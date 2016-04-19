@@ -379,6 +379,13 @@ else
         case 1%Window data
         case 2%Selected trial
         case 3%Selected session
+            if(saveOptions.('doPreprocess') == 1)
+                [mydata, ~, ~] = handles.operationSets{1,2}.getProcData;
+            else
+                mydata = handles.dataSet1.sstData;
+            end
+            uisave({'mydata'},fullfile(handles.folderName,...
+                sprintf('vEEG_sub%02d_sess%02d',handles.subjectNum, handles.sessionNum)));
         case 4%Selected subject
         case 5%All subjects
         case 6%NeuCube
