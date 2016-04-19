@@ -282,11 +282,12 @@ classdef eegOperations < handle
                     signalData = processingData(signal_intvl,:,:);
                     noiseData = processingData(noise_intvl,:,:);
                     
-                    [signalData, ~] = eegOperations.shapeProcessing(signalData);
-                    [noiseData, nT] = eegOperations.shapeProcessing(noiseData);
-                    w = osf(signalData', noiseData');
+                    processedData = zeros(size(processingData, 1), 1, size(processingData, 3));
                     
-                    processedData = spatialFilterSstData(processingData, w);
+                    for i = 1:size(signalData, 3)
+                        w = osf(signalData(:,:,i)', noiseData(:,:,i)');
+                        processedData(:,:,i) = spatialFilterSstData(processingData(:,:,i), w);
+                    end
                     abscissa = obj.abscissa;
                     dataDomain = obj.dataDomain;
                     % args{1} should be a 1 by 2 vector containing signal
