@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 
 % Edit the above text to modify the response to help visualEEG
 
-% Last Modified by GUIDE v2.5 09-Mar-2016 15:36:02
+% Last Modified by GUIDE v2.5 18-May-2016 12:13:59
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -549,6 +549,20 @@ function pbSelectChannels_Callback(hObject, eventdata, handles)
 % hObject    handle to pbSelectChannels (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+channelsInfo = {num2str(handles.dataSet1.listChannels), handles.dataSet1.listChannelNames};
+[channels,~] = listdlg('PromptString','Select channels:',...
+                'ListString',channelsInfo{1,2});
+if(~isempty(channels))
+    
+    channelNames = channelsInfo{1,2}(channels,:);
+    handles.channels = channels;
+    for i = 1:size(handles.operationSets, 1)
+        handles.operationSets{i,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+    end
+    set(handles.editChannels,'String', sprintf('%s ', channelNames{:}));
+    guidata(hObject, handles);
+    updateView(handles);
+end
 
 
 % --- Executes on selection change in lbOperations.

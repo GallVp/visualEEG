@@ -127,6 +127,19 @@ classdef eegData < matlab.mixin.Copyable
             nChannels = size(D.mydata);
             nChannels = nChannels(2);
         end
+        
+        function [ channelNames ] = loadChannelNames(folderName, channelSrNos)
+            try
+                [~,~,raw] = xlsread(strcat(folderName, '/channel_names.xls'));
+                if(sum(cell2mat(raw(:,1)) == channelSrNos) == length(channelSrNos))
+                    channelNames = raw(:,2);
+                else
+                    channelNames = cellstr(num2str(channelSrNos));
+                end
+            catch ME
+                channelNames = cellstr(num2str(channelSrNos));
+            end
+        end
     end
     
     methods
@@ -162,11 +175,11 @@ classdef eegData < matlab.mixin.Copyable
             
             obj.numChannels = eegData.getNumChannels(obj.folderName, subNum, sessNum);
             
-            % Column 1 contains serial number, column two contains actual
-            % number of electrode, and column three contains names of
+            % Column 1 contains serial number, column two contains  names of
             % channels.
-            obj.channelNfo = cell(1, 3);
+            obj.channelNfo = cell(1, 2);
             obj.channelNfo{:,1} = [1:obj.numChannels]';
+            obj.channelNfo{:,2} = eegData.loadChannelNames(folderName, [1:obj.numChannels]');
             
             loadData(obj, subNum, sessNum);
             
@@ -220,6 +233,10 @@ classdef eegData < matlab.mixin.Copyable
         
         function [channelSrNos] = listChannels(obj)
             channelSrNos = obj.channelNfo{1,1};
+        end
+        
+        function [channelNames] = listChannelNames(obj)
+            channelNames = obj.channelNfo{1,2};
         end
         
         function [subjects] = listSubjects(obj)
