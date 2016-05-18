@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 
 % Edit the above text to modify the response to help visualEEG
 
-% Last Modified by GUIDE v2.5 09-Mar-2016 15:36:02
+% Last Modified by GUIDE v2.5 18-May-2016 16:51:24
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -70,6 +70,8 @@ set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menu_export, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
+set(handles.toolShowLegend, 'Enable', 'Off');
+
 
 % Plot instructions
 text(0.38,0.5, 'Go to File->Import data');
@@ -350,6 +352,8 @@ if ~isempty(dataOut)
         set(handles.cbApply, 'Value', 0);
         set(handles.cbExcludeEpochs, 'Value', 0);
         
+        handles.showLegend = 0;
+        
         handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
         guidata(hObject, handles);
         updateView(handles);
@@ -364,6 +368,7 @@ if ~isempty(dataOut)
         set(handles.saveFigure, 'Enable', 'On');
         
         set(handles.menuTools, 'Enable', 'On');
+        set(handles.toolShowLegend, 'Enable', 'On');
     end
 end
 
@@ -453,6 +458,16 @@ if(strcmp(dataDomain, {'Time'}))
     plot(xData, yData)
 else
     stem(xData, yData)
+end
+
+
+%Update Legend
+if(handles.showLegend)
+    channelNames = handles.dataSet1.listChannelNames;
+    channelNames = channelNames(handles.channels,:);
+    legend(channelNames);
+else
+    legend off
 end
 
 
@@ -732,3 +747,13 @@ function menuSvm_Callback(hObject, eventdata, handles)
 dataIn.('dataSet') = copy(handles.dataSet1);
 dataIn.('channels') = handles.channels;
 gSVM(dataIn);
+
+
+% --------------------------------------------------------------------
+function toolShowLegend_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to toolShowLegend (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.showLegend = ~handles.showLegend;
+guidata(hObject, handles);
+updateView(handles);
