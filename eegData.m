@@ -175,7 +175,7 @@ classdef eegData < matlab.mixin.Copyable
             
             obj.numChannels = eegData.getNumChannels(obj.folderName, subNum, sessNum);
             
-            % Column 1 contains serial number, column two contains  names of
+            %Column 1 contains serial number, column two contains  names of
             % channels.
             obj.channelNfo = cell(1, 2);
             obj.channelNfo{:,1} = [1:obj.numChannels]';
