@@ -52,21 +52,23 @@ classdef eegData < matlab.mixin.Copyable
             aIndex = afterIndex / ts;
             
             D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)));
+            rawEegData = D.EEGdata';
+            Epoch_start = D.epoch_start;
             if(strcmp(importMethod, 'BYTRIALTIME'))
-                numTrial = size(D.mydata);
+                numTrial = size(rawEegData);
                 numTrial = floor(numTrial(1)/fs/trialTime);
                 sessionData = zeros(trialTime/ts, length(channels),numTrial);
             else
-                numTrial = length(D.epoch_start);
+                numTrial = length(Epoch_start);
                 sessionData = zeros((beforeIndex+afterIndex)/ts, length(channels),numTrial);
             end
             
             for i=1:numTrial
                 if(strcmp(importMethod, 'BYTRIALTIME'))
-                    sessionData(:,:,i) = eegData.getTrialByTrialTime(D.mydata,i,channels, fs, trialTime);
+                    sessionData(:,:,i) = eegData.getTrialByTrialTime(rawEegData,i,channels, fs, trialTime);
                 else
-                    indices = [D.epoch_start(i)-bIndex D.epoch_start(i)+aIndex-1];
-                    sessionData(:,:,i) = eegData.getTrialByEpochIndex(D.mydata,indices,channels);
+                    indices = [Epoch_start(i)-bIndex Epoch_start(i)+aIndex-1];
+                    sessionData(:,:,i) = eegData.getTrialByEpochIndex(rawEegData,indices,channels);
                 end
             end
         end
@@ -124,8 +126,8 @@ classdef eegData < matlab.mixin.Copyable
         function [ nChannels ] = getNumChannels( folderName, subNum, sessNum)
             
             D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'mydata');
-            nChannels = size(D.mydata);
-            nChannels = nChannels(2);
+            nChannels = size(D.EEGdata);
+            nChannels = nChannels(1);
         end
         
         function [ channelNames ] = loadChannelNames(folderName, channelSrNos)
