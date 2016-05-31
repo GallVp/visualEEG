@@ -53,7 +53,7 @@ classdef eegData < matlab.mixin.Copyable
             
             D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)));
             rawEegData = D.EEGdata';
-            Epoch_start = D.epoch_start;
+            Epoch_start = D.Epoch_start;
             if(strcmp(importMethod, 'BYTRIALTIME'))
                 numTrial = size(rawEegData);
                 numTrial = floor(numTrial(1)/fs/trialTime);
@@ -125,7 +125,7 @@ classdef eegData < matlab.mixin.Copyable
         
         function [ nChannels ] = getNumChannels( folderName, subNum, sessNum)
             
-            D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'mydata');
+            D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'EEGdata');
             nChannels = size(D.EEGdata);
             nChannels = nChannels(1);
         end
@@ -211,7 +211,7 @@ classdef eegData < matlab.mixin.Copyable
             catch me
                 disp(me.identifier);
                 if(strcmp(me.identifier, 'MATLAB:load:couldNotReadFile'))
-                    obj.extrials = zeros(1, datasize(3));
+                    obj.extrials = zeros(1, obj.dataSize(3));
                     mydata = {obj.subjectNum, obj.sessionNum, obj.extrials};
                     save(strcat(obj.folderName,'/ex_trials.mat'), 'mydata');
                 end
