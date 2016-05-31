@@ -272,8 +272,8 @@ function cb_discard_Callback(hObject, eventdata, handles)
 
 val = get(hObject,'Value');
 handles.dataSet1.updateTrialExStatus(handles.trialNum, val);
-handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
 guidata(hObject, handles);
+updateView(handles);
 
 
 % --------------------------------------------------------------------
@@ -351,7 +351,9 @@ if ~isempty(dataOut)
         
 
         set(handles.cbApply, 'Value', 0);
+        set(handles.cbApply, 'Enable', 'Off');
         set(handles.cbExcludeEpochs, 'Value', 0);
+        set(handles.cbExcludeEpochs, 'Enable', 'Off');
         
         handles.showLegend = 0;
         legend off;
@@ -446,7 +448,24 @@ function updateView(handles)
 set(handles.lbOperations, 'String', handles.operationSets{handles.operationSetNum,2}.operations);
 set(handles.lbOperations, 'Value', length(handles.operationSets{handles.operationSetNum,2}.operations));
 
-if handles.operationSets{handles.operationSetNum,3} && ~isempty(handles.operationSets{handles.operationSetNum,2}.operations)
+%Update enable and checked property of apply and Exclude epochs option
+if isempty(handles.operationSets{handles.operationSetNum,2}.operations)
+    set(handles.cbApply, 'Enable', 'Off');
+    handles.operationSets{handles.operationSetNum,3} = 0;
+    set(handles.cbApply, 'Value', 0);
+else
+    set(handles.cbApply, 'Enable', 'On');
+    set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
+end
+
+if(handles.operationSets{handles.operationSetNum,3})
+    set(handles.cbExcludeEpochs, 'Enable', 'On');
+else
+    set(handles.cbExcludeEpochs, 'Enable', 'Off');
+end
+
+%Update Axis data based on state of apply option
+if handles.operationSets{handles.operationSetNum,3}
     [viewData, abscissa, dataDomain] = handles.operationSets{handles.operationSetNum,2}.getProcData;
 else
     viewData = handles.dataSet1.sstData(:,handles.channels,:);
@@ -473,15 +492,16 @@ else
     legend off
 end
 
-
+%Update trial number to be displayed
 totalEpochs = size(viewData, 3);
 if(totalEpochs == 1)
     trialNum = 1;
 else
     trialNum = handles.trialNum;
 end
+
 %update view
-if handles.operationSets{handles.operationSetNum,3} && ~isempty(handles.operationSets{handles.operationSetNum,2}.operations)
+if handles.operationSets{handles.operationSetNum,4} && handles.operationSets{handles.operationSetNum,3}
     set(handles.cb_discard, 'Visible', 'Off');
     set(handles.bg_trial, 'Title', sprintf('Epoch:%d/%d', trialNum, totalEpochs));
 else
@@ -641,6 +661,8 @@ if(isempty(s))
     return
 end
 if(handles.operationSets{handles.operationSetNum,2}.addOperation(s))
+    handles.operationSets{handles.operationSetNum,3} = 1;
+    guidata(hObject, handles);
     updateView(handles);
 end
 
@@ -705,6 +727,8 @@ if(~isempty(answer))
     % Update operations controls
     set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
     set(handles.cbExcludeEpochs, 'Value', handles.operationSets{handles.operationSetNum,4});
+    set(handles.cbApply, 'Enable', 'Off');
+    set(handles.cbExcludeEpochs, 'Enable', 'Off');
     % Update opsSet List
     set(handles.pumOpsSet, 'String', handles.operationSets(:,1));
     set(handles.pumOpsSet, 'Value', handles.operationSetNum);
