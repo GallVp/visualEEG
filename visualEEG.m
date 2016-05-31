@@ -354,6 +354,8 @@ if ~isempty(dataOut)
         set(handles.cbExcludeEpochs, 'Value', 0);
         
         handles.showLegend = 0;
+        legend off;
+        set(handles.toolShowLegend, 'State', 'Off');
         
         handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
         guidata(hObject, handles);
