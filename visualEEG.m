@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 18-May-2016 16:51:24
+% Last Modified by GUIDE v2.5 02-Jun-2016 11:57:24
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -72,7 +72,8 @@ set(handles.menu_export, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
-
+set(handles.menuInsert, 'Enable', 'Off');
+set(handles.menuStaticCue, 'Checked', 'Off');
 
 % Plot instructions
 text(0.38,0.5, 'Go to File->Import data');
@@ -360,8 +361,6 @@ if ~isempty(dataOut)
         set(handles.toolShowLegend, 'State', 'Off');
         
         handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-        guidata(hObject, handles);
-        updateView(handles);
         
         %enable most controls
         set(handles.bg_trial, 'Visible', 'On');
@@ -374,6 +373,16 @@ if ~isempty(dataOut)
         
         set(handles.menuTools, 'Enable', 'On');
         set(handles.toolShowLegend, 'Enable', 'On');
+        
+        set(handles.menuInsert, 'Enable', 'On');
+        
+        % Cue initilization
+        set(handles.menuStaticCue, 'Checked', 'Off');
+        handles.cueNoCue = 0;
+        handles.cueTime = 0;
+        
+        guidata(hObject, handles);
+        updateView(handles);
     end
 end
 
@@ -473,13 +482,20 @@ else
     dataDomain = {'Time'};
 end
 
-
-%Update plot
 [xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles);
 if(strcmp(dataDomain, {'Time'}))
     plot(xData, yData)
 else
     stem(xData, yData)
+end
+
+%Update plot
+if(handles.cueNoCue)
+    hold on
+    a = axis;
+    line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','-', 'Color', 'red', 'LineWidth', 2);
+    axis(a);
+    hold off
 end
 
 
@@ -798,3 +814,41 @@ function toolShowLegend_ClickedCallback(hObject, eventdata, handles)
 handles.showLegend = ~handles.showLegend;
 guidata(hObject, handles);
 updateView(handles);
+
+% --------------------------------------------------------------------
+function menuInsert_Callback(hObject, eventdata, handles)
+% hObject    handle to menuInsert (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menuStaticCue_Callback(hObject, eventdata, handles)
+% hObject    handle to menuStaticCue (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.cueNoCue)
+    handles.cueNoCue = 0;
+    set(handles.menuStaticCue, 'Checked', 'Off');
+    guidata(hObject, handles);
+    updateView(handles);
+else
+    val = inputdlg('Enter cue time:');
+    
+    if(isempty(val))
+        return;
+    end
+    cueTime = str2double(val);
+    
+    if(~isnan(cueTime))
+        if(cueTime < 0 || cueTime > handles.dataSet1.trialTime)
+            errordlg('Invalid cue time.','Cue insertion', 'modal');
+        else
+            handles.cueTime = cueTime;
+            set(handles.menuStaticCue, 'Checked', 'On');
+            handles.cueNoCue = 1;
+            guidata(hObject, handles);
+            updateView(handles);
+        end
+    end
+end
