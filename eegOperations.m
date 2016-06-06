@@ -7,7 +7,7 @@ classdef eegOperations < handle
 % License, or (at your option) any later version.  See the file
 % LICENSE included with this distribution for more information.
     properties (Constant)
-        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF'};
+        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.'};
     end
     
     properties (SetAccess = private)
@@ -178,6 +178,13 @@ classdef eegOperations < handle
                     % args{1} should be a 1 by 2 vector containing signal
                     % time. args{2} should be a 1 by 2 vector containing
                     % noise time.
+                case eegOperations.AVAILABLE_OPERATIONS{11}
+                    prompt={'Enter number of stds'};
+                    name = 'Std number';
+                    defaultans = {'1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
+                    returnArgs = answer;
+                    % args{1} should be number of stds to use.
                 otherwise
                     returnArgs = {};
             end
@@ -283,7 +290,7 @@ classdef eegOperations < handle
                     noiseData = processingData(noise_intvl,:,:);
                     
                     [signalData, ~] = eegOperations.shapeProcessing(signalData);
-                    [noiseData, nT] = eegOperations.shapeProcessing(noiseData);
+                    [noiseData, ~] = eegOperations.shapeProcessing(noiseData);
                     w = osf(signalData', noiseData');
                     
                     processedData = spatialFilterSstData(processingData, w);
@@ -292,6 +299,22 @@ classdef eegOperations < handle
                     % args{1} should be a 1 by 2 vector containing signal
                     % time. args{2} should be a 1 by 2 vector containing
                     % noise time.
+                    
+                case eegOperations.AVAILABLE_OPERATIONS{11}
+                    numEpochs = size(processingData, 3);
+                    numChannels = size(processingData, 2);
+                    numStds = str2double(args{1});
+                    processedData = zeros(size(processingData));
+                    for i=1:numEpochs
+                        for j=1:numChannels
+                            dataStd = std(processingData(:,j, i));
+                            processedData(:,j, i) = processingData(:,j, i) > dataStd * numStds;
+                        end
+                    end
+                    
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % args{1} should be number of stds to use.
                 otherwise
                     processedData = processingData;
             end

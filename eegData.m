@@ -39,7 +39,7 @@ classdef eegData < matlab.mixin.Copyable
         PLOT_TYPE_STEM = 'STEM';
     end
     
-    methods (Access = public, Static)
+    methods (Access = private, Static)
         function [ subjectData ] = getSubject(folderName, subNum, sessions, channels, fs, trialTime, beforeIndex, afterIndex, importMethod)
             for i=1:length(sessions)
                 subjectData(:,:,:,i) = eegData.getSession(folderName, subNum,sessions(i),channels, fs, trialTime, beforeIndex, afterIndex, importMethod);
