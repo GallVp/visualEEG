@@ -22,7 +22,7 @@ function varargout = importOptionsDlg(varargin)
 
 % Edit the above text to modify the response to help importOptionsDlg
 
-% Last Modified by GUIDE v2.5 22-Feb-2016 15:14:21
+% Last Modified by GUIDE v2.5 06-Jun-2016 11:48:18
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -65,6 +65,7 @@ handles.output = hObject;
 
 %Defaults
 set(handles.upByEpochIndex, 'Visible', 'Off');
+set(handles.upByTrialTime, 'Visible', 'On');
 handles.dataOut = [];
 handles.importMethod = 'BYTRIALTIME';
 handles.sampleRate = str2num(get(handles.editSampleRate, 'String'));
@@ -245,4 +246,17 @@ function rbByEpochIndex_Callback(hObject, eventdata, handles)
 handles.importMethod = 'BYEPOCHINDEX';
 set(handles.upByTrialTime, 'Visible', 'Off');
 set(handles.upByEpochIndex, 'Visible', 'On');
+guidata(hObject, handles);
+
+
+% --- Executes on button press in rbEmgCueFiles.
+function rbEmgCueFiles_Callback(hObject, eventdata, handles)
+% hObject    handle to rbEmgCueFiles (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of rbEmgCueFiles
+handles.importMethod = 'EMGCUEFILES';
+set(handles.upByTrialTime, 'Visible', 'Off');
+set(handles.upByEpochIndex, 'Visible', 'Off');
 guidata(hObject, handles);

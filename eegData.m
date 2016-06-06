@@ -33,12 +33,13 @@ classdef eegData < matlab.mixin.Copyable
     properties(Constant)
         IMPORT_METHOD_BY_TIME = 'BYTRIALTIME';
         IMPORT_METHOD_BY_INDEX = 'BYINDEX';
+        IMPORT_METHOD_EMG_CUE_FILES = 'EMGCUEFILES';
         
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
     end
     
-    methods (Access = private, Static)
+    methods (Access = public, Static)
         function [ subjectData ] = getSubject(folderName, subNum, sessions, channels, fs, trialTime, beforeIndex, afterIndex, importMethod)
             for i=1:length(sessions)
                 subjectData(:,:,:,i) = eegData.getSession(folderName, subNum,sessions(i),channels, fs, trialTime, beforeIndex, afterIndex, importMethod);
@@ -123,11 +124,16 @@ classdef eegData < matlab.mixin.Copyable
             end
         end
         
-        function [ nChannels ] = getNumChannels( folderName, subNum, sessNum)
-            
-            D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'EEGdata');
-            nChannels = size(D.EEGdata);
-            nChannels = nChannels(1);
+        function [ nChannels ] = getNumChannels( folderName, importMethod, subNum, sessNum)
+            if(strcmp(eegData.IMPORT_METHOD_EMG_CUE_FILES, importMethod))
+                D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
+                nChannels = size(D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values);
+                nChannels = nChannels(2);
+            else
+                D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'EEGdata');
+                nChannels = size(D.EEGdata);
+                nChannels = nChannels(1);
+            end
         end
         
         function [ channelNames ] = loadChannelNames(folderName, channelSrNos)
@@ -171,11 +177,15 @@ classdef eegData < matlab.mixin.Copyable
             
             if(strcmp(importMethod, obj.IMPORT_METHOD_BY_TIME))
                 obj.trialTime = trialTime;
-            else
+            elseif(strcmp(importMethod, obj.IMPORT_METHOD_BY_INDEX))
                 obj.trialTime = beforeIndex + afterIndex;
+            else
+                %do nothing!! EMG cue files are already in good shape.
+                %Caution!!!: obj.trailTime will be updated in the loadDdata
+                %method.
             end
             
-            obj.numChannels = eegData.getNumChannels(obj.folderName, subNum, sessNum);
+            obj.numChannels = eegData.getNumChannels(obj.folderName, importMethod, subNum, sessNum);
             
             %Column 1 contains serial number, column two contains  names of
             % channels.
@@ -187,18 +197,26 @@ classdef eegData < matlab.mixin.Copyable
             
         end
         
-        function loadData(obj, subjectNum, sessionNum)
+        function loadData(obj, subNum, sessNum)
             % Throws exception eegData:load:noAnchorFolder
             
             if(isempty(obj.folderName))
                 throw(MException('eegData:load:noAnchorFolder', 'anchorFolder should be called first.'));
             end
             
-            obj.subjectNum = subjectNum;
-            obj.sessionNum = sessionNum;
-            obj.sstData = eegData.getSubject(obj.folderName, obj.subjectNum, obj.sessionNum,...
+            obj.subjectNum = subNum;
+            obj.sessionNum = sessNum;
+            
+            if(strcmp(eegData.IMPORT_METHOD_EMG_CUE_FILES, obj.importMethod))
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
+                obj.sstData = D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values;
+                obj.trialTime = size(obj.sstData, 1);
+                obj.trialTime = obj.trialTime / obj.dataRate;
+            else
+                obj.sstData = eegData.getSubject(obj.folderName, obj.subjectNum, obj.sessionNum,...
                 1:obj.numChannels, obj.dataRate, obj.trialTime,...
                 obj.beforeIndex, obj.afterIndex, obj.importMethod);
+            end
             
             obj.dataSize = size(obj.sstData);
             
