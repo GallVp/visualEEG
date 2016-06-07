@@ -271,6 +271,11 @@ classdef eegData < matlab.mixin.Copyable
             end
         end
         
+        function plotData(obj)
+            eegData.plotSstData({1/obj.dataRate:1/obj.dataRate:obj.trialTime}, {obj.sstData}, {sprintf('Sub:%02d Sess:%02d',...
+                obj.subjectNum, obj.sessionNum)}, {eegData.PLOT_TYPE_PLOT}, -1);
+        end
+        
     end
     methods (Access = public, Static)
         function [ X, Xcv, Xtest, y, ycv, ytest] = splitData(sstData, intvla, intvlb, dataRate,  trainPer, cvPer, testPer)

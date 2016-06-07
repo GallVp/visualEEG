@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 02-Jun-2016 11:57:24
+% Last Modified by GUIDE v2.5 07-Jun-2016 16:28:51
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -855,3 +855,13 @@ else
         end
     end
 end
+
+
+% --------------------------------------------------------------------
+function menuExportCues_Callback(hObject, eventdata, handles)
+% hObject    handle to menuExportCues (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+cues = extractCues(copy(handles.dataSet1), 1);
+save(fullfile(handles.folderName,...
+    'emg_cues.mat'), 'cues');
