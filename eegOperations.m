@@ -7,7 +7,7 @@ classdef eegOperations < handle
 % License, or (at your option) any later version.  See the file
 % LICENSE included with this distribution for more information.
     properties (Constant)
-        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.'};
+        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak'};
     end
     
     properties (SetAccess = private)
@@ -179,9 +179,19 @@ classdef eegOperations < handle
                     % time. args{2} should be a 1 by 2 vector containing
                     % noise time.
                 case eegOperations.AVAILABLE_OPERATIONS{11}
-                    prompt={'Enter number of stds'};
+                    prompt={'Enter number of stds:'};
                     name = 'Std number';
                     defaultans = {'1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
+                    returnArgs = answer;
+                    % args{1} should be number of stds to use.
+                case eegOperations.AVAILABLE_OPERATIONS{12}
+                    returnArgs = {'N.R.'};
+                    % No argument required.
+                case eegOperations.AVAILABLE_OPERATIONS{13}
+                    prompt={'Amplitude >=:', 'Nth peak (0 for all):'};
+                    name = 'Detect peak';
+                    defaultans = {'1', '1'};
                     answer = inputdlg(prompt,name,[1 40],defaultans);
                     returnArgs = answer;
                     % args{1} should be number of stds to use.
@@ -309,6 +319,45 @@ classdef eegOperations < handle
                         for j=1:numChannels
                             dataStd = std(processingData(:,j, i));
                             processedData(:,j, i) = processingData(:,j, i) > dataStd * numStds;
+                        end
+                    end
+                    
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % args{1} should be number of stds to use.
+                case eegOperations.AVAILABLE_OPERATIONS{12}
+                    [P, nT] = eegOperations.shapeProcessing(processingData);
+                    processedData = abs(P);
+                    processedData = eegOperations.shapeSst(processedData, nT);
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % No argument required.
+                case eegOperations.AVAILABLE_OPERATIONS{13}
+                    numEpochs = size(processingData, 3);
+                    numChannels = size(processingData, 2);
+                    numSamples = size(processingData, 1);
+                    thresh = str2double(args{1});
+                    peakNumber = round(str2double(args{2}));
+                    processedData = zeros(size(processingData));
+                    for i=1:numEpochs
+                        for j=1:numChannels
+                            pn = 0;
+                            for k=1:numSamples
+                                if(processingData(k,j,i) >= thresh)
+                                    pn = pn +1;
+                                    if(peakNumber == 0)
+                                        processedData(k,j,i) = 1;
+                                        continue;
+                                    elseif(peakNumber == pn)
+                                        processedData(k,j,i) = 1;
+                                        break;
+                                    else
+                                        continue;
+                                    end
+                                else
+                                    continue;
+                                end
+                            end
                         end
                     end
                     
