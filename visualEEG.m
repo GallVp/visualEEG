@@ -536,6 +536,9 @@ if trialNum == 1
 else
     set(handles.pb_previous, 'Enable', 'On');
 end
+if totalEpochs == 1
+    set(handles.cb_discard, 'Visible', 'Off');
+end
 
 function [xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles)
 indices = computeIndices(handles);

@@ -32,7 +32,7 @@ classdef eegData < matlab.mixin.Copyable
     
     properties(Constant)
         IMPORT_METHOD_BY_TIME = 'BYTRIALTIME';
-        IMPORT_METHOD_BY_INDEX = 'BYINDEX';
+        IMPORT_METHOD_BY_INDEX = 'BYEPOCHINDEX';
         IMPORT_METHOD_EMG_CUE_FILES = 'EMGCUEFILES';
         
         PLOT_TYPE_PLOT = 'PLOT';
