@@ -7,7 +7,7 @@ classdef eegOperations < handle
 % License, or (at your option) any later version.  See the file
 % LICENSE included with this distribution for more information.
     properties (Constant)
-        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak'};
+        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue'};
     end
     
     properties (SetAccess = private)
@@ -96,7 +96,7 @@ classdef eegOperations < handle
         end
     end
     
-    methods (Access = private)
+    methods (Access = public)
         function applyAllOperations(obj)
             numOperations = length(obj.operations);
             for i=1:numOperations
@@ -195,6 +195,24 @@ classdef eegOperations < handle
                     answer = inputdlg(prompt,name,[1 40],defaultans);
                     returnArgs = answer;
                     % args{1} should be number of stds to use.
+                case eegOperations.AVAILABLE_OPERATIONS{14}
+                    val = inputdlg('Enter cue time:');
+                    
+                    if(isempty(val))
+                        returnArgs = {};
+                    else
+                        cueTime = val;
+                        [filename, pathname] = ...
+                            uigetfile({'*.mat'},'Select Emg cues file');
+                        
+                        if(isempty(filename))
+                            returnArgs = {};
+                        else
+                            cueFile = load(strcat(pathname, '/', filename),'cues');
+                            returnArgs = {cueTime, cueFile.cues};
+                        end
+                    end
+                    % args{1} should be the cueTime, args{2} should be the emg cues cell array.
                 otherwise
                     returnArgs = {};
             end
@@ -360,12 +378,27 @@ classdef eegOperations < handle
                             end
                         end
                     end
-                    
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % args{1} should be number of stds to use.
+                case eegOperations.AVAILABLE_OPERATIONS{14}
+                    numEpochs = size(processingData, 3);
+                    cueTime = str2double(args{1});
+                    cues = args{2};
+                    processedData = zeros(size(processingData));
+                    for i=1:numEpochs
+                        ext = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,3));
+                        cue = ext(i);
+                        n = round((cueTime - cue) * obj.dataSet.dataRate);
+                        processedData(:,:, i) = circshift(processingData(:,:,i), n, 1);
+                    end
                     abscissa = obj.abscissa;
                     dataDomain = obj.dataDomain;
                     % args{1} should be number of stds to use.
                 otherwise
                     processedData = processingData;
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
             end
         end
     end
