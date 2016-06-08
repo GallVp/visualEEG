@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 07-Jun-2016 16:28:51
+% Last Modified by GUIDE v2.5 07-Jun-2016 17:00:41
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -482,6 +482,7 @@ else
     dataDomain = {'Time'};
 end
 
+%Update plot
 [xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles);
 if(strcmp(dataDomain, {'Time'}))
     plot(xData, yData)
@@ -489,13 +490,23 @@ else
     stem(xData, yData)
 end
 
-%Update plot
-if(handles.cueNoCue)
+
+if(handles.cueNoCue==1)
     hold on
     a = axis;
     line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','-', 'Color', 'red', 'LineWidth', 2);
     axis(a);
     hold off
+elseif(handles.cueNoCue==2)
+    hold on
+    a = axis;
+    ext = cell2mat(handles.cueTime(cell2mat(handles.cueTime(:,1))==handles.subjectNum & cell2mat(handles.cueTime(:,2))==handles.sessionNum,3));
+    cueTime = ext(handles.trialNum);
+    line([cueTime cueTime], [a(3) a(4)], 'LineStyle','-', 'Color', 'red', 'LineWidth', 2);
+    axis(a);
+    hold off
+else
+    %Do nothing
 end
 
 
@@ -830,7 +841,7 @@ function menuStaticCue_Callback(hObject, eventdata, handles)
 % hObject    handle to menuStaticCue (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if(handles.cueNoCue)
+if(handles.cueNoCue == 1)
     handles.cueNoCue = 0;
     set(handles.menuStaticCue, 'Checked', 'Off');
     guidata(hObject, handles);
@@ -849,6 +860,7 @@ else
         else
             handles.cueTime = cueTime;
             set(handles.menuStaticCue, 'Checked', 'On');
+            set(handles.menuEmgCue, 'Checked', 'Off');
             handles.cueNoCue = 1;
             guidata(hObject, handles);
             updateView(handles);
@@ -865,3 +877,30 @@ function menuExportCues_Callback(hObject, eventdata, handles)
 cues = extractCues(copy(handles.dataSet1), 1);
 save(fullfile(handles.folderName,...
     'emg_cues.mat'), 'cues');
+
+
+% --------------------------------------------------------------------
+function menuEmgCue_Callback(hObject, eventdata, handles)
+% hObject    handle to menuEmgCue (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.cueNoCue == 2)
+    handles.cueNoCue = 0;
+    set(handles.menuEmgCue, 'Checked', 'Off');
+    guidata(hObject, handles);
+    updateView(handles);
+else
+    [filename, pathname] = ...
+     uigetfile({'*.mat'},'Select Emg cues file');
+    
+    if(isempty(filename))
+        return;
+    end
+    cueTime = load(strcat(pathname, '/', filename),'cues');
+    handles.cueTime = cueTime.cues;
+    set(handles.menuStaticCue, 'Checked', 'Off');
+    set(handles.menuEmgCue, 'Checked', 'On');
+    handles.cueNoCue = 2;
+    guidata(hObject, handles);
+    updateView(handles);
+end

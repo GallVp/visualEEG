@@ -65,10 +65,7 @@ for i = 1:length(subjects)
                 end
             end
         end
-        cues = [cues; {subjects(i), sessions(j), indices}];
+        cues = [cues; {subjects(i), sessions(j), indices./emgData.dataRate}];
     end
 end
-
-
-
 end
