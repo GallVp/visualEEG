@@ -196,12 +196,15 @@ classdef eegOperations < handle
                     returnArgs = answer;
                     % args{1} should be number of stds to use.
                 case eegOperations.AVAILABLE_OPERATIONS{14}
-                    val = inputdlg('Enter cue time:');
+                    prompt={'Cue Time:', 'Offset:'};
+                    name = 'Cue timing';
+                    defaultans = {'1', '1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
                     
-                    if(isempty(val))
+                    if(isempty(answer))
                         returnArgs = {};
                     else
-                        cueTime = val;
+                        cueTime = answer{1};
                         [filename, pathname] = ...
                             uigetfile({'*.mat'},'Select Emg cues file');
                         
@@ -209,7 +212,7 @@ classdef eegOperations < handle
                             returnArgs = {};
                         else
                             cueFile = load(strcat(pathname, '/', filename),'cues');
-                            returnArgs = {cueTime, cueFile.cues};
+                            returnArgs = {cueTime, cueFile.cues, answer{2}};
                         end
                     end
                     % args{1} should be the cueTime, args{2} should be the emg cues cell array.
@@ -385,11 +388,12 @@ classdef eegOperations < handle
                     numEpochs = size(processingData, 3);
                     cueTime = str2double(args{1});
                     cues = args{2};
+                    offset = args{3};
                     processedData = zeros(size(processingData));
                     for i=1:numEpochs
                         ext = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,3));
                         cue = ext(i);
-                        n = round((cueTime - cue) * obj.dataSet.dataRate);
+                        n = round((cueTime - cue - offset) * obj.dataSet.dataRate);
                         processedData(:,:, i) = circshift(processingData(:,:,i), n, 1);
                     end
                     abscissa = obj.abscissa;
