@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 07-Jun-2016 17:00:41
+% Last Modified by GUIDE v2.5 10-Jun-2016 13:13:31
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -74,6 +74,7 @@ set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
 set(handles.menuInsert, 'Enable', 'Off');
 set(handles.menuStaticCue, 'Checked', 'Off');
+set(handles.menuView, 'Enable', 'Off');
 
 % Plot instructions
 text(0.38,0.5, 'Go to File->Import data');
@@ -375,6 +376,8 @@ if ~isempty(dataOut)
         set(handles.toolShowLegend, 'Enable', 'On');
         
         set(handles.menuInsert, 'Enable', 'On');
+        
+        set(handles.menuView, 'Enable', 'On');
         
         % Cue initilization
         set(handles.menuStaticCue, 'Checked', 'Off');
@@ -903,4 +906,29 @@ else
     handles.cueNoCue = 2;
     guidata(hObject, handles);
     updateView(handles);
+end
+
+
+% --------------------------------------------------------------------
+function menuView_Callback(hObject, eventdata, handles)
+% hObject    handle to menuView (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menuAxisLimits_Callback(hObject, eventdata, handles)
+% hObject    handle to menuAxisLimits (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+a = axis;
+prompt = {'Xmin:','Xmax:','Ymin:','Ymax:'};
+dlg_title = 'Axis limits';
+num_lines = 1;
+defaultans = {num2str(a(1)),num2str(a(2)),num2str(a(3)),num2str(a(4))};
+answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+if(isempty(answer))
+    return;
+else
+    axis([str2double(answer{1}) str2double(answer{2}) str2double(answer{3}) str2double(answer{4})]);
 end
