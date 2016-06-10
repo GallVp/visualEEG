@@ -22,7 +22,7 @@ function varargout = importOptionsDlg(varargin)
 
 % Edit the above text to modify the response to help importOptionsDlg
 
-% Last Modified by GUIDE v2.5 06-Jun-2016 11:48:18
+% Last Modified by GUIDE v2.5 10-Jun-2016 11:36:27
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -67,11 +67,11 @@ handles.output = hObject;
 set(handles.upByEpochIndex, 'Visible', 'Off');
 set(handles.upByTrialTime, 'Visible', 'On');
 handles.dataOut = [];
-handles.importMethod = 'BYTRIALTIME';
-handles.sampleRate = str2num(get(handles.editSampleRate, 'String'));
-handles.trialTime = str2num(get(handles.editTrialTime, 'String'));
-handles.beforeIndex = str2num(get(handles.editBeforeIndex, 'String'));
-handles.afterIndex = str2num(get(handles.editAfterIndex, 'String'));
+handles.importMethod = 'BYEPOCHTIME';
+handles.sampleRate = str2double(get(handles.editSampleRate, 'String'));
+handles.trialTime = str2double(get(handles.editTrialTime, 'String'));
+handles.beforeIndex = str2double(get(handles.editBeforeIndex, 'String'));
+handles.afterIndex = str2double(get(handles.editAfterIndex, 'String'));
 
 % Update handles structure
 guidata(hObject, handles);
@@ -121,14 +121,14 @@ function pbOk_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles.dataOut.('importMethod') = handles.importMethod;
-handles.dataOut.('sampleRate') = str2num(get(handles.editSampleRate, 'String'));
-handles.dataOut.('beforeIndex') = str2num(get(handles.editBeforeIndex, 'String'));
-handles.dataOut.('afterIndex') = str2num(get(handles.editAfterIndex, 'String'));
-if(strcmp(handles.importMethod, 'BYEPOCHINDEX'))
-    handles.dataOut.('trialTime') = str2num(get(handles.editBeforeIndex, 'String'))...
-        + str2num(get(handles.editAfterIndex, 'String'));
+handles.dataOut.('sampleRate') = str2double(get(handles.editSampleRate, 'String'));
+handles.dataOut.('beforeIndex') = str2double(get(handles.editBeforeIndex, 'String'));
+handles.dataOut.('afterIndex') = str2double(get(handles.editAfterIndex, 'String'));
+if(strcmp(handles.importMethod, 'BYEPOCHEVENT'))
+    handles.dataOut.('trialTime') = str2double(get(handles.editBeforeIndex, 'String'))...
+        + str2double(get(handles.editAfterIndex, 'String'));
 else
-    handles.dataOut.('trialTime') = str2num(get(handles.editTrialTime, 'String'));
+    handles.dataOut.('trialTime') = str2double(get(handles.editTrialTime, 'String'));
 end
 guidata(hObject, handles);
 close(handles.figure1);
@@ -216,7 +216,7 @@ function rbByTrialTime_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of rbByTrialTime
-handles.importMethod = 'BYTRIALTIME';
+handles.importMethod = 'BYEPOCHTIME';
 set(handles.upByTrialTime, 'Visible', 'On');
 set(handles.upByEpochIndex, 'Visible', 'Off');
 guidata(hObject, handles);
@@ -243,20 +243,20 @@ function rbByEpochIndex_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of rbByEpochIndex
-handles.importMethod = 'BYEPOCHINDEX';
+handles.importMethod = 'BYEPOCHEVENT';
 set(handles.upByTrialTime, 'Visible', 'Off');
 set(handles.upByEpochIndex, 'Visible', 'On');
 guidata(hObject, handles);
 
 
-% --- Executes on button press in rbEmgCueFiles.
-function rbEmgCueFiles_Callback(hObject, eventdata, handles)
-% hObject    handle to rbEmgCueFiles (see GCBO)
+% --- Executes on button press in rbSignalMatFiles.
+function rbSignalMatFiles_Callback(hObject, eventdata, handles)
+% hObject    handle to rbSignalMatFiles (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of rbEmgCueFiles
-handles.importMethod = 'EMGCUEFILES';
+% Hint: get(hObject,'Value') returns toggle state of rbSignalMatFiles
+handles.importMethod = 'SIGNALMATFILES';
 set(handles.upByTrialTime, 'Visible', 'Off');
 set(handles.upByEpochIndex, 'Visible', 'Off');
 guidata(hObject, handles);

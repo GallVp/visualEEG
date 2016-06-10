@@ -202,7 +202,7 @@ val = get(hObject,'String');
 intvl1 = str2double(val);
 
 if(~isnan(intvl1))
-    if(intvl1 >= handles.intvl2 || intvl1 < 0 || intvl1 > handles.dataSet1.trialTime)
+    if(intvl1 >= handles.intvl2 || intvl1 < 0 || intvl1 > handles.dataSet1.epochTime)
         errordlg('Invalid interval.','Interval selection', 'modal');
         set(hObject, 'String', num2str(handles.intvl1));
     else
@@ -237,7 +237,7 @@ val = get(hObject,'String');
 intvl2 = str2double(val);
 
 if(~isnan(intvl2))
-    if(intvl2 <= handles.intvl1 || intvl2 < 0 || intvl2 > handles.dataSet1.trialTime)
+    if(intvl2 <= handles.intvl1 || intvl2 < 0 || intvl2 > handles.dataSet1.epochTime)
         errordlg('Invalid interval.','Interval selection', 'modal');
         set(hObject, 'String', num2str(handles.intvl2));
     else
@@ -347,7 +347,7 @@ if ~isempty(dataOut)
         
         handles.intvl1 = 0;
         set(handles.edit_intvl1, 'String', num2str(handles.intvl1));
-        handles.intvl2 = handles.dataSet1.trialTime;
+        handles.intvl2 = handles.dataSet1.epochTime;
         set(handles.edit_intvl2, 'String', num2str(handles.intvl2));
         
 
@@ -478,7 +478,7 @@ if handles.operationSets{handles.operationSetNum,3}
     [viewData, abscissa, dataDomain] = handles.operationSets{handles.operationSetNum,2}.getProcData;
 else
     viewData = handles.dataSet1.sstData(:,handles.channels,:);
-    abscissa = 0:1/handles.dataSet1.dataRate:handles.dataSet1.trialTime;
+    abscissa = 0:1/handles.dataSet1.dataRate:handles.dataSet1.epochTime;
     dataDomain = {'Time'};
 end
 
@@ -855,7 +855,7 @@ else
     cueTime = str2double(val);
     
     if(~isnan(cueTime))
-        if(cueTime < 0 || cueTime > handles.dataSet1.trialTime)
+        if(cueTime < 0 || cueTime > handles.dataSet1.epochTime)
             errordlg('Invalid cue time.','Cue insertion', 'modal');
         else
             handles.cueTime = cueTime;

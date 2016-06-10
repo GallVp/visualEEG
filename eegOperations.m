@@ -59,7 +59,7 @@ classdef eegOperations < handle
         function [returnData, abscissa, dataDomain] = getProcData(obj)
             if(isempty(obj.procData))
                 obj.procData = obj.dataSet.sstData(:,obj.channels, obj.exepochs);
-                obj.abscissa = 0:1/obj.dataSet.dataRate:obj.dataSet.trialTime;
+                obj.abscissa = 0:1/obj.dataSet.dataRate:obj.dataSet.epochTime;
                 obj.dataDomain = {'Time'};
             end
             if (obj.numApldOps == length(obj.operations) - 1)

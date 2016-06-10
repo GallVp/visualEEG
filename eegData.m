@@ -20,7 +20,7 @@ classdef eegData < matlab.mixin.Copyable
         importMethod% Method of importing data
         beforeIndex % Time before index
         afterIndex  % Time after index
-        trialTime   % Time of one trial
+        epochTime   % Time of one trial
         numChannels % Total number of channels
         dataRate    % Data sample rate
     end
@@ -31,22 +31,22 @@ classdef eegData < matlab.mixin.Copyable
     end
     
     properties(Constant)
-        IMPORT_METHOD_BY_TIME = 'BYTRIALTIME';
-        IMPORT_METHOD_BY_INDEX = 'BYEPOCHINDEX';
-        IMPORT_METHOD_EMG_CUE_FILES = 'EMGCUEFILES';
+        IMPORT_METHOD_BY_TIME = 'BYEPOCHTIME';
+        IMPORT_METHOD_BY_EVENT = 'BYEPOCHEVENT';
+        IMPORT_METHOD_SIGNAL_MAT_FILES = 'SIGNALMATFILES';
         
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
     end
     
     methods (Access = private, Static)
-        function [ subjectData ] = getSubject(folderName, subNum, sessions, channels, fs, trialTime, beforeIndex, afterIndex, importMethod)
+        function [ subjectData ] = getSubject(folderName, subNum, sessions, channels, fs, epochTime, beforeIndex, afterIndex, importMethod)
             for i=1:length(sessions)
-                subjectData(:,:,:,i) = eegData.getSession(folderName, subNum,sessions(i),channels, fs, trialTime, beforeIndex, afterIndex, importMethod);
+                subjectData(:,:,:,i) = eegData.getSession(folderName, subNum,sessions(i),channels, fs, epochTime, beforeIndex, afterIndex, importMethod);
             end
         end
         
-        function [ sessionData] = getSession(folderName, subNum, sessNum, channels, fs, trialTime, beforeIndex, afterIndex, importMethod)
+        function [ sessionData] = getSession(folderName, subNum, sessNum, channels, fs, epochTime, beforeIndex, afterIndex, importMethod)
             
             ts = 1/fs;
             bIndex = beforeIndex / ts;
@@ -54,30 +54,29 @@ classdef eegData < matlab.mixin.Copyable
             
             D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)));
             rawEegData = D.EEGdata';
-            Epoch_start = D.Epoch_start;
-            if(strcmp(importMethod, 'BYTRIALTIME'))
+            if(strcmp(importMethod, eegData.IMPORT_METHOD_BY_TIME))
                 numTrial = size(rawEegData);
-                numTrial = floor(numTrial(1)/fs/trialTime);
-                sessionData = zeros(trialTime/ts, length(channels),numTrial);
+                numTrial = floor(numTrial(1)/fs/epochTime);
+                sessionData = zeros(epochTime/ts, length(channels),numTrial);
             else
-                numTrial = length(Epoch_start);
+                numTrial = length(D.Events);
                 sessionData = zeros((beforeIndex+afterIndex)/ts, length(channels),numTrial);
             end
             
             for i=1:numTrial
-                if(strcmp(importMethod, 'BYTRIALTIME'))
-                    sessionData(:,:,i) = eegData.getTrialByTrialTime(rawEegData,i,channels, fs, trialTime);
+                if(strcmp(importMethod, eegData.IMPORT_METHOD_BY_TIME))
+                    sessionData(:,:,i) = eegData.getTrialByTrialTime(rawEegData,i,channels, fs, epochTime);
                 else
-                    indices = [Epoch_start(i)-bIndex Epoch_start(i)+aIndex-1];
+                    indices = [D.Events(i)-bIndex D.Events(i)+aIndex-1];
                     sessionData(:,:,i) = eegData.getTrialByEpochIndex(rawEegData,indices,channels);
                 end
             end
         end
         
-        function [ trialdata ] = getTrialByTrialTime (rawdata, trialNum, channels,fs, trialTime)
+        function [ trialdata ] = getTrialByTrialTime (rawdata, trialNum, channels,fs, epochTime)
             
             ts = 1/fs;
-            true_intvl = [0 trialTime] + (trialNum - 1) * trialTime;
+            true_intvl = [0 epochTime] + (trialNum - 1) * epochTime;
             
             indices = true_intvl ./ ts;
             
@@ -125,7 +124,7 @@ classdef eegData < matlab.mixin.Copyable
         end
         
         function [ nChannels ] = getNumChannels( folderName, importMethod, subNum, sessNum)
-            if(strcmp(eegData.IMPORT_METHOD_EMG_CUE_FILES, importMethod))
+            if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, importMethod))
                 D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
                 nChannels = size(D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values);
                 nChannels = nChannels(2);
@@ -157,7 +156,7 @@ classdef eegData < matlab.mixin.Copyable
     end
     
     methods (Access = public)
-        function anchorFolder(obj, folderName, dataRate, importMethod, trialTime, beforeIndex, afterIndex)
+        function anchorFolder(obj, folderName, dataRate, importMethod, epochTime, beforeIndex, afterIndex)
             % Throws exception eegData:load:noFileFound
             obj.folderName = folderName;
             
@@ -176,9 +175,9 @@ classdef eegData < matlab.mixin.Copyable
             obj.afterIndex = afterIndex;
             
             if(strcmp(importMethod, obj.IMPORT_METHOD_BY_TIME))
-                obj.trialTime = trialTime;
-            elseif(strcmp(importMethod, obj.IMPORT_METHOD_BY_INDEX))
-                obj.trialTime = beforeIndex + afterIndex;
+                obj.epochTime = epochTime;
+            elseif(strcmp(importMethod, obj.IMPORT_METHOD_BY_EVENT))
+                obj.epochTime = beforeIndex + afterIndex;
             else
                 %do nothing!! EMG cue files are already in good shape.
                 %Caution!!!: obj.trailTime will be updated in the loadDdata
@@ -207,22 +206,23 @@ classdef eegData < matlab.mixin.Copyable
             obj.subjectNum = subNum;
             obj.sessionNum = sessNum;
             
-            if(strcmp(eegData.IMPORT_METHOD_EMG_CUE_FILES, obj.importMethod))
+            if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
                 D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
                 obj.sstData = D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values;
-                obj.trialTime = size(obj.sstData, 1);
-                obj.trialTime = obj.trialTime / obj.dataRate;
+                obj.epochTime = size(obj.sstData, 1);
+                obj.epochTime = obj.epochTime / obj.dataRate;
             else
                 obj.sstData = eegData.getSubject(obj.folderName, obj.subjectNum, obj.sessionNum,...
-                1:obj.numChannels, obj.dataRate, obj.trialTime,...
+                1:obj.numChannels, obj.dataRate, obj.epochTime,...
                 obj.beforeIndex, obj.afterIndex, obj.importMethod);
             end
             
             obj.dataSize = size(obj.sstData);
             
             try
-                D = load(strcat(obj.folderName,'/ex_trials.mat'), 'mydata');
-                obj.extrials = cell2mat(D.mydata(cell2mat(D.mydata(:,1)) == obj.subjectNum & cell2mat(D.mydata(:,2)) == obj.sessionNum,3));
+                D = load(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
+                obj.extrials = cell2mat(D.ex_trials(cell2mat(D.ex_trials(:,1)) == obj.subjectNum &...
+                    cell2mat(D.ex_trials(:,2)) == obj.sessionNum,3));
                 if(isempty(obj.extrials))
                     obj.extrials = zeros(1, obj.dataSize(3));
                 end
@@ -230,8 +230,8 @@ classdef eegData < matlab.mixin.Copyable
                 disp(me.identifier);
                 if(strcmp(me.identifier, 'MATLAB:load:couldNotReadFile'))
                     obj.extrials = zeros(1, obj.dataSize(3));
-                    mydata = {obj.subjectNum, obj.sessionNum, obj.extrials};
-                    save(strcat(obj.folderName,'/ex_trials.mat'), 'mydata');
+                    ex_trials = {obj.subjectNum, obj.sessionNum, obj.extrials};
+                    save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
                 end
             end
         end
@@ -239,16 +239,16 @@ classdef eegData < matlab.mixin.Copyable
         function updateTrialExStatus(obj, trialNum, status)
             obj.extrials(trialNum) = status;
             
-            D = load(strcat(obj.folderName,'/ex_trials.mat'), 'mydata');
-            ext = cell2mat(D.mydata(cell2mat(D.mydata(:,1))==obj.subjectNum & cell2mat(D.mydata(:,2))==obj.sessionNum,3));
+            D = load(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
+            ext = cell2mat(D.ex_trials(cell2mat(D.ex_trials(:,1))==obj.subjectNum & cell2mat(D.ex_trials(:,2))==obj.sessionNum,3));
             if(isempty(ext))
                 ext = obj.extrials;
-                mydata = [D.mydata; {obj.subjectNum, obj.sessionNum, ext}];
+                ex_trials = [D.ex_trials; {obj.subjectNum, obj.sessionNum, ext}];
             else
-                D.mydata(cell2mat(D.mydata(:,1))==obj.subjectNum & cell2mat(D.mydata(:,2))==obj.sessionNum,3) = {obj.extrials};
-                mydata = D.mydata;
+                D.ex_trials(cell2mat(D.ex_trials(:,1))==obj.subjectNum & cell2mat(D.ex_trials(:,2))==obj.sessionNum,3) = {obj.extrials};
+                ex_trials = D.ex_trials;
             end
-            save(strcat(obj.folderName,'/ex_trials.mat'), 'mydata');
+            save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
         end
         
         function [channelSrNos] = listChannels(obj)
@@ -272,7 +272,7 @@ classdef eegData < matlab.mixin.Copyable
         end
         
         function plotData(obj)
-            eegData.plotSstData({1/obj.dataRate:1/obj.dataRate:obj.trialTime}, {obj.sstData}, {sprintf('Sub:%02d Sess:%02d',...
+            eegData.plotSstData({1/obj.dataRate:1/obj.dataRate:obj.epochTime}, {obj.sstData}, {sprintf('Sub:%02d Sess:%02d',...
                 obj.subjectNum, obj.sessionNum)}, {eegData.PLOT_TYPE_PLOT}, -1);
         end
         
