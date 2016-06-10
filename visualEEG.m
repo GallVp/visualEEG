@@ -913,7 +913,7 @@ else
     end
     handles.dynamicCueOffset = str2double(answer{1});
     [filename, pathname] = ...
-     uigetfile({'*.mat'},'Select cues file');
+     uigetfile({'*.mat'},'Select cues file', handles.dataSet1.folderName);
     
     if(isempty(filename))
         return;
