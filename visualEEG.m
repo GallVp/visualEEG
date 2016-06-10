@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 10-Jun-2016 13:13:31
+% Last Modified by GUIDE v2.5 10-Jun-2016 13:32:13
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -381,8 +381,11 @@ if ~isempty(dataOut)
         
         % Cue initilization
         set(handles.menuStaticCue, 'Checked', 'Off');
-        handles.cueNoCue = 0;
+        set(handles.menuDynamicCue, 'Checked', 'Off');
+        handles.staticCue = 0;
+        handles.dynamicCue = 0;
         handles.cueTime = 0;
+        handles.cues = {};
         
         guidata(hObject, handles);
         updateView(handles);
@@ -494,22 +497,26 @@ else
 end
 
 
-if(handles.cueNoCue==1)
+if(handles.staticCue)
     hold on
     a = axis;
-    line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','-', 'Color', 'red', 'LineWidth', 2);
+    line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
     axis(a);
     hold off
-elseif(handles.cueNoCue==2)
+end
+if(handles.dynamicCue)
     hold on
     a = axis;
-    ext = cell2mat(handles.cueTime(cell2mat(handles.cueTime(:,1))==handles.subjectNum & cell2mat(handles.cueTime(:,2))==handles.sessionNum,3));
-    cueTime = ext(handles.trialNum);
-    line([cueTime cueTime], [a(3) a(4)], 'LineStyle','-', 'Color', 'red', 'LineWidth', 2);
+    ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
+    try
+        cueTime = ext(handles.trialNum);
+        line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)], 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
+    catch ME
+        disp(ME)
+        disp('Probable cause: Dynamic cues not available for selected subject/session.')
+    end
     axis(a);
     hold off
-else
-    %Do nothing
 end
 
 
@@ -844,13 +851,17 @@ function menuStaticCue_Callback(hObject, eventdata, handles)
 % hObject    handle to menuStaticCue (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if(handles.cueNoCue == 1)
-    handles.cueNoCue = 0;
+if(handles.staticCue == 1)
+    handles.staticCue = 0;
     set(handles.menuStaticCue, 'Checked', 'Off');
     guidata(hObject, handles);
     updateView(handles);
 else
-    val = inputdlg('Enter cue time:');
+    prompt = {'Enter cue time:'};
+    dlg_title = 'Cue time';
+    num_lines = 1;
+    defaultans = {'0'};
+    val = inputdlg(prompt,dlg_title,num_lines,defaultans);
     
     if(isempty(val))
         return;
@@ -863,8 +874,7 @@ else
         else
             handles.cueTime = cueTime;
             set(handles.menuStaticCue, 'Checked', 'On');
-            set(handles.menuEmgCue, 'Checked', 'Off');
-            handles.cueNoCue = 1;
+            handles.staticCue = 1;
             guidata(hObject, handles);
             updateView(handles);
         end
@@ -883,27 +893,35 @@ save(fullfile(handles.folderName,...
 
 
 % --------------------------------------------------------------------
-function menuEmgCue_Callback(hObject, eventdata, handles)
-% hObject    handle to menuEmgCue (see GCBO)
+function menuDynamicCue_Callback(hObject, eventdata, handles)
+% hObject    handle to menuDynamicCue (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if(handles.cueNoCue == 2)
-    handles.cueNoCue = 0;
-    set(handles.menuEmgCue, 'Checked', 'Off');
+if(handles.dynamicCue == 1)
+    handles.dynamicCue = 0;
+    set(handles.menuDynamicCue, 'Checked', 'Off');
     guidata(hObject, handles);
     updateView(handles);
 else
+    prompt = {'Enter cue offset:'};
+    dlg_title = 'Cue offset';
+    num_lines = 1;
+    defaultans = {'0'};
+    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+    if(isempty(answer))
+        return;
+    end
+    handles.dynamicCueOffset = str2double(answer{1});
     [filename, pathname] = ...
-     uigetfile({'*.mat'},'Select Emg cues file');
+     uigetfile({'*.mat'},'Select cues file');
     
     if(isempty(filename))
         return;
     end
-    cueTime = load(strcat(pathname, '/', filename),'cues');
-    handles.cueTime = cueTime.cues;
-    set(handles.menuStaticCue, 'Checked', 'Off');
-    set(handles.menuEmgCue, 'Checked', 'On');
-    handles.cueNoCue = 2;
+    D = load(strcat(pathname, '/', filename),'cues');
+    handles.cues = D.cues;
+    set(handles.menuDynamicCue, 'Checked', 'On');
+    handles.dynamicCue = 1;
     guidata(hObject, handles);
     updateView(handles);
 end
