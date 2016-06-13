@@ -18,7 +18,7 @@ There are three ways in which data can be imported.
 * By epoch event
 * Signal mat files
 
-In method 1, only *epoch time* and *sampling rate* are needed. In method 2, *sampling rate*, *time before epoch event* and *time after epoch event* are needed. In this case, each *.mat* file should also contain another variable to provide event information. This variable should be a vector whose length is equal to total number of epochs. By method 3, mat fies exported from CED Signal program can be imported. In this case, the name of the data structure in the mat file should have the same name as that of the file.
+In method 1, only *epoch time* and *sampling rate* are needed. In method 2, *sampling rate*, *time before epoch event* and *time after epoch event* are needed. In this case, each *.mat* file should also contain another vector variable **Events**. This variable should be a vector whose length is equal to total number of epochs. By method 3, mat fies exported from CED Signal program can be imported. In this case, the name of the data structure in the mat file should have the same name as that of the file.
 
 ---
 
