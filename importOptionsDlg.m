@@ -22,7 +22,7 @@ function varargout = importOptionsDlg(varargin)
 
 % Edit the above text to modify the response to help importOptionsDlg
 
-% Last Modified by GUIDE v2.5 10-Jun-2016 11:36:27
+% Last Modified by GUIDE v2.5 13-Jun-2016 12:49:26
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -124,6 +124,9 @@ handles.dataOut.('importMethod') = handles.importMethod;
 handles.dataOut.('sampleRate') = str2double(get(handles.editSampleRate, 'String'));
 handles.dataOut.('beforeIndex') = str2double(get(handles.editBeforeIndex, 'String'));
 handles.dataOut.('afterIndex') = str2double(get(handles.editAfterIndex, 'String'));
+handles.dataOut.('dvName') = get(handles.editDataVariable, 'String');
+handles.dataOut.('evName') = get(handles.editEventVariable, 'String');
+handles.dataOut.('dvOrient') = get(handles.cbChannAcrossRow1, 'Value'); % A value of 1 means channels are across rows. This is Default!
 if(strcmp(handles.importMethod, 'BYEPOCHEVENT'))
     handles.dataOut.('trialTime') = str2double(get(handles.editBeforeIndex, 'String'))...
         + str2double(get(handles.editAfterIndex, 'String'));
@@ -259,4 +262,71 @@ function rbSignalMatFiles_Callback(hObject, eventdata, handles)
 handles.importMethod = 'SIGNALMATFILES';
 set(handles.upByTrialTime, 'Visible', 'Off');
 set(handles.upByEpochIndex, 'Visible', 'Off');
+set(handles.cbChannAcrossRow1, 'Enable', 'Off');
+set(handles.editDataVariable, 'String', 'subXX_sessYY');
+set(handles.editDataVariable, 'Enable', 'Off');
 guidata(hObject, handles);
+
+
+
+function editDataVariable_Callback(hObject, eventdata, handles)
+% hObject    handle to editDataVariable (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editDataVariable as text
+%        str2double(get(hObject,'String')) returns contents of editDataVariable as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editDataVariable_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editDataVariable (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function editEventVariable_Callback(hObject, eventdata, handles)
+% hObject    handle to editEventVariable (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editEventVariable as text
+%        str2double(get(hObject,'String')) returns contents of editEventVariable as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editEventVariable_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editEventVariable (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in cbChannAcrossRow1.
+function cbChannAcrossRow1_Callback(hObject, eventdata, handles)
+% hObject    handle to cbChannAcrossRow1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of cbChannAcrossRow1
+
+
+% --- Executes on button press in cbChannAcrossRow2.
+function cbChannAcrossRow2_Callback(hObject, eventdata, handles)
+% hObject    handle to cbChannAcrossRow2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of cbChannAcrossRow2

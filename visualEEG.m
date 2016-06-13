@@ -208,7 +208,8 @@ if(~isnan(intvl1))
         set(hObject, 'String', num2str(handles.intvl1));
     else
         handles.intvl1 = intvl1;
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
+            handles.operationSets{handles.operationSetNum,4});
         guidata(hObject, handles);
         updateView(handles);
     end
@@ -243,7 +244,8 @@ if(~isnan(intvl2))
         set(hObject, 'String', num2str(handles.intvl2));
     else
         handles.intvl2 = intvl2;
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
+            handles.operationSets{handles.operationSetNum,4});
         guidata(hObject, handles);
         updateView(handles);
     end
@@ -316,11 +318,17 @@ if ~isempty(dataOut)
         handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
         try
             handles.dataSet1.anchorFolder(folderName, dataOut.sampleRate, dataOut.importMethod,...
-                dataOut.trialTime, dataOut.beforeIndex, dataOut.afterIndex);
+                dataOut.trialTime, dataOut.beforeIndex, dataOut.afterIndex, dataOut.dvName, dataOut.dvOrient, dataOut.evName);
         catch ME
             if (strcmp(ME.identifier,'eegData:load:noFileFound'))
                  errordlg('Folder does not contain any valid data file(s).','Import Data', 'modal');
                  return
+            elseif(strcmp(ME.identifier,'MATLAB:nonExistentField'))
+                disp(ME);
+                disp('Probable cause: Incorrect variable name used.')
+            else
+                disp(ME);
+                disp('Probable cause: Unknown.')
             end
         end
         
@@ -361,7 +369,8 @@ if ~isempty(dataOut)
         legend off;
         set(handles.toolShowLegend, 'State', 'Off');
         
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
+            handles.operationSets{handles.operationSetNum,4});
         
         %enable most controls
         set(handles.bg_trial, 'Visible', 'On');

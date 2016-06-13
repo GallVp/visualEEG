@@ -23,6 +23,9 @@ classdef eegData < matlab.mixin.Copyable
         epochTime   % Time of one trial
         numChannels % Total number of channels
         dataRate    % Data sample rate
+        dvName      % Name of data variable
+        evName      % Name of event variable
+        dvOrient    % Orientation of data variable. 1 means channels are across rows.
     end
     
     properties (Access = private)
@@ -39,59 +42,63 @@ classdef eegData < matlab.mixin.Copyable
         PLOT_TYPE_STEM = 'STEM';
     end
     
-    methods (Access = private, Static)
-        function [ subjectData ] = getSubject(folderName, subNum, sessions, channels, fs, epochTime, beforeIndex, afterIndex, importMethod)
-            for i=1:length(sessions)
-                subjectData(:,:,:,i) = eegData.getSession(folderName, subNum,sessions(i),channels, fs, epochTime, beforeIndex, afterIndex, importMethod);
+    methods (Access = private)
+        function [ subjectData ] = getSubject(obj, channels)
+            for i=1:length(obj.listSessions)
+                subjectData(:,:,:,i) = getSession(obj, channels);
             end
         end
         
-        function [ sessionData] = getSession(folderName, subNum, sessNum, channels, fs, epochTime, beforeIndex, afterIndex, importMethod)
+        function [ sessionData] = getSession(obj, channels)
             
-            ts = 1/fs;
-            bIndex = beforeIndex / ts;
-            aIndex = afterIndex / ts;
+            ts = 1/obj.dataRate;
+            bIndex = obj.beforeIndex / ts;
+            aIndex = obj.afterIndex / ts;
             
-            D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)));
-            rawEegData = D.EEGdata';
-            if(strcmp(importMethod, eegData.IMPORT_METHOD_BY_TIME))
-                numTrial = size(rawEegData);
-                numTrial = floor(numTrial(1)/fs/epochTime);
-                sessionData = zeros(epochTime/ts, length(channels),numTrial);
+            D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)));
+            if(obj.dvOrient)
+                rawEegData = D.(obj.dvName)';
             else
-                numTrial = length(D.Events);
-                sessionData = zeros((beforeIndex+afterIndex)/ts, length(channels),numTrial);
+                rawEegData = D.(obj.dvName);
+            end
+            if(strcmp(obj.importMethod, eegData.IMPORT_METHOD_BY_TIME))
+                numTrial = size(rawEegData, 1);
+                numTrial = floor(numTrial/obj.dataRate/obj.epochTime);
+                sessionData = zeros(obj.epochTime/ts, length(channels),numTrial);
+            else
+                numTrial = length(D.(obj.evName));
+                sessionData = zeros((obj.beforeIndex+obj.afterIndex)/ts, length(channels),numTrial);
             end
             
             for i=1:numTrial
-                if(strcmp(importMethod, eegData.IMPORT_METHOD_BY_TIME))
-                    sessionData(:,:,i) = eegData.getTrialByTrialTime(rawEegData,i,channels, fs, epochTime);
+                if(strcmp(obj.importMethod, eegData.IMPORT_METHOD_BY_TIME))
+                    sessionData(:,:,i) = getTrialByTrialTime(obj, rawEegData,i,channels, obj.dataRate);
                 else
-                    indices = [D.Events(i)-bIndex D.Events(i)+aIndex-1];
-                    sessionData(:,:,i) = eegData.getTrialByEpochIndex(rawEegData,indices,channels);
+                    indices = [D.(obj.evName)(i)-bIndex D.(obj.evName)(i)+aIndex-1];
+                    sessionData(:,:,i) = getTrialByEpochIndex(obj, rawEegData,indices,channels);
                 end
             end
         end
         
-        function [ trialdata ] = getTrialByTrialTime (rawdata, trialNum, channels,fs, epochTime)
+        function [ trialdata ] = getTrialByTrialTime (obj, rawdata, trialNum, channels,fs)
             
             ts = 1/fs;
-            true_intvl = [0 epochTime] + (trialNum - 1) * epochTime;
+            true_intvl = [0 obj.epochTime] + (trialNum - 1) * obj.epochTime;
             
             indices = true_intvl ./ ts;
             
             trialdata = rawdata(indices(1)+1:indices(2),channels);
         end
         
-        function [ trialdata ] = getTrialByEpochIndex (rawdata, indices, channels)
+        function [ trialdata ] = getTrialByEpochIndex (obj, rawdata, indices, channels)
             
             trialdata = rawdata(indices(1):indices(2),channels);
         end
         
-        function [ dataNfo ] = validateFolder( folderName )
+        function validateFolder( obj )
             
             
-            folderDir = dir(folderName);
+            folderDir = dir(obj.folderName);
             numContents = length(folderDir);
             
             j=1;
@@ -121,23 +128,27 @@ classdef eegData < matlab.mixin.Copyable
                 dataNfo{i,1} = subjects(i);
                 dataNfo{i,2} = [fileData(fileData(:,1)==subjects(i),2)];
             end
+            
+            obj.ssNfo = dataNfo;
         end
         
-        function [ nChannels ] = getNumChannels( folderName, importMethod, subNum, sessNum)
-            if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, importMethod))
-                D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
-                nChannels = size(D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values);
-                nChannels = nChannels(2);
+        function setNumChannels(obj)
+            if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), sprintf('sub%02d_sess%02d',  obj.subjectNum, obj.sessionNum));
+                nChannels = size(D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values);
+                nChannels = nChannels(2); %% This is how Signal exports its files.
             else
-                D = load(strcat(folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), 'EEGdata');
-                nChannels = size(D.EEGdata);
-                nChannels = nChannels(1);
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), obj.dvName);
+                nChannels = size(D.(obj.dvName));
+                nChannels = nChannels(-obj.dvOrient + 2); %% y = -x + 2
             end
+            obj.numChannels = nChannels;
         end
         
-        function [ channelNames ] = loadChannelNames(folderName, channelSrNos)
+        function loadChannelNames(obj)
+            channelSrNos = [1:obj.numChannels]';
             try
-                [~,~,raw] = xlsread(strcat(folderName, '/channel_names.xls'));
+                [~,~,raw] = xlsread(strcat(obj.folderName, '/channel_names.xls'));
                 if(sum(cell2mat(raw(:,1)) == channelSrNos) == length(channelSrNos))
                     channelNames = raw(:,2);
                 else
@@ -146,6 +157,11 @@ classdef eegData < matlab.mixin.Copyable
             catch ME
                 channelNames = cellstr(num2str(channelSrNos));
             end
+            %Column 1 contains serial number, column two contains  names of
+            % channels.
+            obj.channelNfo = cell(1, 2);
+            obj.channelNfo{:,1} = [1:obj.numChannels]';
+            obj.channelNfo{:,2} = channelNames;
         end
     end
     
@@ -156,11 +172,15 @@ classdef eegData < matlab.mixin.Copyable
     end
     
     methods (Access = public)
-        function anchorFolder(obj, folderName, dataRate, importMethod, epochTime, beforeIndex, afterIndex)
+        function anchorFolder(obj, folderName, dataRate, importMethod, epochTime, beforeIndex,...
+                afterIndex, dvName, dvOrient, evName)
             % Throws exception eegData:load:noFileFound
             obj.folderName = folderName;
+            obj.dvName = dvName;
+            obj.evName = evName;
+            obj.dvOrient = dvOrient;
             
-            obj.ssNfo = eegData.validateFolder(folderName);
+            validateFolder(obj);
             
             
             lst = cell2mat(obj.ssNfo(:,1));
@@ -174,6 +194,9 @@ classdef eegData < matlab.mixin.Copyable
             obj.beforeIndex = beforeIndex;
             obj.afterIndex = afterIndex;
             
+            obj.subjectNum = subNum;
+            obj.sessionNum = sessNum;
+            
             if(strcmp(importMethod, obj.IMPORT_METHOD_BY_TIME))
                 obj.epochTime = epochTime;
             elseif(strcmp(importMethod, obj.IMPORT_METHOD_BY_EVENT))
@@ -184,13 +207,8 @@ classdef eegData < matlab.mixin.Copyable
                 %method.
             end
             
-            obj.numChannels = eegData.getNumChannels(obj.folderName, importMethod, subNum, sessNum);
-            
-            %Column 1 contains serial number, column two contains  names of
-            % channels.
-            obj.channelNfo = cell(1, 2);
-            obj.channelNfo{:,1} = [1:obj.numChannels]';
-            obj.channelNfo{:,2} = eegData.loadChannelNames(folderName, [1:obj.numChannels]');
+            setNumChannels(obj);
+            loadChannelNames(obj);
             
             loadData(obj, subNum, sessNum);
             
@@ -207,14 +225,12 @@ classdef eegData < matlab.mixin.Copyable
             obj.sessionNum = sessNum;
             
             if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
-                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', subNum, sessNum)), sprintf('sub%02d_sess%02d', subNum, sessNum));
-                obj.sstData = D.(sprintf('sub%02d_sess%02d', subNum, sessNum)).values;
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum));
+                obj.sstData = D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values;
                 obj.epochTime = size(obj.sstData, 1);
                 obj.epochTime = obj.epochTime / obj.dataRate;
             else
-                obj.sstData = eegData.getSubject(obj.folderName, obj.subjectNum, obj.sessionNum,...
-                1:obj.numChannels, obj.dataRate, obj.epochTime,...
-                obj.beforeIndex, obj.afterIndex, obj.importMethod);
+                obj.sstData = getSubject(obj, 1:obj.numChannels);
             end
             
             obj.dataSize = size(obj.sstData);
