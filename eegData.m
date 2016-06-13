@@ -44,9 +44,7 @@ classdef eegData < matlab.mixin.Copyable
     
     methods (Access = private)
         function [ subjectData ] = getSubject(obj, channels)
-            for i=1:length(obj.listSessions)
-                subjectData(:,:,:,i) = getSession(obj, channels);
-            end
+            subjectData = getSession(obj, channels);
         end
         
         function [ sessionData] = getSession(obj, channels)

@@ -162,17 +162,21 @@ classdef eegOperations < handle
                     num_lines = 1;
                     defaultans = {'[]','[]'};
                     answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
-                    signalTime = str2num(answer{1});
-                    noiseTime = str2num(answer{2});
-                    if(length(signalTime) ~= 2 || length(noiseTime) ~= 2 || signalTime(2) <= signalTime(1) || noiseTime(2) <= noiseTime(1))
-                        errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
+                    if(isempty(answer))
                         returnArgs = {};
                     else
-                        if(abs(signalTime(2) - signalTime(1)) ~= abs(noiseTime(2) - noiseTime(1)))
-                            errordlg('The intervals should be equal.', 'Interval Error', 'modal');
+                        signalTime = str2double(answer{1});
+                        noiseTime = str2double(answer{2});
+                        if(length(signalTime) ~= 2 || length(noiseTime) ~= 2 || signalTime(2) <= signalTime(1) || noiseTime(2) <= noiseTime(1))
+                            errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};
                         else
-                            returnArgs = {signalTime; noiseTime};
+                            if(abs(signalTime(2) - signalTime(1)) ~= abs(noiseTime(2) - noiseTime(1)))
+                                errordlg('The intervals should be equal.', 'Interval Error', 'modal');
+                                returnArgs = {};
+                            else
+                                returnArgs = {signalTime; noiseTime};
+                            end
                         end
                     end
                     % args{1} should be a 1 by 2 vector containing signal
