@@ -13,7 +13,7 @@ visualEEG can only import data saved in **.mat** files. All the files should be 
 
 > subXX_sessYY.mat
 
-In each file, the data should be saved in **EEGData** variable. This variable should have *channels* along *rows* and *samples* along *columns*.
+In each file, the data should be saved in **EEGdata** variable. This variable should have *channels* along *rows* and *samples* along *columns*.
 
 There are three ways in which data can be imported.
 > 1.  By epoch time
