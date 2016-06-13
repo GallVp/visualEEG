@@ -165,8 +165,8 @@ classdef eegOperations < handle
                     if(isempty(answer))
                         returnArgs = {};
                     else
-                        signalTime = str2double(answer{1});
-                        noiseTime = str2double(answer{2});
+                        signalTime = str2num(answer{1}); %% Don't change it to str2double as it is an array
+                        noiseTime = str2num(answer{2});
                         if(length(signalTime) ~= 2 || length(noiseTime) ~= 2 || signalTime(2) <= signalTime(1) || noiseTime(2) <= noiseTime(1))
                             errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};

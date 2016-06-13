@@ -472,6 +472,10 @@ function updateView(handles)
 set(handles.lbOperations, 'String', handles.operationSets{handles.operationSetNum,2}.operations);
 set(handles.lbOperations, 'Value', length(handles.operationSets{handles.operationSetNum,2}.operations));
 
+% Update Operation Sets list
+set(handles.pumOpsSet, 'String', handles.operationSets(:,1));
+set(handles.pumOpsSet, 'Value', handles.operationSetNum);
+
 %Update enable and checked property of apply and Exclude epochs option
 if isempty(handles.operationSets{handles.operationSetNum,2}.operations)
     set(handles.cbApply, 'Enable', 'Off');
