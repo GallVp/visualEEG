@@ -449,7 +449,11 @@ figXData = get(h, 'XData');
 figYData = get(h, 'YData');
 H = figure;
 if(iscell(figXData))
-    plot(cell2mat(figXData(1,1)), cell2mat(figYData), 'linewidth', 2);
+    hold on;
+    for i=1:size(figXData, 1)
+        plot(cell2mat(figXData(i,1)), cell2mat(figYData(i,1)), 'linewidth', 2);
+    end
+    hold off;
 else
     plot(figXData, figYData, 'linewidth', 2);
 end

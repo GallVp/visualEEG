@@ -7,7 +7,7 @@ classdef eegOperations < handle
 % License, or (at your option) any later version.  See the file
 % LICENSE included with this distribution for more information.
     properties (Constant)
-        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue'};
+        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF '};
     end
     
     properties (SetAccess = private)
@@ -171,12 +171,8 @@ classdef eegOperations < handle
                             errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};
                         else
-                            if(abs(signalTime(2) - signalTime(1)) ~= abs(noiseTime(2) - noiseTime(1)))
-                                errordlg('The intervals should be equal.', 'Interval Error', 'modal');
-                                returnArgs = {};
-                            else
-                                returnArgs = {signalTime; noiseTime};
-                            end
+                            
+                            returnArgs = {signalTime; noiseTime};
                         end
                     end
                     % args{1} should be a 1 by 2 vector containing signal

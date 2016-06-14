@@ -89,8 +89,12 @@ classdef eegData < matlab.mixin.Copyable
         end
         
         function [ trialdata ] = getTrialByEpochIndex (obj, rawdata, indices, channels)
-            
-            trialdata = rawdata(indices(1):indices(2),channels);
+            try
+                trialdata = rawdata(indices(1):indices(2),channels);
+            catch ME
+                disp(ME);
+                disp('Probable cause: Too large time inteval selected for importing data.')
+            end
         end
         
         function validateFolder( obj )
