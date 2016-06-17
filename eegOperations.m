@@ -8,7 +8,7 @@ classdef eegOperations < handle
 % LICENSE included with this distribution for more information.
     properties (Constant)
         AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
+            'PCA', 'FAST ICA', 'Optimal SF Per/Epoch', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
     end
     
     properties (SetAccess = private)
