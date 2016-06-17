@@ -7,7 +7,8 @@ classdef eegOperations < handle
 % License, or (at your option) any later version.  See the file
 % LICENSE included with this distribution for more information.
     properties (Constant)
-        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian', 'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF '};
+        AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
     end
     
     properties (SetAccess = private)
@@ -216,6 +217,9 @@ classdef eegOperations < handle
                         end
                     end
                     % args{1} should be the cueTime, args{2} should be the emg cues cell array.
+                case eegOperations.AVAILABLE_OPERATIONS{16}
+                    returnArgs = {'N.R.'};
+                    % No argument required.
                 otherwise
                     returnArgs = {};
             end
@@ -400,6 +404,15 @@ classdef eegOperations < handle
                     abscissa = obj.abscissa;
                     dataDomain = obj.dataDomain;
                     % args{1} should be number of stds to use.
+                case eegOperations.AVAILABLE_OPERATIONS{16}
+                    [P, nT] = eegOperations.shapeProcessing(processingData);
+                    N_ch = size(P, 2);
+                    M=eye(N_ch)-1/N_ch*ones(N_ch);
+                    processedData= P * M;
+                    processedData = eegOperations.shapeSst(processedData, nT);
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % No argument required.
                 otherwise
                     processedData = processingData;
                     abscissa = obj.abscissa;
