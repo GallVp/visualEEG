@@ -8,7 +8,7 @@ classdef eegOperations < handle
 % LICENSE included with this distribution for more information.
     properties (Constant)
         AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode', 'Split Data'};
     end
     
     properties (SetAccess = private)
@@ -166,14 +166,14 @@ classdef eegOperations < handle
                     if(isempty(answer))
                         returnArgs = {};
                     else
-                        signalTime = str2num(answer{1}); %% Don't change it to str2double as it is an array
+                        epochs = str2num(answer{1}); %% Don't change it to str2double as it is an array
                         noiseTime = str2num(answer{2});
-                        if(length(signalTime) ~= 2 || signalTime(2) <= signalTime(1))
+                        if(length(epochs) ~= 2 || epochs(2) <= epochs(1))
                             errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};
                         else
                             
-                            returnArgs = {signalTime; noiseTime; str2num(answer{3})};
+                            returnArgs = {epochs; noiseTime; str2num(answer{3})};
                         end
                     end
                     % args{1} should be a 1 by 2 vector containing signal
@@ -220,6 +220,34 @@ classdef eegOperations < handle
                 case eegOperations.AVAILABLE_OPERATIONS{16}
                     returnArgs = {'N.R.'};
                     % No argument required.
+                    
+                case eegOperations.AVAILABLE_OPERATIONS{17}
+                    prompt = {'Enter epoch numbers:'};
+                    dlg_title = 'Select epochs';
+                    num_lines = 1;
+                    if(isempty(obj.procData))
+                        numEpochs = size(obj.dataSet.sstData, 3);
+                    else
+                        numEpochs = size(obj.procData, 3);
+                    end
+                    defaultans = {strcat('[','1:', num2str(numEpochs),']')};
+                    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+                    if(isempty(answer))
+                        returnArgs = {};
+                    else
+                        epochs = str2num(answer{1}); %% Don't change it to str2double as it is an array
+                        if(~isnan(epochs))
+                            lia = ismember(epochs, 1:numEpochs);
+                            if(sum(lia) == length(lia))
+                                returnArgs = {epochs};
+                            else
+                                errordlg('Wrong epoch(s) selected.','Epoch selection', 'modal');
+                                returnArgs = {};
+                            end
+                        end
+                    end
+                    % args{1} should a vector containing the numbers of
+                    % required epochs.
                 otherwise
                     returnArgs = {};
             end
@@ -429,6 +457,13 @@ classdef eegOperations < handle
                     abscissa = obj.abscissa;
                     dataDomain = obj.dataDomain;
                     % No argument required.
+                    
+                case eegOperations.AVAILABLE_OPERATIONS{17}
+                    processedData = processingData(:,:, args{1});
+                    abscissa = obj.abscissa;
+                    dataDomain = obj.dataDomain;
+                    % args{1} should a vector containing the numbers of
+                    % required epochs.
                 otherwise
                     processedData = processingData;
                     abscissa = obj.abscissa;

@@ -312,7 +312,7 @@ if ~isempty(dataOut)
         handles.folderName = folderName;
         % Initilize a data class and a operations class
         handles.dataSet1 = eegData;
-        %Set Operations Set Info
+        %Set Operations Set Info {Name, eegOperations obj, apply, excludeEpochs, trialNum}
         handles.operationSets = {'Set 1', eegOperations, 0, 0};
         handles.operationSetNum = 1;
         handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
@@ -750,6 +750,7 @@ function pumOpsSet_Callback(hObject, eventdata, handles)
 index = get(hObject,'Value');
 
 handles.operationSetNum = index;
+handles.trialNum = 1;
 
 guidata(hObject, handles);
 updateView(handles);
