@@ -8,7 +8,7 @@ classdef eegOperations < handle
 % LICENSE included with this distribution for more information.
     properties (Constant)
         AVAILABLE_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF Per/Epoch', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode'};
     end
     
     properties (SetAccess = private)
@@ -158,27 +158,27 @@ classdef eegOperations < handle
                     returnArgs = {'N.R.'};
                     % No argument required.
                 case eegOperations.AVAILABLE_OPERATIONS{10}
-                    prompt = {'Enter signal time [Si Sf]:','Enter noise time [Ni Nf]:'};
+                    prompt = {'Enter signal time [Si Sf]:','Enter noise time [Ni Nf] (empty = ~[Si Sf]):', 'Per epoch?(1,0):'};
                     dlg_title = 'Input';
                     num_lines = 1;
-                    defaultans = {'[]','[]'};
+                    defaultans = {'[]','[]', '1'};
                     answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
                     if(isempty(answer))
                         returnArgs = {};
                     else
                         signalTime = str2num(answer{1}); %% Don't change it to str2double as it is an array
                         noiseTime = str2num(answer{2});
-                        if(length(signalTime) ~= 2 || length(noiseTime) ~= 2 || signalTime(2) <= signalTime(1) || noiseTime(2) <= noiseTime(1))
+                        if(length(signalTime) ~= 2 || signalTime(2) <= signalTime(1))
                             errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};
                         else
                             
-                            returnArgs = {signalTime; noiseTime};
+                            returnArgs = {signalTime; noiseTime; str2num(answer{3})};
                         end
                     end
                     % args{1} should be a 1 by 2 vector containing signal
                     % time. args{2} should be a 1 by 2 vector containing
-                    % noise time.
+                    % noise time. arg{3} should be 1,0
                 case eegOperations.AVAILABLE_OPERATIONS{11}
                     prompt={'Enter number of stds:'};
                     name = 'Std number';
@@ -316,25 +316,41 @@ classdef eegOperations < handle
                     % No argument required.
                 case eegOperations.AVAILABLE_OPERATIONS{10}
                     signal_intvl = args{1};
-                    noise_intvl = args{2};
+                    if(~isempty(args{2}))
+                        noise_intvl = args{2};
+                        noise_intvl = noise_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(2);
+                    else
+                        noise_intvl = [0 signal_intvl(1) signal_intvl(2) obj.dataSet.epochTime];
+                        noise_intvl = [noise_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(2)...
+                            noise_intvl(3) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(4)];
+                    end
                     signal_intvl = signal_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:signal_intvl(2);
-                    noise_intvl = noise_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(2);
+                    
                     signal_intvl = round(signal_intvl .* obj.dataSet.dataRate);
                     noise_intvl = round(noise_intvl .* obj.dataSet.dataRate);
                     signalData = processingData(signal_intvl,:,:);
                     noiseData = processingData(noise_intvl,:,:);
                     
-                    processedData = zeros(size(processingData, 1), 1, size(processingData, 3));
-                    
-                    for i = 1:size(signalData, 3)
-                        w = osf(signalData(:,:,i)', noiseData(:,:,i)');
-                        processedData(:,:,i) = spatialFilterSstData(processingData(:,:,i), w);
+                    if(args{3})
+                        processedData = zeros(size(processingData, 1), 1, size(processingData, 3));
+                        
+                        for i = 1:size(signalData, 3)
+                            w = osf(signalData(:,:,i)', noiseData(:,:,i)');
+                            processedData(:,:,i) = spatialFilterSstData(processingData(:,:,i), w);
+                        end
+                    else
+                        [signalData, ~] = eegOperations.shapeProcessing(signalData);
+                        [noiseData, ~] = eegOperations.shapeProcessing(noiseData);
+                        w = osf(signalData', noiseData');
+                        [P, nT] = eegOperations.shapeProcessing(processingData);
+                        processedData =  P * w;
+                        processedData = eegOperations.shapeSst(processedData, nT);
                     end
                     abscissa = obj.abscissa;
                     dataDomain = obj.dataDomain;
                     % args{1} should be a 1 by 2 vector containing signal
                     % time. args{2} should be a 1 by 2 vector containing
-                    % noise time.
+                    % noise time. args{3} should be 1,0.
                     
                 case eegOperations.AVAILABLE_OPERATIONS{11}
                     numEpochs = size(processingData, 3);
