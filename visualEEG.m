@@ -313,7 +313,7 @@ if ~isempty(dataOut)
         % Initilize a data class and a operations class
         handles.dataSet1 = eegData;
         %Set Operations Set Info {Name, eegOperations obj, apply, excludeEpochs, trialNum}
-        handles.operationSets = {'Set 1', eegOperations, 0, 0};
+        handles.operationSets = {'Set 1', eegOperations, 0, 0, 1};
         handles.operationSetNum = 1;
         handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
         try
@@ -749,8 +749,9 @@ function pumOpsSet_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumOpsSet
 index = get(hObject,'Value');
 
+handles.operationSets{handles.operationSetNum,5} = handles.trialNum;
 handles.operationSetNum = index;
-handles.trialNum = 1;
+handles.trialNum = handles.operationSets{handles.operationSetNum,5};
 
 guidata(hObject, handles);
 updateView(handles);
@@ -781,7 +782,7 @@ defaultans = {''};
 answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
 if(~isempty(answer))
     handles.operationSetNum = size(handles.operationSets, 1) + 1;
-    handles.operationSets(handles.operationSetNum, :) = {answer{1}, eegOperations, 0, 0};
+    handles.operationSets(handles.operationSetNum, :) = {answer{1}, eegOperations, 0, 0, 1};
     % Update operations controls
     set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
     set(handles.cbExcludeEpochs, 'Value', handles.operationSets{handles.operationSetNum,4});
