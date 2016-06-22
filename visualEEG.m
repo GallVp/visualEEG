@@ -275,7 +275,11 @@ function cb_discard_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of cb_discard
 
 val = get(hObject,'Value');
-handles.dataSet1.updateTrialExStatus(handles.trialNum, val);
+if handles.operationSets{handles.operationSetNum,3} % If apply is off the data comes directly from eegdata class.
+    handles.dataSet1.updateTrialExStatus(handles.operationSets{handles.operationSetNum,2}.procEpochs(handles.trialNum), val);
+else
+    handles.dataSet1.updateTrialExStatus(handles.trialNum, val);
+end
 guidata(hObject, handles);
 updateView(handles);
 
@@ -549,27 +553,38 @@ end
 %Update trial number to be displayed
 totalEpochs = size(viewData, 3);
 if(totalEpochs == 1)
-    trialNum = 1;
+    epochNum = 1;
 else
-    trialNum = handles.trialNum;
+    epochNum = handles.trialNum;
 end
 
-%update view
+%update visibility of discard checkbox
 if handles.operationSets{handles.operationSetNum,4} && handles.operationSets{handles.operationSetNum,3}
     set(handles.cb_discard, 'Visible', 'Off');
-    set(handles.bg_trial, 'Title', sprintf('Epoch:%d/%d', trialNum, totalEpochs));
+    
 else
     set(handles.cb_discard, 'Visible', 'On');
-    set(handles.cb_discard, 'Value', handles.dataSet1.extrials(1, trialNum));
-    set(handles.bg_trial, 'Title', sprintf('Epoch:%d/%d; Excluded:%d', trialNum, totalEpochs, sum(handles.dataSet1.extrials)));
+    set(handles.cb_discard, 'Value', handles.dataSet1.extrials(1, epochNum));
 end
 
-if trialNum == totalEpochs
+%Show epoch info
+if handles.operationSets{handles.operationSetNum,3}
+    if handles.operationSets{handles.operationSetNum,4}
+        set(handles.bg_trial, 'Title', sprintf('Epoch:%d(%d)/%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs));
+    else
+        set(handles.bg_trial, 'Title', sprintf('Epoch:%d(%d)/%d; Excluded:%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs, sum(handles.dataSet1.extrials(handles.operationSets{handles.operationSetNum,2}.procEpochs))));
+    end
+else
+    set(handles.bg_trial, 'Title', sprintf('Epoch:%d/%d; Excluded:%d', epochNum, totalEpochs, sum(handles.dataSet1.extrials)));
+end
+
+% Set Visibility of next, previous buttons
+if epochNum == totalEpochs
     set(handles.pb_next, 'Enable', 'Off');
 else
     set(handles.pb_next, 'Enable', 'On');
 end
-if trialNum == 1
+if epochNum == 1
     set(handles.pb_previous, 'Enable', 'Off');
 else
     set(handles.pb_previous, 'Enable', 'On');
@@ -693,6 +708,7 @@ function cbApply_Callback(hObject, eventdata, handles)
 
 val = get(hObject, 'Value');
 handles.operationSets{handles.operationSetNum,3} = val;
+handles.trialNum = 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -705,6 +721,8 @@ index = get(handles.lbOperations, 'Value');
 
 handles.operationSets{handles.operationSetNum,2}.rmOperation(index);
 handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+handles.trialNum = 1;
+guidata(hObject, handles);
 updateView(handles);
 
 
@@ -713,12 +731,14 @@ function pbAddOperation_Callback(hObject, eventdata, handles)
 % hObject    handle to pbAddOperation (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[s,~] = listdlg('PromptString','Select a operation:', 'SelectionMode','single', 'ListString',eegOperations.AVAILABLE_OPERATIONS);
+[s,~] = listdlg('PromptString','Select a operation:', 'SelectionMode','single', 'ListString', ...
+    handles.operationSets{handles.operationSetNum,2}.availOps);
 if(isempty(s))
     return
 end
 if(handles.operationSets{handles.operationSetNum,2}.addOperation(s))
     handles.operationSets{handles.operationSetNum,3} = 1;
+    handles.trialNum = 1;
     guidata(hObject, handles);
     updateView(handles);
 end
@@ -735,6 +755,7 @@ function cbExcludeEpochs_Callback(hObject, eventdata, handles)
 val = get(hObject, 'Value');
 handles.operationSets{handles.operationSetNum,4} = val;
 handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
+handles.trialNum = 1;
 guidata(hObject, handles);
 updateView(handles);
 
