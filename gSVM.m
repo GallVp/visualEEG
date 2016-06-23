@@ -70,7 +70,7 @@ handles.channels = dataIn.('channels');
 
 handles.subjectNum = handles.dataSet1.subjectNum;
 handles.sessionNum = handles.dataSet1.sessionNum;
-handles.trialTime = handles.dataSet1.trialTime;
+handles.trialTime = handles.dataSet1.epochTime;
 handles.dataRate = handles.dataSet1.dataRate;
 
 %Default values
@@ -883,3 +883,13 @@ function pbSelectChannels_Callback(hObject, eventdata, handles)
 % hObject    handle to pbSelectChannels (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+channelsInfo = {num2str(handles.dataSet1.listChannels), handles.dataSet1.listChannelNames};
+[channels,~] = listdlg('PromptString','Select channels:',...
+                'ListString',channelsInfo{1,2});
+if(~isempty(channels))
+    
+    channelNames = channelsInfo{1,2}(channels,:);
+    handles.channels = channels;
+    set(handles.editChannels,'String', sprintf('%s ', channelNames{:}));
+    guidata(hObject, handles);
+end

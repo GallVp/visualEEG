@@ -300,8 +300,8 @@ classdef eegData < matlab.mixin.Copyable
             
             
             %loading data
-            indicesa = [intvla(1)+1/dataRate intvla(2)] .* dataRate;
-            indicesb = [intvlb(1)+1/dataRate intvlb(2)] .* dataRate;
+            indicesa = round([intvla(1)+1/dataRate intvla(2)] .* dataRate);
+            indicesb = round([intvlb(1)+1/dataRate intvlb(2)] .* dataRate);
             subjectData1 = sstData(indicesa(1):indicesa(2),:,:,:);
             subjectData2 = sstData(indicesb(1):indicesb(2),:,:,:);
             
