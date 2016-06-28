@@ -1,38 +1,56 @@
 classdef eegData < matlab.mixin.Copyable
     
-% eegData A class representing eeg data and anchored into a folder.
-
-% Copyright (c) <2016> <Usman Rashid>
-% 
-% This program is free software; you can redistribute it and/or
-% modify it under the terms of the GNU General Public License as
-% published by the Free Software Foundation; either version 2 of the
-% License, or (at your option) any later version.  See the file
-% LICENSE included with this distribution for more information.
+    % eegData A class representing eeg data and anchored into a folder.
+    
+    
+    
+    % Copyright (c) <2016> <Usman Rashid>
+    %
+    % This program is free software; you can redistribute it and/or
+    % modify it under the terms of the GNU General Public License as
+    % published by the Free Software Foundation; either version 2 of the
+    % License, or (at your option) any later version.  See the file
+    % LICENSE included with this distribution for more information.
+    
+    
+    
     
     properties (SetAccess = private)
-        sstData     % Data of selected session for selected subject.
-        folderName  % Name of anchor folder.
-        dataSize    % Size of sstData
-        extrials    % Excluded trials; 1 means exclude
-        subjectNum  % Current selected subject
-        sessionNum  % Current selected session
-        importMethod% Method of importing data
-        beforeIndex % Time before index
-        afterIndex  % Time after index
-        epochTime   % Time of one trial
-        numChannels % Total number of channels
-        dataRate    % Data sample rate
-        dvName      % Name of data variable
-        evName      % Name of event variable
-        dvOrient    % Orientation of data variable. 1 means channels are across rows.
+        folderName      % Name of anchor folder.
+        dataSize        % Size of sstData
+        extrials        % Excluded trials; 0 means exclude
+        subjectNum      % Current selected subject
+        sessionNum      % Current selected session
+        epochTime       % Time of one epoch
+        dataRate        % Data sample rate
+        channelNums     % Nums of currently selected channels
+        interval        % Interval of data
+        currentEpochNum % Currently selected epoch
+        epochNums       % Absolute epoch nums in selected data: sstData
+        exEpochsOnOff   %Exclude epochs or not
+        selectedData
     end
-    
     properties (Access = private)
-        ssNfo       % Subject and session info.
-        channelNfo  % Information of channels.
+        ssNfo           % Subject and session info.
+        channelNfo      % Information of channels. SrNos and Names
+        importMethod    % Import method used.
+        beforeIndex
+        afterIndex
+        dvName
+        dvOrient
+        evName
+        numChannels     % Total number of channels
+        sstData         % Data loaded from file
+        selectedEpochs  % A logical vector indicating selected epochs
     end
-    
+    events
+        dataSelectionChanged
+    end
+    methods
+        function obj = eegData
+            obj.uiLoad;
+        end
+    end
     properties(Constant)
         IMPORT_METHOD_BY_TIME = 'BYEPOCHTIME';
         IMPORT_METHOD_BY_EVENT = 'BYEPOCHEVENT';
@@ -40,9 +58,50 @@ classdef eegData < matlab.mixin.Copyable
         
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
+        EVENT_NAME_CHANNELS_CHANGED = 'CHANNELS_CHANGED';
+        EVENT_NAME_SUBJECT_CHANGED = 'SUBJECT_CHANGED';
+        EVENT_NAME_SESSION_CHANGED = 'SESSION_CHANGED';
+        EVENT_NAME_INTERVAL_CHANGED = 'INTERVAL_CHANGED';
+        EVENT_NAME_EPOCHS_CHANGED = 'EPOCHS_CHANGED';
     end
-    
     methods (Access = private)
+        function uiLoad(obj)
+            dataOut = importOptionsDlg;
+            if ~isempty(dataOut)
+                fname = uigetdir;
+                if fname ~=0
+                    obj.folderName = fname;
+                    obj.dataRate = dataOut.sampleRate;
+                    obj.importMethod = dataOut.importMethod;
+                    obj.epochTime = dataOut.trialTime;
+                    obj.beforeIndex = dataOut.beforeIndex;
+                    obj.afterIndex = dataOut.afterIndex;
+                    obj.dvName = dataOut.dvName;
+                    obj.dvOrient = dataOut.dvOrient;
+                    obj.evName = dataOut.evName;
+                    try
+                        obj.anchorFolder;
+                    catch ME
+                        if (strcmp(ME.identifier,'eegData:load:noFileFound'))
+                            errordlg('Folder does not contain any valid data file(s).','Import Data', 'modal');
+                            return
+                        elseif(strcmp(ME.identifier,'MATLAB:nonExistentField'))
+                            disp(ME);
+                            disp('Probable cause: Incorrect variable name used.')
+                        else
+                            disp(ME);
+                            disp('Probable cause: Unknown.')
+                        end
+                    end
+                else
+                    ME = MException('eegData:load:noFolder', 'No folder selected.');
+                    throw(ME)
+                end
+            else
+                ME = MException('eegData:load:noImportOptions', 'Import options not provided.');
+                throw(ME)
+            end
+        end
         function [ subjectData ] = getSubject(obj, channels)
             subjectData = getSession(obj, channels);
         end
@@ -134,7 +193,7 @@ classdef eegData < matlab.mixin.Copyable
             obj.ssNfo = dataNfo;
         end
         
-        function setNumChannels(obj)
+        function loadNumChannels(obj)
             if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
                 D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), sprintf('sub%02d_sess%02d',  obj.subjectNum, obj.sessionNum));
                 nChannels = size(D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values);
@@ -165,69 +224,34 @@ classdef eegData < matlab.mixin.Copyable
             obj.channelNfo{:,1} = [1:obj.numChannels]';
             obj.channelNfo{:,2} = channelNames;
         end
-    end
-    
-    methods
-        function folderName = get.folderName(obj)
-            folderName = obj.folderName;
-        end
-    end
-    
-    methods (Access = public)
-        function anchorFolder(obj, folderName, dataRate, importMethod, epochTime, beforeIndex,...
-                afterIndex, dvName, dvOrient, evName)
-            % Throws exception eegData:load:noFileFound
-            obj.folderName = folderName;
-            obj.dvName = dvName;
-            obj.evName = evName;
-            obj.dvOrient = dvOrient;
+        
+        function anchorFolder(obj)
             
             validateFolder(obj);
             
-            
+            % Set current selection of subject and session numbers
             lst = cell2mat(obj.ssNfo(:,1));
             subNum = lst(1);
             lst = cell2mat(obj.ssNfo(1, 2));
             sessNum = lst(1);
             
-            obj.dataRate = dataRate;
-            obj.importMethod = importMethod;
-            
-            obj.beforeIndex = beforeIndex;
-            obj.afterIndex = afterIndex;
-            
             obj.subjectNum = subNum;
             obj.sessionNum = sessNum;
             
-            if(strcmp(importMethod, obj.IMPORT_METHOD_BY_TIME))
-                obj.epochTime = epochTime;
-            elseif(strcmp(importMethod, obj.IMPORT_METHOD_BY_EVENT))
-                obj.epochTime = beforeIndex + afterIndex;
-            else
-                %do nothing!! EMG cue files are already in good shape.
-                %Caution!!!: obj.trailTime will be updated in the loadDdata
-                %method.
+            % Calculate epoch time if required
+            if(strcmp(obj.importMethod, obj.IMPORT_METHOD_BY_EVENT))
+                obj.epochTime = obj.beforeIndex + obj.afterIndex;
             end
             
-            setNumChannels(obj);
-            loadChannelNames(obj);
-            
-            loadData(obj, subNum, sessNum);
-            
+            obj.loadNumChannels;
+            obj.loadChannelNames;
+            obj.loadSubSessFile;
         end
         
-        function loadData(obj, subNum, sessNum)
-            % Throws exception eegData:load:noAnchorFolder
-            
-            if(isempty(obj.folderName))
-                throw(MException('eegData:load:noAnchorFolder', 'anchorFolder should be called first.'));
-            end
-            
-            obj.subjectNum = subNum;
-            obj.sessionNum = sessNum;
-            
+        function loadSubSessFile(obj)
             if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
-                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum));
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)),...
+                    sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum));
                 obj.sstData = D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values;
                 obj.epochTime = size(obj.sstData, 1);
                 obj.epochTime = obj.epochTime / obj.dataRate;
@@ -242,20 +266,31 @@ classdef eegData < matlab.mixin.Copyable
                 obj.extrials = cell2mat(D.ex_trials(cell2mat(D.ex_trials(:,1)) == obj.subjectNum &...
                     cell2mat(D.ex_trials(:,2)) == obj.sessionNum,3));
                 if(isempty(obj.extrials))
-                    obj.extrials = zeros(1, obj.dataSize(3));
+                    obj.extrials = ones(1, obj.dataSize(3));
                 end
             catch me
                 disp(me.identifier);
                 if(strcmp(me.identifier, 'MATLAB:load:couldNotReadFile'))
-                    obj.extrials = zeros(1, obj.dataSize(3));
+                    obj.extrials = ones(1, obj.dataSize(3));
                     ex_trials = {obj.subjectNum, obj.sessionNum, obj.extrials};
                     save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
                 end
             end
+            % Default selection of data
+            obj.channelNums = 1:obj.numChannels;
+            obj.interval = [0 obj.epochTime]; % Display interval starts from 0, actual interval starts from Ts
+            obj.currentEpochNum = 1;
+            obj.epochNums = 1:obj.dataSize(3);
+            obj.exEpochsOnOff = 0;
+            obj.selectedData = obj.sstData;
+            obj.selectedEpochs = ones(1, obj.dataSize(3)) == 1;
         end
+    end
+    methods (Access = public)   
         
-        function updateTrialExStatus(obj, trialNum, status)
-            obj.extrials(trialNum) = status;
+        function updateTrialExStatus(obj, relativeEpochNum, status)
+            absoluteEpochNum = obj.absoluteEpochNum(relativeEpochNum);
+            obj.extrials(absoluteEpochNum) = status;
             
             D = load(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
             ext = cell2mat(D.ex_trials(cell2mat(D.ex_trials(:,1))==obj.subjectNum & cell2mat(D.ex_trials(:,2))==obj.sessionNum,3));
@@ -267,14 +302,30 @@ classdef eegData < matlab.mixin.Copyable
                 ex_trials = D.ex_trials;
             end
             save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
+            
+            allEPochNums = 1:size(obj.sstData, 3);
+            if(obj.exEpochsOnOff)
+                obj.epochNums = allEPochNums(obj.extrials & obj.selectedEpochs);
+            else
+                obj.epochNums = allEPochNums(obj.selectedEpochs);
+            end
+            obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+            obj.dataSize = size(obj.selectedData);
+            
+            notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
         end
         
-        function [channelSrNos] = listChannels(obj)
+        function [channelSrNos] = listAllChannelNums(obj)
             channelSrNos = obj.channelNfo{1,1};
         end
         
-        function [channelNames] = listChannelNames(obj)
+        function [channelNames] = listAllChannelNames(obj)
             channelNames = obj.channelNfo{1,2};
+        end
+        
+        function [channelNames] = listChannelNames(obj)
+            names = obj.listAllChannelNames;
+            channelNames = names(obj.channelNums);
         end
         
         function [subjects] = listSubjects(obj)
@@ -290,10 +341,157 @@ classdef eegData < matlab.mixin.Copyable
         end
         
         function plotData(obj)
-            eegData.plotSstData({1/obj.dataRate:1/obj.dataRate:obj.epochTime}, {obj.sstData}, {sprintf('Sub:%02d Sess:%02d',...
-                obj.subjectNum, obj.sessionNum)}, {eegData.PLOT_TYPE_PLOT}, -1);
+            eegData.plotSstData({obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2)}, {obj.selectedData},...
+                {sprintf('Sub:%02d Sess:%02d', obj.subjectNum, obj.sessionNum)}, {eegData.PLOT_TYPE_PLOT}, -1, obj.currentEpochNum);
         end
         
+        function selectSub(obj,sub)
+            % Throws exception eegData:load:noSuchSubject
+            if(sum(ismember(obj.listSubjects, sub)))
+                obj.subjectNum = sub;
+                sessions = obj.listSessions;
+                obj.sessionNum = sessions(1);
+                obj.loadSubSessFile;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SUBJECT_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchSubject', 'This subject number is not available.');
+                throw(ME)
+            end
+        end
+        
+        function selectSess(obj,sess)
+            % Throws exception eegData:load:noSuchSession
+            if(sum(ismember(obj.listSessions, sess)))
+                obj.sessionNum = sess;
+                obj.loadSubSessFile;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SESSION_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchSession', 'This session number is not available.');
+                throw(ME)
+            end
+        end
+        function selectChannels(obj,channelNums)
+            % Throws exception eegData:load:noSuchChannels
+            if(sum(ismember(obj.listAllChannelNums, channelNums)) == length(channelNums))
+                obj.channelNums = channelNums;
+                obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_CHANNELS_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchChannels', 'Invalid channels selected.');
+                throw(ME)
+            end
+        end
+        function selectChannelsByName(obj,channelNames)
+            % Throws exception eegData:load:noSuchChannels
+            if(sum(ismember(obj.listAllChannelNames, channelNames)) == length(channelNames))
+                nums = obj.listAllChannelNums;
+                obj.channelNums = nums(ismember(obj.listAllChannelNames, channelNames));
+                obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_CHANNELS_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchChannels', 'Invalid channels selected.');
+                throw(ME)
+            end
+        end
+        function selectInterval(obj,interval)
+            % Throws exception eegData:load:noSuchInterval
+            if(length(interval) == 2 && interval(1) < interval(2) && interval(1) >= 0 && interval(2) <= obj.epochTime)
+                obj.interval = interval;
+                obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_INTERVAL_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchInterval', 'Invalid interval selected.');
+                throw(ME)
+            end
+        end
+        function excludeEpochs(obj, onOff)
+            if(onOff ~= obj.exEpochsOnOff)
+                allEPochNums = 1:size(obj.sstData, 3);
+                if(onOff)
+                    obj.exEpochsOnOff = onOff;
+                    obj.epochNums = allEPochNums(obj.extrials & obj.selectedEpochs);
+                    
+                else
+                    obj.epochNums = allEPochNums(obj.selectedEpochs);
+                    obj.exEpochsOnOff = onOff;
+                end
+                obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                obj.currentEpochNum = 1;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
+            end
+        end
+        
+        function selectEpochs(obj, relativeEpochNums)
+            allEPochNums = 1:size(obj.sstData, 3);
+            try
+                absoluteEpochNums = obj.absoluteEpochNum(relativeEpochNums);
+            catch ME
+                disp(ME);
+                disp('Invalid epochs selected.');
+                return;
+            end
+            
+            if(sum(ismember(obj.epochNums, absoluteEpochNums)) == length(absoluteEpochNums))
+                obj.selectedEpochs = ismember(allEPochNums, absoluteEpochNums);
+                if(obj.exEpochsOnOff)
+                    obj.epochNums = allEPochNums(obj.extrials & obj.selectedEpochs);
+                else
+                    obj.epochNums = allEPochNums(obj.selectedEpochs);
+                end
+                obj.selectedData = obj.sstData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                obj.currentEpochNum = 1;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
+            else
+                ME = MException('eegData:load:noSuchEpochs', 'Invalid epochs selected.');
+                throw(ME)
+            end
+        end
+        function [indices] = getSelectedIndices(obj)
+            indices = (obj.interval(1) + 1/obj.dataRate : 1/obj.dataRate : obj.interval(2)) .* obj.dataRate;
+        end
+        function [epoch] = getEpoch(obj)
+            epoch = obj.selectedData(:,:,obj.currentEpochNum);
+        end
+        function [answer] = isempty(obj)
+            answer = isempty(obj.selectedData);
+        end
+        function [answer] = isLastEpoch(obj)
+            answer = obj.currentEpochNum == obj.dataSize(3);
+        end
+        function [answer] = isFirstEpoch(obj)
+            answer = obj.currentEpochNum == 1;
+        end
+        function [epochNum] = absoluteEpochNum(obj, relativeEpochNum)
+            try
+                epochNum = obj.epochNums(relativeEpochNum);
+            catch ME
+                disp(ME);
+                disp('Invalid epochs selected.');
+            end
+        end
+        function [obj] = nextEpoch(obj)
+            if(obj.isLastEpoch)
+                ME = MException('eegData:select:lastEpoch', 'Current epoch is the last epoch.');
+                throw(ME)
+            else
+                obj.currentEpochNum = obj.currentEpochNum + 1;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
+            end
+        end
+        function [obj] = previousEpoch(obj)
+            if(obj.isFirstEpoch)
+                ME = MException('eegData:select:firstEpoch', 'Current epoch is the first epoch.');
+                throw(ME)
+            else
+                obj.currentEpochNum = obj.currentEpochNum - 1;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
+            end
+        end
     end
     methods (Access = public, Static)
         function [ X, Xcv, Xtest, y, ycv, ytest] = splitData(sstData, intvla, intvlb, dataRate,  trainPer, cvPer, testPer)
@@ -378,12 +576,20 @@ classdef eegData < matlab.mixin.Copyable
             Xcv = sstData(indicesR(1):indicesR(2),:,train_trials+1:train_trials+cv_trials);
             Xtest = sstData(indicesR(1):indicesR(2),:, train_trials+cv_trials + 1:end);
         end
-        function H = plotSstData(abscissa, sstData, titleText, plotType, xAxisLimits)
+        function H = plotSstData(abscissa, sstData, titleText, plotType, xAxisLimits, epochNum)
             % Create a figure and axes
             % xAxisLimits = -1 means that this argument is not used
             % sstData, abscicca, titleText and plotType should be m * 1 cell arrays.
             
-            persistant.trialNum = 1;
+            switch nargin
+                case 4
+                    persistant.trialNum = 1;
+                    xAxisLimits = -1;
+                case 5
+                    persistant.trialNum = 1;
+                otherwise
+                    persistant.trialNum = epochNum;
+            end
             persistant.totalEpochs = size(sstData{1}, 3);
             persistant.numDats = size(sstData, 1);
             

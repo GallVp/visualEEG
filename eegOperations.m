@@ -1,11 +1,17 @@
 classdef eegOperations < handle
-% Copyright (c) <2016> <Usman Rashid>
-% 
-% This program is free software; you can redistribute it and/or
-% modify it under the terms of the GNU General Public License as
-% published by the Free Software Foundation; either version 2 of the
-% License, or (at your option) any later version.  See the file
-% LICENSE included with this distribution for more information.
+    
+    
+    
+    % Copyright (c) <2016> <Usman Rashid>
+    %
+    % This program is free software; you can redistribute it and/or
+    % modify it under the terms of the GNU General Public License as
+    % published by the Free Software Foundation; either version 2 of the
+    % License, or (at your option) any later version.  See the file
+    % LICENSE included with this distribution for more information.
+    
+    
+    
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
             'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode', 'Group Epochs'};
@@ -13,7 +19,6 @@ classdef eegOperations < handle
     
     properties (SetAccess = private)
         operations  % Operations applied to data
-        procEpochs  % Epochs present in procData.
         availOps    % Operations available
     end
     
@@ -22,52 +27,27 @@ classdef eegOperations < handle
         dataSet     % An object of class eegData.
         procData    % Processed data.
         abscissa    % x-axis data.
-        channels    % Selected channels.
-        exepochs    % Index of excluded epochs. 1 means include.
-        exOnOff     % To exclude or not to exclude the epochs.
         numApldOps  % Number of applied operations.
         dataDomain  % Domain of processed data
-        intvl       % Interval for FFT
         chanChange  % Number of channels changed.
         sLCentre    % Centre for spatial laplacian filter.
         eignVect    % Eignvectors computed for PCA.
     end
     
     methods (Access = public)
-        function attachDataSet(obj, eegData)
-            obj.dataSet = eegData;
+        function [obj] = eegOperations(data)
+            obj.dataSet = data;
+            
+            % Default properties
             obj.numApldOps = 0;
             obj.chanChange = 1;
             obj.availOps = eegOperations.ALL_OPERATIONS;
-        end
-        function updateDataInfo(obj, channels, intvl, opsOnOff)
-            if(isequal(obj.channels,channels))
-                obj.chanChange = 0;
-            else
-                obj.chanChange = 1;
-            end
-            obj.channels = channels;
-            obj.exOnOff = opsOnOff;
-            obj.intvl = intvl;
-            obj.procData = [];
-            obj.abscissa = [];
-            obj.dataDomain = {'None'};
-            obj.numApldOps = 0;
-            if(obj.exOnOff)
-                obj.exepochs = ~obj.dataSet.extrials;
-            else
-                obj.exepochs = ones(1, length(obj.dataSet.extrials));
-                obj.exepochs = obj.exepochs == 1;
-            end
+            obj.procData = obj.dataSet.selectedData;
+            obj.abscissa = obj.dataSet.interval(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:obj.dataSet.interval(1);
+            obj.dataDomain = {'Time'};
+            addlistener(obj.dataSet,'dataSelectionChanged',@handleDataSelectionChange)
         end
         function [returnData, abscissa, dataDomain] = getProcData(obj)
-            if(isempty(obj.procData))
-                obj.procData = obj.dataSet.sstData(:,obj.channels, obj.exepochs);
-                obj.abscissa = 0:1/obj.dataSet.dataRate:obj.dataSet.epochTime;
-                obj.dataDomain = {'Time'};
-                obj.procEpochs = 1 : obj.dataSet.dataSize(3);
-                obj.procEpochs = obj.procEpochs(obj.exepochs);
-            end
             if (obj.numApldOps == length(obj.operations) - 1)
                 applyLastOperation(obj);
             elseif (obj.numApldOps == 0)
@@ -119,6 +99,18 @@ classdef eegOperations < handle
     end
     
     methods (Access = private)
+        function handleDataSetChange(src, eventData)
+            if(strcmp(eventData.changeName,eegData.EVENT_NAME_CHANNELS_CHANGED))
+                obj.chanChange = 1;
+            else
+                obj.chanChange = 0;
+            end
+            obj.procData = obj.dataSet.selectedData;
+            obj.abscissa = obj.dataSet.interval(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:obj.dataSet.interval(1);
+            obj.dataDomain = {'Time'};
+            obj.numApldOps = 0;
+        end
+        
         function applyAllOperations(obj)
             numOperations = length(obj.operations);
             for i=1:numOperations
@@ -292,7 +284,7 @@ classdef eegOperations < handle
                     obj.procData = eegOperations.shapeSst(obj.procData, nT);
                     % args{1} should be a filter object obtained from designfilter.
                 case eegOperations.ALL_OPERATIONS{6}
-                    indices = (obj.intvl(1) * obj.dataSet.dataRate + 1) : (obj.intvl(2) * obj.dataSet.dataRate);
+                    indices = obj.dataSet.getSelectedIndices;
                     processingData = processingData(indices, :,:);
                     [m, n, o] = size(processingData);
                     obj.procData = zeros(floor(m/2) + 1, n, o);
