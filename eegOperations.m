@@ -19,67 +19,79 @@ classdef eegOperations < handle
     
     properties (SetAccess = private)
         operations  % Operations applied to data
-        availOps    % Operations available
     end
     
     properties (Access = private)
-        arguments   % Arguments for each operation
-        dataSet     % An object of class eegData.
-        procData    % Processed data.
-        abscissa    % x-axis data.
-        numApldOps  % Number of applied operations.
-        dataDomain  % Domain of processed data
-        chanChange  % Number of channels changed.
-        sLCentre    % Centre for spatial laplacian filter.
-        eignVect    % Eignvectors computed for PCA.
+        arguments       % Arguments for each operation
+        dataSet         % An object of class sstData.
+        procData        % Processed data. An object of sstData class.
+        numApldOps      % Number of applied operations.
+        dataChangeName  % Name of change in source data.
+        availOps        % Operations available
     end
     
     methods (Access = public)
+        
         function [obj] = eegOperations(data)
-            obj.dataSet = data;
+            % Make new copy of dataSet
+            obj.dataSet = data.getSstData;
             
             % Default properties
             obj.numApldOps = 0;
-            obj.chanChange = 1;
             obj.availOps = eegOperations.ALL_OPERATIONS;
-            obj.procData = obj.dataSet.selectedData;
-            obj.abscissa = obj.dataSet.interval(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:obj.dataSet.interval(1);
-            obj.dataDomain = {'Time'};
-            addlistener(obj.dataSet,'dataSelectionChanged',@handleDataSelectionChange)
+            obj.procData = copy(obj.dataSet);
+            addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
+            
         end
-        function [returnData, abscissa, dataDomain] = getProcData(obj)
-            if (obj.numApldOps == length(obj.operations) - 1)
-                applyLastOperation(obj);
-            elseif (obj.numApldOps == 0)
-                applyAllOperations(obj);
-            else
-                % Do nothing!!
+        function handleDataSelectionChange(obj, src, eventData)
+            obj.dataChangeName = eventData.changeName;
+            obj.numApldOps = 0;
+            % Make new copy of dataSet
+            obj.dataSet = src.getSstData;
+        end
+        function [returnData] = getProcData(obj, apply)
+            if(nargin < 2)
+                apply = 1;
             end
-            returnData = obj.procData;
-            abscissa = obj.abscissa;
-            dataDomain = obj.dataDomain;
+            if(apply)
+                if (obj.numApldOps + 1 == length(obj.operations))
+                    applyLastOperation(obj);
+                else
+                    % Take a fresh copy of dataSet
+                    obj.procData = copy(obj.dataSet);
+                    applyAllOperations(obj);
+                end
+                returnData = obj.procData;
+            else
+                returnData = obj.dataSet;
+            end
         end
-        function [success] = addOperation (obj, index)      % Here index refers to ALL_OPERATIONS.
-            
-            opName = obj.availOps(index);
-            
-            index = strcmp(eegOperations.ALL_OPERATIONS, opName);
-            
-            indices = 1:length(eegOperations.ALL_OPERATIONS);
-            index = indices(index);
-            
-            args = obj.askArgs(index);
-            if(isempty(args))
+        function [success] = addOperation (obj)      % Here index refers to ALL_OPERATIONS.
+            [s,~] = listdlg('PromptString','Select an operation:', 'SelectionMode','single', 'ListString', ...
+                obj.availOps);
+            if(isempty(s))
                 success = 0;
             else
-                if(isempty(obj.operations))
-                    obj.operations = eegOperations.ALL_OPERATIONS(index);
-                    obj.arguments = {args};
+                
+                opName = obj.availOps(s);
+                
+                index = strcmp(eegOperations.ALL_OPERATIONS, opName);
+                indices = 1:length(eegOperations.ALL_OPERATIONS);
+                index = indices(index);
+                
+                args = obj.askArgs(s);
+                if(isempty(args))
+                    success = 0;
                 else
-                    obj.operations = [obj.operations, eegOperations.ALL_OPERATIONS(index)];
-                    obj.arguments = [obj.arguments {args}];
+                    if(isempty(obj.operations))
+                        obj.operations = eegOperations.ALL_OPERATIONS(index);
+                        obj.arguments = {args};
+                    else
+                        obj.operations = [obj.operations, eegOperations.ALL_OPERATIONS(index)];
+                        obj.arguments = [obj.arguments {args}];
+                    end
+                    success = 1;
                 end
-                success = 1;
             end
         end
         function rmOperation (obj, index)                   % Here index refers to operations.
@@ -99,19 +111,9 @@ classdef eegOperations < handle
     end
     
     methods (Access = private)
-        function handleDataSetChange(src, eventData)
-            if(strcmp(eventData.changeName,eegData.EVENT_NAME_CHANNELS_CHANGED))
-                obj.chanChange = 1;
-            else
-                obj.chanChange = 0;
-            end
-            obj.procData = obj.dataSet.selectedData;
-            obj.abscissa = obj.dataSet.interval(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:obj.dataSet.interval(1);
-            obj.dataDomain = {'Time'};
-            obj.numApldOps = 0;
-        end
         
         function applyAllOperations(obj)
+            
             numOperations = length(obj.operations);
             for i=1:numOperations
                 obj.applyOperation(obj.operations{i}, obj.arguments{i}, obj.procData);
@@ -260,15 +262,18 @@ classdef eegOperations < handle
         function applyOperation(obj, operationName, args,  processingData)     
             switch operationName
                 case eegOperations.ALL_OPERATIONS{1}
-                    obj.procData = mean(processingData, 2);
+                    channelNums = 1;
+                    channelName = 'Mean';
+                    obj.procData.setChannelData(mean(processingData.selectedData, 2), channelNums, channelName);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{2}
-                    obj.procData = mean(processingData, 3);
+                    epochNums = 1;
+                    obj.procData.setEpochData(mean(processingData.selectedData, 3), epochNums);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{3}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    obj.procData = detrend(P, args{1});
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    P = detrend(P, args{1});
+                    obj.procData.setSelectedData(eegOperations.shapeSst(P, nT));
                     % args{1} should be 'linear' or 'constant'
                 case eegOperations.ALL_OPERATIONS{4}
                     [P, nT] = eegOperations.shapeProcessing(processingData);
