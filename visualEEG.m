@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 10-Jun-2016 13:32:13
+% Last Modified by GUIDE v2.5 29-Jun-2016 16:00:49
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -66,7 +66,7 @@ handles.output = hObject;
 
 % Hide most controls
 set(handles.bg_trial, 'Visible', 'Off');
-set(handles.up_data, 'Visible', 'Off');
+set(handles.up_data, 'Visible', 'On');
 set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menu_export, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
@@ -989,4 +989,27 @@ if(isempty(answer))
     return;
 else
     axis([str2double(answer{1}) str2double(answer{2}) str2double(answer{3}) str2double(answer{4})]);
+end
+
+
+% --- Executes on selection change in pumDataSet.
+function pumDataSet_Callback(hObject, eventdata, handles)
+% hObject    handle to pumDataSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns pumDataSet contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pumDataSet
+
+
+% --- Executes during object creation, after setting all properties.
+function pumDataSet_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pumDataSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end
