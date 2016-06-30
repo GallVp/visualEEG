@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 29-Jun-2016 16:00:49
+% Last Modified by GUIDE v2.5 30-Jun-2016 14:31:48
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -65,10 +65,10 @@ function visualEEG_OpeningFcn(hObject, ~, handles, varargin)
 handles.output = hObject;
 
 % Hide most controls
-set(handles.bg_trial, 'Visible', 'Off');
-set(handles.up_data, 'Visible', 'On');
+set(handles.bgEpochs, 'Visible', 'Off');
+set(handles.upData, 'Visible', 'Off');
 set(handles.saveFigure, 'Enable', 'Off');
-set(handles.menu_export, 'Enable', 'Off');
+set(handles.menuExport, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
@@ -78,6 +78,9 @@ set(handles.menuView, 'Enable', 'Off');
 
 % Plot instructions
 text(0.38,0.5, 'Go to File->Import data');
+
+% Add a dataSets class to the GUI
+handles.dSets = dataSets;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -101,7 +104,7 @@ function pb_previous_Callback(hObject, ~, handles)
 % hObject    handle to pb_previous (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.trialNum = handles.trialNum - 1;
+handles.dSets.getOperationSuperSet.getOperationSet.getProcData.previousEpoch;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -112,65 +115,53 @@ function pb_next_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.trialNum = handles.trialNum + 1;
+handles.epochNum = handles.epochNum + 1;
 guidata(hObject, handles);
 updateView(handles);
 
 
-% --- Executes on selection change in pum_subject.
-function pum_subject_Callback(hObject, ~, handles)
-% hObject    handle to pum_subject (see GCBO)
+% --- Executes on selection change in pumSubject.
+function pumSubject_Callback(hObject, ~, handles)
+% hObject    handle to pumSubject (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns pum_subject contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from pum_subject
+% Hints: contents = cellstr(get(hObject,'String')) returns pumSubject contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pumSubject
 index = get(hObject,'Value');
-lst = handles.dataSet1.listSubjects;
+lst = handles.dSets.getDataSet.listSubjects;
 handles.subjectNum = lst(index);
 
-lst = handles.dataSet1.listSessions(handles.subjectNum);
-set(handles.pum_session, 'String', num2str(lst));
-set(handles.pum_session, 'Value', 1);
+lst = handles.dSets.getDataSet.listSessions(handles.subjectNum);
+set(handles.pumSession, 'String', num2str(lst));
+set(handles.pumSession, 'Value', 1);
 handles.sessionNum = lst(1);
 
-% Reset trial number back to 1.
-handles.trialNum = 1;
-
-handles.dataSet1.loadData(handles.subjectNum, handles.sessionNum);
-for i = 1:size(handles.operationSets, 1)
-    handles.operationSets{i,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-end
+handles.dSets.getDataSet.selectSub(handles.subjectNum);
 guidata(hObject, handles);
 updateView(handles);
 
 
-% --- Executes on selection change in pum_session.
-function pum_session_Callback(hObject, eventdata, handles)
-% hObject    handle to pum_session (see GCBO)
+% --- Executes on selection change in pumSession.
+function pumSession_Callback(hObject, eventdata, handles)
+% hObject    handle to pumSession (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns pum_session contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from pum_session
+% Hints: contents = cellstr(get(hObject,'String')) returns pumSession contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pumSession
 index = get(hObject,'Value');
-lst = handles.dataSet1.listSessions;
+lst = handles.dSets.getDataSet.listSessions;
 handles.sessionNum = lst(index);
 
-% Reset trial number back to 1.
-handles.trialNum = 1;
-
-handles.dataSet1.loadData(handles.subjectNum, handles.sessionNum);
-for i = 1:size(handles.operationSets, 1)
-    handles.operationSets{i,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-end
+handles.dSets.getDataSet.selectSess(handles.sessionNum);
 guidata(hObject, handles);
 updateView(handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function pum_session_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to pum_session (see GCBO)
+function pumSession_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pumSession (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -181,7 +172,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 % --- Executes during object creation, after setting all properties.
-function pum_subject_CreateFcn(hObject, eventdata, handles)
+function pumSubject_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to pum_channel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
@@ -192,32 +183,31 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function edit_intvl1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_intvl1 (see GCBO)
+function editIntvl1_Callback(hObject, eventdata, handles)
+% hObject    handle to editIntvl1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_intvl1 as text
-%        str2num(get(hObject,'String')) returns contents of edit_intvl1 as a double
+% Hints: get(hObject,'String') returns contents of editIntvl1 as text
+%        str2num(get(hObject,'String')) returns contents of editIntvl1 as a double
 val = get(hObject,'String');
 intvl1 = str2double(val);
 
 if(~isnan(intvl1))
-    if(intvl1 >= handles.intvl2 || intvl1 < 0 || intvl1 > handles.dataSet1.epochTime)
-        errordlg('Invalid interval.','Interval selection', 'modal');
-        set(hObject, 'String', num2str(handles.intvl1));
-    else
+    try
+        handles.dSets.getDataSet.selectInterval([intvl1 handles.intvl2]);
         handles.intvl1 = intvl1;
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
-            handles.operationSets{handles.operationSetNum,4});
         guidata(hObject, handles);
         updateView(handles);
+    catch ME
+        errordlg(ME.message,'Interval selection', 'modal');
+        set(hObject,'String', num2str(handles.intvl1));
     end
 end
 
 % --- Executes during object creation, after setting all properties.
-function edit_intvl1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_intvl1 (see GCBO)
+function editIntvl1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editIntvl1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -228,33 +218,32 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-function edit_intvl2_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_intvl2 (see GCBO)
+function editIntvl2_Callback(hObject, eventdata, handles)
+% hObject    handle to editIntvl2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_intvl2 as text
-%        str2num(get(hObject,'String')) returns contents of edit_intvl2 as a double
+% Hints: get(hObject,'String') returns contents of editIntvl2 as text
+%        str2num(get(hObject,'String')) returns contents of editIntvl2 as a double
 val = get(hObject,'String');
 intvl2 = str2double(val);
 
 if(~isnan(intvl2))
-    if(intvl2 <= handles.intvl1 || intvl2 < 0 || intvl2 > handles.dataSet1.epochTime)
-        errordlg('Invalid interval.','Interval selection', 'modal');
-        set(hObject, 'String', num2str(handles.intvl2));
-    else
-        handles.intvl2 = intvl2;
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
-            handles.operationSets{handles.operationSetNum,4});
+    try
+        handles.dSets.getDataSet.selectInterval([handle.intvl1 intvl2]);
+        handles.intvl1 = intvl2;
         guidata(hObject, handles);
         updateView(handles);
+    catch ME
+        errordlg(ME.message,'Interval selection', 'modal');
+        set(hObject,'String', num2str(handles.intvl2));
     end
 end
 
 
 % --- Executes during object creation, after setting all properties.
-function edit_intvl2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_intvl2 (see GCBO)
+function editIntvl2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editIntvl2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -266,47 +255,46 @@ end
 
 
 
-% --- Executes on button press in cb_discard.
-function cb_discard_Callback(hObject, eventdata, handles)
-% hObject    handle to cb_discard (see GCBO)
+% --- Executes on button press in cbDiscard.
+function cbDiscard_Callback(hObject, eventdata, handles)
+% hObject    handle to cbDiscard (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of cb_discard
+% Hint: get(hObject,'Value') returns toggle state of cbDiscard
 
 val = get(hObject,'Value');
 if handles.operationSets{handles.operationSetNum,3} % If apply is off the data comes directly from eegdata class.
-    handles.dataSet1.updateTrialExStatus(handles.operationSets{handles.operationSetNum,2}.procEpochs(handles.trialNum), val);
+    handles.dataSet1.updateTrialExStatus(handles.operationSets{handles.operationSetNum,2}.procEpochs(handles.epochNum), val);
 else
-    handles.dataSet1.updateTrialExStatus(handles.trialNum, val);
+    handles.dataSet1.updateTrialExStatus(handles.epochNum, val);
 end
 guidata(hObject, handles);
-updateView(handles);
 
 
 % --------------------------------------------------------------------
-function menu_file_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_file (see GCBO)
+function menuFile_Callback(hObject, eventdata, handles)
+% hObject    handle to menuFile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % --------------------------------------------------------------------
-function menu_help_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_help (see GCBO)
+function menuHelp_Callback(hObject, eventdata, handles)
+% hObject    handle to menuHelp (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 
 % --------------------------------------------------------------------
-function menu_about_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_about (see GCBO)
+function menuAbout_Callback(hObject, eventdata, handles)
+% hObject    handle to menuAbout (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 uiwait(msgbox(sprintf('Visual EEG\n\nVersion 1.0\n\nUsman Rashid\nurashid@aut.ac.nz\nAUT New Zealand'), 'About', 'help', 'modal'));
 
 % --------------------------------------------------------------------
-function menu_import_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_import (see GCBO)
+function menuImport_Callback(hObject, eventdata, handles)
+% hObject    handle to menuImport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 dataOut = importOptionsDlg;
@@ -344,24 +332,24 @@ if ~isempty(dataOut)
         %Startup data selection
         lst = handles.dataSet1.listSessions;
         handles.sessionNum = lst(1);
-        set(handles.pum_session, 'String', num2str(handles.dataSet1.listSessions));
-        set(handles.pum_session, 'Value', 1);
+        set(handles.pumSession, 'String', num2str(handles.dataSet1.listSessions));
+        set(handles.pumSession, 'Value', 1);
         
         lst = handles.dataSet1.listSubjects;
         handles.subjectNum = lst(1);
-        set(handles.pum_subject, 'String', num2str(handles.dataSet1.listSubjects));
-        set(handles.pum_subject, 'Value', 1);
+        set(handles.pumSubject, 'String', num2str(handles.dataSet1.listSubjects));
+        set(handles.pumSubject, 'Value', 1);
         
-        handles.trialNum = 1;
+        handles.epochNum = 1;
         
         lst = handles.dataSet1.listChannels;
         handles.channels = lst(1);
         set(handles.editChannels, 'String', num2str(lst(1)));
         
         handles.intvl1 = 0;
-        set(handles.edit_intvl1, 'String', num2str(handles.intvl1));
+        set(handles.editIntvl1, 'String', num2str(handles.intvl1));
         handles.intvl2 = handles.dataSet1.epochTime;
-        set(handles.edit_intvl2, 'String', num2str(handles.intvl2));
+        set(handles.editIntvl2, 'String', num2str(handles.intvl2));
         
 
         set(handles.cbApply, 'Value', 0);
@@ -377,11 +365,11 @@ if ~isempty(dataOut)
             handles.operationSets{handles.operationSetNum,4});
         
         %enable most controls
-        set(handles.bg_trial, 'Visible', 'On');
-        set(handles.up_data, 'Visible', 'On');
+        set(handles.bgEpochs, 'Visible', 'On');
+        set(handles.upData, 'Visible', 'On');
         set(handles.upOperations, 'Visible', 'On');
         
-        set(handles.menu_export, 'Enable', 'On');
+        set(handles.menuExport, 'Enable', 'On');
         
         set(handles.saveFigure, 'Enable', 'On');
         
@@ -406,8 +394,8 @@ if ~isempty(dataOut)
 end
 
 % --------------------------------------------------------------------
-function menu_export_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_export (see GCBO)
+function menuExport_Callback(hObject, eventdata, handles)
+% hObject    handle to menuExport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 saveOptions = exportOptionsDlg;
@@ -430,8 +418,8 @@ else
     end
 end
 % --------------------------------------------------------------------
-function menu_exit_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_exit (see GCBO)
+function menuExit_Callback(hObject, eventdata, handles)
+% hObject    handle to menuExit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 close all;
@@ -530,7 +518,7 @@ if(handles.dynamicCue)
     a = axis;
     ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
     try
-        cueTime = ext(handles.trialNum);
+        cueTime = ext(handles.epochNum);
         line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)], 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
     catch ME
         disp(ME)
@@ -555,27 +543,27 @@ totalEpochs = size(viewData, 3);
 if(totalEpochs == 1)
     epochNum = 1;
 else
-    epochNum = handles.trialNum;
+    epochNum = handles.epochNum;
 end
 
 %update visibility of discard checkbox
 if handles.operationSets{handles.operationSetNum,4} && handles.operationSets{handles.operationSetNum,3}
-    set(handles.cb_discard, 'Visible', 'Off');
+    set(handles.cbDiscard, 'Visible', 'Off');
     
 else
-    set(handles.cb_discard, 'Visible', 'On');
-    set(handles.cb_discard, 'Value', handles.dataSet1.extrials(1, epochNum));
+    set(handles.cbDiscard, 'Visible', 'On');
+    set(handles.cbDiscard, 'Value', handles.dataSet1.extrials(1, epochNum));
 end
 
 %Show epoch info
 if handles.operationSets{handles.operationSetNum,3}
     if handles.operationSets{handles.operationSetNum,4}
-        set(handles.bg_trial, 'Title', sprintf('Epoch:%d(%d)/%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs));
+        set(handles.bgEpochs, 'Title', sprintf('Epoch:%d(%d)/%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs));
     else
-        set(handles.bg_trial, 'Title', sprintf('Epoch:%d(%d)/%d; Excluded:%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs, sum(handles.dataSet1.extrials(handles.operationSets{handles.operationSetNum,2}.procEpochs))));
+        set(handles.bgEpochs, 'Title', sprintf('Epoch:%d(%d)/%d; Excluded:%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs, sum(handles.dataSet1.extrials(handles.operationSets{handles.operationSetNum,2}.procEpochs))));
     end
 else
-    set(handles.bg_trial, 'Title', sprintf('Epoch:%d/%d; Excluded:%d', epochNum, totalEpochs, sum(handles.dataSet1.extrials)));
+    set(handles.bgEpochs, 'Title', sprintf('Epoch:%d/%d; Excluded:%d', epochNum, totalEpochs, sum(handles.dataSet1.extrials)));
 end
 
 % Set Visibility of next, previous buttons
@@ -590,7 +578,7 @@ else
     set(handles.pb_previous, 'Enable', 'On');
 end
 if totalEpochs == 1
-    set(handles.cb_discard, 'Visible', 'Off');
+    set(handles.cbDiscard, 'Visible', 'Off');
 end
 
 function [xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles)
@@ -601,7 +589,7 @@ datasize = size(viewData);
 if(length(datasize) == 2)
     yData = viewData(indices(1):indices(2),:);
 else
-    yData = viewData(indices(1):indices(2),:,handles.trialNum);
+    yData = viewData(indices(1):indices(2),:,handles.epochNum);
 end
 else
    xData = abscissa;
@@ -609,7 +597,7 @@ else
    if(length(datasize) == 2)
        yData = viewData(:,:);
    else
-       yData = viewData(:,:,handles.trialNum);
+       yData = viewData(:,:,handles.epochNum);
    end
 end
 
@@ -708,7 +696,7 @@ function cbApply_Callback(hObject, eventdata, handles)
 
 val = get(hObject, 'Value');
 handles.operationSets{handles.operationSetNum,3} = val;
-handles.trialNum = 1;
+handles.epochNum = 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -721,7 +709,7 @@ index = get(handles.lbOperations, 'Value');
 
 handles.operationSets{handles.operationSetNum,2}.rmOperation(index);
 handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-handles.trialNum = 1;
+handles.epochNum = 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -738,7 +726,7 @@ if(isempty(s))
 end
 if(handles.operationSets{handles.operationSetNum,2}.addOperation(s))
     handles.operationSets{handles.operationSetNum,3} = 1;
-    handles.trialNum = 1;
+    handles.epochNum = 1;
     guidata(hObject, handles);
     updateView(handles);
 end
@@ -755,7 +743,7 @@ function cbExcludeEpochs_Callback(hObject, eventdata, handles)
 val = get(hObject, 'Value');
 handles.operationSets{handles.operationSetNum,4} = val;
 handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-handles.trialNum = 1;
+handles.epochNum = 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -770,9 +758,9 @@ function pumOpsSet_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumOpsSet
 index = get(hObject,'Value');
 
-handles.operationSets{handles.operationSetNum,5} = handles.trialNum;
+handles.operationSets{handles.operationSetNum,5} = handles.epochNum;
 handles.operationSetNum = index;
-handles.trialNum = handles.operationSets{handles.operationSetNum,5};
+handles.epochNum = handles.operationSets{handles.operationSetNum,5};
 
 guidata(hObject, handles);
 updateView(handles);
@@ -1013,3 +1001,56 @@ function pumDataSet_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+function editNumGroups_Callback(hObject, eventdata, handles)
+% hObject    handle to editNumGroups (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editNumGroups as text
+%        str2double(get(hObject,'String')) returns contents of editNumGroups as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editNumGroups_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editNumGroups (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function editGroupNum_Callback(hObject, eventdata, handles)
+% hObject    handle to editGroupNum (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editGroupNum as text
+%        str2double(get(hObject,'String')) returns contents of editGroupNum as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editGroupNum_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editGroupNum (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pbSuperAddOpsSet.
+function pbSuperAddOpsSet_Callback(hObject, eventdata, handles)
+% hObject    handle to pbSuperAddOpsSet (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

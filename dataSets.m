@@ -41,6 +41,10 @@ properties (SetAccess = private)
             oSS = obj.oSuperSets{obj.dataSetNum};
         end
         
+        function [dataSet] = getDataSet(obj)
+            dataSet = obj.dSets{obj.dataSetNum};
+        end
+        
         function addDataSet(obj)
             obj.dSets{obj.dataSetNum} = eegData;
             obj.numDataSets = obj.numDataSets + 1;

@@ -286,8 +286,7 @@ classdef eegData < sstData
             plotData@sstData(dataSst);
         end
         
-        function updateTrialExStatus(obj, relativeEpochNum, status)
-            absoluteEpochNum = obj.absoluteEpochNum(relativeEpochNum);
+        function updateEpochExStatus(obj, absoluteEpochNum, status)
             obj.extrials(absoluteEpochNum) = status;
             
             D = load(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');

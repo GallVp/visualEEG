@@ -21,9 +21,11 @@ classdef operationSets < handle
     
     methods
         function [obj] = operationSets(data)
-            obj.numOperationSets = 0;
-            obj.operationSetNum = 0;
+            obj.numOperationSets = 1;
+            obj.operationSetNum = 1;
             obj.dataEeg = data;
+            obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
+            obj.names{obj.operationSetNum} = 'Set 1';
         end
     end
     
@@ -50,20 +52,14 @@ classdef operationSets < handle
         end
         
         function rmOpearionSet(obj)
-            obj.oSets{obj.operationSetNum} = [];
-            obj.names{obj.operationSetNum} = [];
-            obj.numOperationSets = obj.numOperationSets - 1;
-            switch(obj.numOperationSets)
-                case 0
-                    obj.operationSetNum = 0;
-                case 1
-                    obj.operationSetNum = 1;
-                otherwise
-                    if(obj.operationSetNum == 1)
-                        obj.operationSetNum = obj.operationSetNum + 1;
-                    else
-                        obj.operationSetNum = obj.operationSetNum - 1;
-                    end
+            if(obj.operationSetNum ~= 1)
+                obj.oSets{obj.operationSetNum} = [];
+                obj.names{obj.operationSetNum} = [];
+                obj.numOperationSets = obj.numOperationSets - 1;
+                obj.operationSetNum = obj.operationSetNum - 1;
+            else
+                ME = MException('operationSets:remove:defalutOpSet', 'Default operation set cannot be removed.');
+                throw(ME)
             end
         end
         
