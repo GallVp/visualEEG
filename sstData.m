@@ -46,25 +46,25 @@ classdef sstData < matlab.mixin.Copyable
             obj.abscissa = abscissa;
             obj.dataType = dataType;
             
-            obj.dataSize = size(selectedData);
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         function setChannelData(obj, selectedData, channelNums, channelNames)
             obj.selectedData = selectedData;
             obj.channelNums = channelNums;
             obj.channelNames = channelNames;
             
-            obj.dataSize = size(selectedData);
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         function setEpochData(obj, selectedData, epochNums)
             obj.selectedData = selectedData;
             obj.epochNums = epochNums;
             obj.currentEpochNum = epochNums(1);
             
-            obj.dataSize = size(selectedData);
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         function setSelectedData(obj, selectedData)
             obj.selectedData = selectedData;
-            obj.dataSize = size(selectedData);
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
     end
     methods (Access = public)
@@ -86,7 +86,10 @@ classdef sstData < matlab.mixin.Copyable
         function [answer] = isFirstEpoch(obj)
             answer = obj.currentEpochNum == 1;
         end
-        function [epochNum] = absoluteEpochNum(obj, relativeEpochNum)
+        function [epochNum] = getAbsoluteEpochNum(obj, relativeEpochNum)
+            if nargin < 2
+                relativeEpochNum = obj.currentEpochNum;
+            end
             try
                 epochNum = obj.epochNums(relativeEpochNum);
             catch ME
@@ -100,7 +103,6 @@ classdef sstData < matlab.mixin.Copyable
                 throw(ME)
             else
                 obj.currentEpochNum = obj.currentEpochNum + 1;
-                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
             end
         end
         function [obj] = previousEpoch(obj)
@@ -109,7 +111,6 @@ classdef sstData < matlab.mixin.Copyable
                 throw(ME)
             else
                 obj.currentEpochNum = obj.currentEpochNum - 1;
-                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
             end
         end
     end

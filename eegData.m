@@ -13,9 +13,9 @@ classdef eegData < sstData
     % LICENSE included with this distribution for more information.
     properties (SetAccess = private)
         folderName      % Name of anchor folder.
-        extrials        % Excluded trials; 0 means exclude
         epochTime       % Time of one epoch
         exEpochsOnOff   %Exclude epochs or not
+        extrials        % Excluded trials; 0 means exclude
     end
     properties (Access = private)
         ssNfo           % Subject and session info.
@@ -29,6 +29,7 @@ classdef eegData < sstData
         numChannels     % Total number of channels
         fileData         % Data loaded from file
         selectedEpochs  % A logical vector indicating selected epochs
+
     end
     events
         dataSelectionChanged
@@ -399,6 +400,23 @@ classdef eegData < sstData
                 throw(ME)
             end
         end
+        
+        function [SrNo] = getSessionSrNo(obj)
+            SrNo = find(ismember(obj.listSessions, obj.sessionNum));
+        end
+        
+        function [SrNo] = getSubjectSrNo(obj)
+            SrNo = find(ismember(obj.listSubjects, obj.subjectNum));
+        end
+        
+        function [status] = getEpochExStatus(obj, currentEpochNum)
+            if nargin < 2
+                status = obj.extrials(obj.getAbsoluteEpochNum(obj.currentEpochNum));
+            else
+                status = obj.extrials(obj.getAbsoluteEpochNum(currentEpochNum));
+            end
+        end
+        
         function excludeEpochs(obj, onOff)
             if(onOff ~= obj.exEpochsOnOff)
                 allEPochNums = 1:size(obj.fileData, 3);

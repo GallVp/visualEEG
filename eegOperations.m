@@ -1,4 +1,4 @@
-classdef eegOperations < handle
+classdef eegOperations < matlab.mixin.Copyable
     
     
     
@@ -23,44 +23,47 @@ classdef eegOperations < handle
     
     properties (Access = private)
         arguments       % Arguments for each operation
-        dataSet         % An object of class sstData.
+        dataSet         % An object of class sstData. Unapplied data.
         procData        % Processed data. An object of sstData class.
         numApldOps      % Number of applied operations.
         dataChangeName  % Name of change in source data.
         availOps        % Operations available
     end
     
+    methods(Access = protected)
+        % Override copyElement method:
+        function cpObj = copyElement(obj)
+            % Make a shallow copy of all four properties
+            cpObj = copyElement@matlab.mixin.Copyable(obj);
+            % Make a deep copy of the DeepCp object
+            cpObj.procData = copy(obj.procData);
+            cpObj.dataSet = copy(obj.dataSet);
+        end
+    end
     methods (Access = public)
         
         function [obj] = eegOperations(data)
-            % Make new copy of dataSet
             obj.dataSet = data.getSstData;
             
             % Default properties
             obj.numApldOps = 0;
             obj.availOps = eegOperations.ALL_OPERATIONS;
-            obj.procData = copy(obj.dataSet);
+            obj.procData = data.getSstData;
             addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
             
         end
         function handleDataSelectionChange(obj, src, eventData)
             obj.dataChangeName = eventData.changeName;
             obj.numApldOps = 0;
-            % Make new copy of dataSet
+            obj.procData = src.getSstData;
             obj.dataSet = src.getSstData;
+            applyAllOperations(obj);
         end
         function [returnData] = getProcData(obj, apply)
             if(nargin < 2)
                 apply = 1;
             end
             if(apply)
-                if (obj.numApldOps + 1 == length(obj.operations))
-                    applyLastOperation(obj);
-                else
-                    % Take a fresh copy of dataSet
-                    obj.procData = copy(obj.dataSet);
-                    applyAllOperations(obj);
-                end
                 returnData = obj.procData;
             else
                 returnData = obj.dataSet;
@@ -93,6 +96,7 @@ classdef eegOperations < handle
                     success = 1;
                 end
             end
+            applyAllOperations(obj);
         end
         function rmOperation (obj, index)                   % Here index refers to operations.
             % Operation clearup
@@ -107,6 +111,9 @@ classdef eegOperations < handle
             selection = selection ~= index;
             obj.operations = obj.operations(selection);
             obj.arguments = obj.arguments(selection);
+            
+            obj.procData = copy(obj.dataSet);
+            applyAllOperations(obj);
         end
     end
     
@@ -115,15 +122,10 @@ classdef eegOperations < handle
         function applyAllOperations(obj)
             
             numOperations = length(obj.operations);
-            for i=1:numOperations
+            for i=obj.numApldOps + 1 :numOperations
                 obj.applyOperation(obj.operations{i}, obj.arguments{i}, obj.procData);
             end
             obj.numApldOps = length(obj.operations);
-        end
-        function applyLastOperation(obj)
-            index = length(obj.operations);
-            obj.applyOperation(obj.operations{index}, obj.arguments{index}, obj.procData);
-            obj.numApldOps = obj.numApldOps + 1;
         end
         function [returnArgs] = askArgs(obj, index)
             switch eegOperations.ALL_OPERATIONS{index}

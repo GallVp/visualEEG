@@ -46,16 +46,16 @@ properties (SetAccess = private)
         end
         
         function addDataSet(obj)
-            obj.dSets{obj.dataSetNum} = eegData;
             obj.numDataSets = obj.numDataSets + 1;
             obj.dataSetNum = obj.numDataSets;
+            obj.dSets{obj.dataSetNum} = eegData;
             obj.oSuperSets{obj.dataSetNum} = operationSets(obj.dSets{obj.dataSetNum});
             
             % Getting dataset name
             str = obj.dSets{obj.dataSetNum}.folderName;
             expression = '\/';
             splitStr = regexp(str,expression,'split');
-            obj.names{obj.dataSetNum} = splitStr(length(splitStr));
+            obj.names{obj.dataSetNum} = splitStr{length(splitStr)};
         end
         
         function rmDataSet(obj)

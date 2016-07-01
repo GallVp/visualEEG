@@ -26,6 +26,7 @@ classdef operationSets < handle
             obj.dataEeg = data;
             obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
             obj.names{obj.operationSetNum} = 'Set 1';
+            obj.operationSetOptions{obj.operationSetNum, 1} = 0;
         end
     end
     
@@ -43,15 +44,49 @@ classdef operationSets < handle
             oSet = obj.oSets{obj.operationSetNum};
         end
         
-        function addOpearionSet(obj, name)
-            obj.numOperationSets = obj.numOperationSets + 1;
-            obj.operationSetNum = obj.numOperationSets;
-            obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
-            obj.names{obj.operationSetNum} = name;
-            obj.operationSetOptions{obj.operationSetNum, 1} = 1;
+        function [success] = addOperationSet(obj)
+            prompt = {'Enter operation set name:'};
+            dlg_title = 'Name';
+            num_lines = 1;
+            defaultans = {''};
+            answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+            if(~isempty(answer))
+                name  = answer{1};
+                
+                obj.numOperationSets = obj.numOperationSets + 1;
+                obj.operationSetNum = obj.numOperationSets;
+                obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
+                obj.names{obj.operationSetNum} = name;
+                obj.operationSetOptions{obj.operationSetNum, 1} = 0;
+                
+                success = 1;
+            else
+                success = 0;
+            end
         end
         
-        function rmOpearionSet(obj)
+        function [success] = superAddOperationSet(obj)
+            prompt = {'Enter operation set name:'};
+            dlg_title = 'Name';
+            num_lines = 1;
+            defaultans = {''};
+            answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+            if(~isempty(answer))
+                name  = answer{1};
+                
+                obj.numOperationSets = obj.numOperationSets + 1;
+                obj.operationSetNum = obj.numOperationSets;
+                obj.oSets{obj.operationSetNum} = copy(obj.oSets{obj.operationSetNum - 1});
+                obj.names{obj.operationSetNum} = name;
+                obj.operationSetOptions{obj.operationSetNum, 1} = 0;
+                
+                success = 1;
+            else
+                success = 0;
+            end
+        end
+        
+        function rmOperationSet(obj)
             if(obj.operationSetNum ~= 1)
                 obj.oSets{obj.operationSetNum} = [];
                 obj.names{obj.operationSetNum} = [];

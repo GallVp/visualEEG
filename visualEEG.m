@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 30-Jun-2016 14:31:48
+% Last Modified by GUIDE v2.5 01-Jul-2016 12:26:02
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -99,23 +99,23 @@ function varargout = visualEEG_OutputFcn(~, ~, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in pb_previous.
-function pb_previous_Callback(hObject, ~, handles)
-% hObject    handle to pb_previous (see GCBO)
+% --- Executes on button press in pbPrevious.
+function pbPrevious_Callback(hObject, ~, handles)
+% hObject    handle to pbPrevious (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.dSets.getOperationSuperSet.getOperationSet.getProcData.previousEpoch;
+handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied).previousEpoch;
 guidata(hObject, handles);
 updateView(handles);
 
 
-% --- Executes on button press in pb_next.
-function pb_next_Callback(hObject, ~, handles)
-% hObject    handle to pb_next (see GCBO)
+% --- Executes on button press in pbNext.
+function pbNext_Callback(hObject, ~, handles)
+% hObject    handle to pbNext (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.epochNum = handles.epochNum + 1;
+handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied).nextEpoch;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -130,14 +130,9 @@ function pumSubject_Callback(hObject, ~, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumSubject
 index = get(hObject,'Value');
 lst = handles.dSets.getDataSet.listSubjects;
-handles.subjectNum = lst(index);
+subjectNum = lst(index);
 
-lst = handles.dSets.getDataSet.listSessions(handles.subjectNum);
-set(handles.pumSession, 'String', num2str(lst));
-set(handles.pumSession, 'Value', 1);
-handles.sessionNum = lst(1);
-
-handles.dSets.getDataSet.selectSub(handles.subjectNum);
+handles.dSets.getDataSet.selectSub(subjectNum);
 guidata(hObject, handles);
 updateView(handles);
 
@@ -152,9 +147,9 @@ function pumSession_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumSession
 index = get(hObject,'Value');
 lst = handles.dSets.getDataSet.listSessions;
-handles.sessionNum = lst(index);
+sessionNum = lst(index);
 
-handles.dSets.getDataSet.selectSess(handles.sessionNum);
+handles.dSets.getDataSet.selectSess(sessionNum);
 guidata(hObject, handles);
 updateView(handles);
 
@@ -195,13 +190,12 @@ intvl1 = str2double(val);
 
 if(~isnan(intvl1))
     try
-        handles.dSets.getDataSet.selectInterval([intvl1 handles.intvl2]);
-        handles.intvl1 = intvl1;
+        handles.dSets.getDataSet.selectInterval([intvl1 handles.dSets.getDataSet.interval(2)]);
         guidata(hObject, handles);
         updateView(handles);
     catch ME
         errordlg(ME.message,'Interval selection', 'modal');
-        set(hObject,'String', num2str(handles.intvl1));
+        set(hObject,'String', num2str(handles.dSets.getDataSet.interval(1)));
     end
 end
 
@@ -230,13 +224,12 @@ intvl2 = str2double(val);
 
 if(~isnan(intvl2))
     try
-        handles.dSets.getDataSet.selectInterval([handle.intvl1 intvl2]);
-        handles.intvl1 = intvl2;
+        handles.dSets.getDataSet.selectInterval([handles.dSets.getDataSet.interval(1) intvl2]);
         guidata(hObject, handles);
         updateView(handles);
     catch ME
         errordlg(ME.message,'Interval selection', 'modal');
-        set(hObject,'String', num2str(handles.intvl2));
+        set(hObject,'String', num2str(handles.dSets.getDataSet.interval(2)));
     end
 end
 
@@ -264,12 +257,11 @@ function cbDiscard_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of cbDiscard
 
 val = get(hObject,'Value');
-if handles.operationSets{handles.operationSetNum,3} % If apply is off the data comes directly from eegdata class.
-    handles.dataSet1.updateTrialExStatus(handles.operationSets{handles.operationSetNum,2}.procEpochs(handles.epochNum), val);
-else
-    handles.dataSet1.updateTrialExStatus(handles.epochNum, val);
-end
+absoluteEpochNum = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(...
+    handles.dSets.getOperationSuperSet.isApplied).getAbsoluteEpochNum;
+handles.dSets.getDataSet.updateEpochExStatus(absoluteEpochNum, ~val);
 guidata(hObject, handles);
+updateView(handles);
 
 
 % --------------------------------------------------------------------
@@ -297,100 +289,30 @@ function menuImport_Callback(hObject, eventdata, handles)
 % hObject    handle to menuImport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-dataOut = importOptionsDlg;
-if ~isempty(dataOut)
-    folderName = uigetdir;
-    if folderName ~=0
-        handles.folderName = folderName;
-        % Initilize a data class and a operations class
-        handles.dataSet1 = eegData;
-        %Set Operations Set Info {Name, eegOperations obj, apply, excludeEpochs, trialNum}
-        handles.operationSets = {'Set 1', eegOperations, 0, 0, 1};
-        handles.operationSetNum = 1;
-        handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
-        try
-            handles.dataSet1.anchorFolder(folderName, dataOut.sampleRate, dataOut.importMethod,...
-                dataOut.trialTime, dataOut.beforeIndex, dataOut.afterIndex, dataOut.dvName, dataOut.dvOrient, dataOut.evName);
-        catch ME
-            if (strcmp(ME.identifier,'eegData:load:noFileFound'))
-                 errordlg('Folder does not contain any valid data file(s).','Import Data', 'modal');
-                 return
-            elseif(strcmp(ME.identifier,'MATLAB:nonExistentField'))
-                disp(ME);
-                disp('Probable cause: Incorrect variable name used.')
-            else
-                disp(ME);
-                disp('Probable cause: Unknown.')
-            end
-        end
-        
-        %Set operations box
-        set(handles.lbOperations, 'String', '');
-        set(handles.lbOperations, 'Value', 1);
-        
-        
-        %Startup data selection
-        lst = handles.dataSet1.listSessions;
-        handles.sessionNum = lst(1);
-        set(handles.pumSession, 'String', num2str(handles.dataSet1.listSessions));
-        set(handles.pumSession, 'Value', 1);
-        
-        lst = handles.dataSet1.listSubjects;
-        handles.subjectNum = lst(1);
-        set(handles.pumSubject, 'String', num2str(handles.dataSet1.listSubjects));
-        set(handles.pumSubject, 'Value', 1);
-        
-        handles.epochNum = 1;
-        
-        lst = handles.dataSet1.listChannels;
-        handles.channels = lst(1);
-        set(handles.editChannels, 'String', num2str(lst(1)));
-        
-        handles.intvl1 = 0;
-        set(handles.editIntvl1, 'String', num2str(handles.intvl1));
-        handles.intvl2 = handles.dataSet1.epochTime;
-        set(handles.editIntvl2, 'String', num2str(handles.intvl2));
-        
+try
+handles.dSets.addDataSet;
+%Set operations box
 
-        set(handles.cbApply, 'Value', 0);
-        set(handles.cbApply, 'Enable', 'Off');
-        set(handles.cbExcludeEpochs, 'Value', 0);
-        set(handles.cbExcludeEpochs, 'Enable', 'Off');
-        
-        handles.showLegend = 0;
-        legend off;
-        set(handles.toolShowLegend, 'State', 'Off');
-        
-        handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2],...
-            handles.operationSets{handles.operationSetNum,4});
-        
-        %enable most controls
-        set(handles.bgEpochs, 'Visible', 'On');
-        set(handles.upData, 'Visible', 'On');
-        set(handles.upOperations, 'Visible', 'On');
-        
-        set(handles.menuExport, 'Enable', 'On');
-        
-        set(handles.saveFigure, 'Enable', 'On');
-        
-        set(handles.menuTools, 'Enable', 'On');
-        set(handles.toolShowLegend, 'Enable', 'On');
-        
-        set(handles.menuInsert, 'Enable', 'On');
-        
-        set(handles.menuView, 'Enable', 'On');
-        
-        % Cue initilization
-        set(handles.menuStaticCue, 'Checked', 'Off');
-        set(handles.menuDynamicCue, 'Checked', 'Off');
-        handles.staticCue = 0;
-        handles.dynamicCue = 0;
-        handles.cueTime = 0;
-        handles.cues = {};
-        
-        guidata(hObject, handles);
-        updateView(handles);
-    end
+handles.showLegend = 0;
+legend off;
+set(handles.toolShowLegend, 'State', 'Off');
+
+%enable most controls
+set(handles.bgEpochs, 'Visible', 'On');
+set(handles.upData, 'Visible', 'On');
+set(handles.upOperations, 'Visible', 'On');
+set(handles.menuExport, 'Enable', 'On');
+set(handles.saveFigure, 'Enable', 'On');
+set(handles.menuTools, 'Enable', 'On');
+set(handles.toolShowLegend, 'Enable', 'On');
+set(handles.menuInsert, 'Enable', 'On');
+set(handles.menuView, 'Enable', 'On');
+
+guidata(hObject, handles);
+updateView(handles);
+catch ME
+    errordlg(ME.message,'Data import', 'modal');
+    disp(ME);
 end
 
 % --------------------------------------------------------------------
@@ -406,7 +328,7 @@ else
         case 2%Selected trial
         case 3%Selected session
             if(saveOptions.('doPreprocess') == 1)
-                [mydata, ~, ~] = handles.operationSets{1,2}.getProcData;
+                [mydata, ~, ~] = handles.operationSets{1,2}.getProcData(handles.dSets.getOperationSuperSet.isApplied);
             else
                 mydata = handles.dataSet1.sstData;
             end
@@ -464,145 +386,116 @@ close(H);
 % ---Update View function
 function updateView(handles)
 
+data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+
 % Update the operations list
-set(handles.lbOperations, 'String', handles.operationSets{handles.operationSetNum,2}.operations);
-set(handles.lbOperations, 'Value', length(handles.operationSets{handles.operationSetNum,2}.operations));
+set(handles.lbOperations, 'String', handles.dSets.getOperationSuperSet.getOperationSet.operations);
+set(handles.lbOperations, 'Value', length(handles.dSets.getOperationSuperSet.getOperationSet.operations));
 
 % Update Operation Sets list
-set(handles.pumOpsSet, 'String', handles.operationSets(:,1));
-set(handles.pumOpsSet, 'Value', handles.operationSetNum);
+set(handles.pumOpsSet, 'String', handles.dSets.getOperationSuperSet.names);
+set(handles.pumOpsSet, 'Value', handles.dSets.getOperationSuperSet.operationSetNum);
 
-%Update enable and checked property of apply and Exclude epochs option
-if isempty(handles.operationSets{handles.operationSetNum,2}.operations)
+%Update data selection
+set(handles.pumDataSet, 'String', handles.dSets.names);
+set(handles.pumDataSet, 'Value', handles.dSets.dataSetNum);
+
+set(handles.pumSession, 'String', num2str(handles.dSets.getDataSet.listSessions));
+set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
+
+set(handles.pumSubject, 'String', num2str(handles.dSets.getDataSet.listSubjects));
+set(handles.pumSubject, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
+
+set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listAllChannelNames));
+
+set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
+set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
+
+set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
+
+%Update enable and checked property of apply
+if isempty(handles.dSets.getOperationSuperSet.getOperationSet.operations)
     set(handles.cbApply, 'Enable', 'Off');
-    handles.operationSets{handles.operationSetNum,3} = 0;
+    set(handles.pbRemoveOperation, 'Enable', 'Off');
     set(handles.cbApply, 'Value', 0);
 else
     set(handles.cbApply, 'Enable', 'On');
-    set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
+    set(handles.pbRemoveOperation, 'Enable', 'On');
+    set(handles.cbApply, 'Value', handles.dSets.getOperationSuperSet.isApplied);
 end
 
-if(handles.operationSets{handles.operationSetNum,3})
-    set(handles.cbExcludeEpochs, 'Enable', 'On');
-else
-    set(handles.cbExcludeEpochs, 'Enable', 'Off');
-end
-
-%Update Axis data based on state of apply option
-if handles.operationSets{handles.operationSetNum,3}
-    [viewData, abscissa, dataDomain] = handles.operationSets{handles.operationSetNum,2}.getProcData;
-else
-    viewData = handles.dataSet1.sstData(:,handles.channels,:);
-    abscissa = 0:1/handles.dataSet1.dataRate:handles.dataSet1.epochTime;
-    dataDomain = {'Time'};
-end
 
 %Update plot
-[xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles);
-if(strcmp(dataDomain, {'Time'}))
-    plot(xData, yData)
+if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
+    plot(data.abscissa, data.getEpoch)
 else
-    stem(xData, yData)
+    stem(data.abscissa, data.getEpoch)
 end
 
 
-if(handles.staticCue)
-    hold on
-    a = axis;
-    line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
-    axis(a);
-    hold off
-end
-if(handles.dynamicCue)
-    hold on
-    a = axis;
-    ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
-    try
-        cueTime = ext(handles.epochNum);
-        line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)], 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
-    catch ME
-        disp(ME)
-        disp('Probable cause: Dynamic cues not available for selected subject/session.')
-    end
-    axis(a);
-    hold off
-end
+% if(handles.staticCue)
+%     hold on
+%     a = axis;
+%     line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
+%     axis(a);
+%     hold off
+% end
+% if(handles.dynamicCue)
+%     hold on
+%     a = axis;
+%     ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
+%     try
+%         cueTime = ext(handles.epochNum);
+%         line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)],...
+% 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
+%     catch ME
+%         disp(ME)
+%         disp('Probable cause: Dynamic cues not available for selected subject/session.')
+%     end
+%     axis(a);
+%     hold off
+% end
 
 
 %Update Legend
-if(handles.showLegend)
-    channelNames = handles.dataSet1.listChannelNames;
-    channelNames = channelNames(handles.channels,:);
-    legend(channelNames);
-else
-    legend off
-end
+% if(handles.showLegend)
+%     channelNames = handles.dataSet1.listChannelNames;
+%     channelNames = channelNames(handles.channels,:);
+%     legend(channelNames);
+% else
+%     legend off
+% end
 
 %Update trial number to be displayed
-totalEpochs = size(viewData, 3);
-if(totalEpochs == 1)
-    epochNum = 1;
+% totalEpochs = size(viewData, 3);
+% if(totalEpochs == 1)
+%     epochNum = 1;
+% else
+%     epochNum = handles.epochNum;
+% end
+
+
+
+%Show epoch info
+
+set(handles.bgEpochs, 'Title', sprintf('Epoch:%d (%d)/%d; Excluded:%d', data.getAbsoluteEpochNum(data.currentEpochNum),...
+    data.currentEpochNum, data.dataSize(3), '0'));
+
+% Set Visibility of next, previous buttons
+if data.isLastEpoch
+    set(handles.pbNext, 'Enable', 'Off');
 else
-    epochNum = handles.epochNum;
+    set(handles.pbNext, 'Enable', 'On');
+end
+if data.isFirstEpoch
+    set(handles.pbPrevious, 'Enable', 'Off');
+else
+    set(handles.pbPrevious, 'Enable', 'On');
 end
 
 %update visibility of discard checkbox
-if handles.operationSets{handles.operationSetNum,4} && handles.operationSets{handles.operationSetNum,3}
-    set(handles.cbDiscard, 'Visible', 'Off');
-    
-else
-    set(handles.cbDiscard, 'Visible', 'On');
-    set(handles.cbDiscard, 'Value', handles.dataSet1.extrials(1, epochNum));
-end
+set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
 
-%Show epoch info
-if handles.operationSets{handles.operationSetNum,3}
-    if handles.operationSets{handles.operationSetNum,4}
-        set(handles.bgEpochs, 'Title', sprintf('Epoch:%d(%d)/%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs));
-    else
-        set(handles.bgEpochs, 'Title', sprintf('Epoch:%d(%d)/%d; Excluded:%d', epochNum, handles.operationSets{handles.operationSetNum,2}.procEpochs(epochNum), totalEpochs, sum(handles.dataSet1.extrials(handles.operationSets{handles.operationSetNum,2}.procEpochs))));
-    end
-else
-    set(handles.bgEpochs, 'Title', sprintf('Epoch:%d/%d; Excluded:%d', epochNum, totalEpochs, sum(handles.dataSet1.extrials)));
-end
-
-% Set Visibility of next, previous buttons
-if epochNum == totalEpochs
-    set(handles.pb_next, 'Enable', 'Off');
-else
-    set(handles.pb_next, 'Enable', 'On');
-end
-if epochNum == 1
-    set(handles.pb_previous, 'Enable', 'Off');
-else
-    set(handles.pb_previous, 'Enable', 'On');
-end
-if totalEpochs == 1
-    set(handles.cbDiscard, 'Visible', 'Off');
-end
-
-function [xData, yData] = computePlotData(viewData, abscissa, dataDomain, handles)
-indices = computeIndices(handles);
-if(strcmp(dataDomain, {'Time'}))
-xData = abscissa(indices(1):indices(2));
-datasize = size(viewData);
-if(length(datasize) == 2)
-    yData = viewData(indices(1):indices(2),:);
-else
-    yData = viewData(indices(1):indices(2),:,handles.epochNum);
-end
-else
-   xData = abscissa;
-   datasize = size(viewData);
-   if(length(datasize) == 2)
-       yData = viewData(:,:);
-   else
-       yData = viewData(:,:,handles.epochNum);
-   end
-end
-
-function [indices] = computeIndices(handles)
-indices = [handles.intvl1+1/handles.dataSet1.dataRate handles.intvl2] .* handles.dataSet1.dataRate;
 
 function editChannels_Callback(hObject, eventdata, handles)
 % hObject    handle to editChannels (see GCBO)
@@ -611,20 +504,28 @@ function editChannels_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of editChannels as text
 %        str2double(get(hObject,'String')) returns contents of editChannels as a double
-val = get(hObject,'String');
-channels = str2num(val);
-
-if(~isnan(channels))
-    lia = ismember(channels, handles.dataSet1.listChannels);
+channels = get(hObject,'String');
+channelNames = strsplit(channels);
+channelNums = str2num(channels);
+if(~isnan(channelNums))
+    lia = ismember(channelNums, handles.dSets.getDataSet.listAllChannelNums);
     if(sum(lia) == length(lia))
-        handles.channels = channels;
-        for i = 1:size(handles.operationSets, 1)
-            handles.operationSets{i,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-        end
+        handles.dSets.getDataSet.selectChannels(channelNums);
         guidata(hObject, handles);
         updateView(handles);
     else
         errordlg('Wrong channel(s) selected.','Channel selection', 'modal');
+        set(hObject,'String', num2str(handles.dSets.getDataSet.channelNums));
+    end
+else
+    lia = ismember(channelNames, handles.dSets.getDataSet.listAllChannelNames);
+    if(sum(lia) == length(lia))
+        handles.dSets.getDataSet.selectChannelsByName(channelNames);
+        guidata(hObject, handles);
+        updateView(handles);
+    else
+        errordlg('Wrong channel(s) selected.','Channel selection', 'modal');
+        set(hObject,'String', strjoin(handles.dSets.getDataSet.listChannelNames));
     end
 end
 
@@ -647,17 +548,13 @@ function pbSelectChannels_Callback(hObject, eventdata, handles)
 % hObject    handle to pbSelectChannels (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-channelsInfo = {num2str(handles.dataSet1.listChannels), handles.dataSet1.listChannelNames};
+chanNames = handles.dSets.getDataSet.listAllChannelNames;
 [channels,~] = listdlg('PromptString','Select channels:',...
-                'ListString',channelsInfo{1,2});
+                'ListString', chanNames);
 if(~isempty(channels))
-    
-    channelNames = channelsInfo{1,2}(channels,:);
-    handles.channels = channels;
-    for i = 1:size(handles.operationSets, 1)
-        handles.operationSets{i,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-    end
-    set(handles.editChannels,'String', sprintf('%s ', channelNames{:}));
+    channelNames = chanNames(channels,:);
+    handles.dSets.getDataSet.selectChannelsByName(channelNames);
+    set(handles.editChannels,'String', strjoin(channelNames));
     guidata(hObject, handles);
     updateView(handles);
 end
@@ -695,8 +592,7 @@ function cbApply_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of cbApply
 
 val = get(hObject, 'Value');
-handles.operationSets{handles.operationSetNum,3} = val;
-handles.epochNum = 1;
+handles.dSets.getOperationSuperSet.setApplied(val);
 guidata(hObject, handles);
 updateView(handles);
 
@@ -707,9 +603,7 @@ function pbRemoveOperation_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 index = get(handles.lbOperations, 'Value');
 
-handles.operationSets{handles.operationSetNum,2}.rmOperation(index);
-handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-handles.epochNum = 1;
+handles.dSets.getOperationSuperSet.getOperationSet.rmOperation(index);
 guidata(hObject, handles);
 updateView(handles);
 
@@ -719,17 +613,10 @@ function pbAddOperation_Callback(hObject, eventdata, handles)
 % hObject    handle to pbAddOperation (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[s,~] = listdlg('PromptString','Select a operation:', 'SelectionMode','single', 'ListString', ...
-    handles.operationSets{handles.operationSetNum,2}.availOps);
-if(isempty(s))
-    return
-end
-if(handles.operationSets{handles.operationSetNum,2}.addOperation(s))
-    handles.operationSets{handles.operationSetNum,3} = 1;
-    handles.epochNum = 1;
-    guidata(hObject, handles);
-    updateView(handles);
-end
+handles.dSets.getOperationSuperSet.getOperationSet.addOperation;
+handles.dSets.getOperationSuperSet.setApplied(1);
+guidata(hObject, handles);
+updateView(handles);
 
 
 % --- Executes on button press in cbExcludeEpochs.
@@ -741,9 +628,7 @@ function cbExcludeEpochs_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of cbExcludeEpochs
 
 val = get(hObject, 'Value');
-handles.operationSets{handles.operationSetNum,4} = val;
-handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-handles.epochNum = 1;
+handles.dSets.getDataSet.excludeEpochs(val);
 guidata(hObject, handles);
 updateView(handles);
 
@@ -758,9 +643,7 @@ function pumOpsSet_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumOpsSet
 index = get(hObject,'Value');
 
-handles.operationSets{handles.operationSetNum,5} = handles.epochNum;
-handles.operationSetNum = index;
-handles.epochNum = handles.operationSets{handles.operationSetNum,5};
+handles.dSets.getOperationSuperSet.selectOperationSet(index);
 
 guidata(hObject, handles);
 updateView(handles);
@@ -784,25 +667,8 @@ function pbAddOpsSet_Callback(hObject, eventdata, handles)
 % hObject    handle to pbAddOpsSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-prompt = {'Enter operation set name:'};
-dlg_title = 'Name';
-num_lines = 1;
-defaultans = {''};
-answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
-if(~isempty(answer))
-    handles.operationSetNum = size(handles.operationSets, 1) + 1;
-    handles.operationSets(handles.operationSetNum, :) = {answer{1}, eegOperations, 0, 0, 1};
+if(handles.dSets.getOperationSuperSet.addOperationSet)
     % Update operations controls
-    set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
-    set(handles.cbExcludeEpochs, 'Value', handles.operationSets{handles.operationSetNum,4});
-    set(handles.cbApply, 'Enable', 'Off');
-    set(handles.cbExcludeEpochs, 'Enable', 'Off');
-    % Update opsSet List
-    set(handles.pumOpsSet, 'String', handles.operationSets(:,1));
-    set(handles.pumOpsSet, 'Value', handles.operationSetNum);
-    handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
-    handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-
     guidata(hObject, handles);
     updateView(handles);
 end
@@ -813,22 +679,12 @@ function pbRemoveOpsSet_Callback(hObject, eventdata, handles)
 % hObject    handle to pbRemoveOpsSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if(handles.operationSetNum == 1)
-    errordlg('Default operation set can not be deleted.','Operation Set Error', 'modal');
-else
-    handles.operationSets(handles.operationSetNum, :) = [];
-    handles.operationSetNum = 1;
-    % Update operations controls
-    set(handles.cbApply, 'Value', handles.operationSets{handles.operationSetNum,3});
-    set(handles.cbExcludeEpochs, 'Value', handles.operationSets{handles.operationSetNum,4});
-    % Update opsSet List
-    set(handles.pumOpsSet, 'String', handles.operationSets(:,1));
-    set(handles.pumOpsSet, 'Value', handles.operationSetNum);
-    handles.operationSets{handles.operationSetNum,2}.attachDataSet(handles.dataSet1);
-    handles.operationSets{handles.operationSetNum,2}.updateDataInfo(handles.channels,[handles.intvl1 handles.intvl2], handles.operationSets{handles.operationSetNum,4});
-
+try
+    handles.dSets.getOperationSuperSet.rmOperationSet;
     guidata(hObject, handles);
     updateView(handles);
+catch ME
+    errordlg(ME.message,'Cue insertion', 'modal');
 end
 
 
@@ -988,6 +844,10 @@ function pumDataSet_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns pumDataSet contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from pumDataSet
+index = get(hObject,'Value');
+handles.dSets.selectDataSet(index);
+guidata(hObject, handles);
+updateView(handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -1054,3 +914,8 @@ function pbSuperAddOpsSet_Callback(hObject, eventdata, handles)
 % hObject    handle to pbSuperAddOpsSet (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if(handles.dSets.getOperationSuperSet.superAddOperationSet)
+    % Update operations controls
+    guidata(hObject, handles);
+    updateView(handles);
+end
