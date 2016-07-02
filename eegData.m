@@ -42,10 +42,12 @@ classdef eegData < sstData
         function data = getSstData(obj)
             data = sstData;
             currentEpochNum = 1;
+            sz = obj.getFileDataSize;
+            numExcludedEpochs = sz(3) - sum(obj.selectedEpochs & obj.extrials);
             abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
             dataType = sstData.DATA_TYPE_TIME_SERIES;
-            data.setData(obj.selectedData, obj.subjectNum, obj.sessionNum, obj.dataRate, obj.channelNums, obj.listChannelNames, obj.interval,...
-                obj.epochNums, currentEpochNum, abscissa, dataType)
+            data.setData(obj.selectedData, obj.subjectNum, obj.sessionNum, obj.dataRate, obj.channelNums, obj.listChannelNames, obj.interval, ...
+                obj.epochNums, currentEpochNum, abscissa, dataType, numExcludedEpochs);
         end
     end
     properties(Constant)

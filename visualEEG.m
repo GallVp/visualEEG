@@ -286,6 +286,7 @@ function menuImport_Callback(hObject, eventdata, handles)
 % hObject    handle to menuImport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 try
 handles.dSets.addDataSet;
 %Set operations box
@@ -301,9 +302,7 @@ set(handles.upData, 'Visible', 'On');
 set(handles.upOperations, 'Visible', 'On');
 set(handles.menuExport, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
-set(handles.menuTools, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
-set(handles.menuInsert, 'Enable', 'On');
 set(handles.menuView, 'Enable', 'On');
 
 guidata(hObject, handles);
@@ -433,7 +432,7 @@ if(isempty(dispEpoch))
     axis([0 1 0 1]);
     text(0.38,0.5, 'No epochs available.');
 else
-    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
+    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES) || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_TIME_SERIES))
         plot(data.abscissa, dispEpoch)
     else
         stem(data.abscissa, dispEpoch)
@@ -482,10 +481,9 @@ end
 
 
 %Show epoch info
-filDataSize = handles.dSets.getDataSet.getFileDataSize;
 
 set(handles.bgEpochs, 'Title', sprintf('Epoch:%d (%d)/%d; Excluded:%d', data.getAbsoluteEpochNum(data.currentEpochNum),...
-    data.currentEpochNum, data.dataSize(3), filDataSize(3) - data.dataSize(3)));
+    data.currentEpochNum, data.dataSize(3), data.numExcludedEpochs));
 
 % Set Visibility of next, previous buttons
 if data.isLastEpoch
@@ -500,11 +498,12 @@ else
 end
 
 %update visibility of discard checkbox
-if(data.currentEpochNum ~= 0)
+if(data.currentEpochNum == 0 || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_FREQUENCY_SERIES)...
+        || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_TIME_SERIES))
+    set(handles.cbDiscard, 'Enable', 'Off');
+else
     set(handles.cbDiscard, 'Enable', 'On');
     set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
-else
-    set(handles.cbDiscard, 'Enable', 'Off');
 end
 
 

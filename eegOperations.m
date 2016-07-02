@@ -28,6 +28,9 @@ classdef eegOperations < matlab.mixin.Copyable
         numApldOps      % Number of applied operations.
         dataChangeName  % Name of change in source data.
         availOps        % Operations available
+        storedArgs      % A structure with stored volatile args.
+                        % Volatile args are the one which are asked during
+                        % application of operation
     end
     
     methods(Access = protected)
@@ -50,6 +53,7 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.availOps = eegOperations.ALL_OPERATIONS;
             obj.procData = data.getSstData;
             addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
+            obj.storedArgs.('sLCentre') = [];
             
         end
         function handleDataSelectionChange(obj, src, eventData)
@@ -113,6 +117,7 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.arguments = obj.arguments(selection);
             
             obj.procData = copy(obj.dataSet);
+            obj.numApldOps = 0;
             applyAllOperations(obj);
         end
     end
@@ -157,7 +162,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     % args{1} should be the data rate.
                 case eegOperations.ALL_OPERATIONS{7}
                     returnArgs = {'N.R.'};
-                    obj.chanChange = 1;
+                    obj.storedArgs.('sLCentre') = [];
                     % chanChange is introduced here to ensure that when
                     % this operation is added after removal, it asks for
                     % argument during operation execution.
@@ -165,7 +170,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     % opertion.
                 case eegOperations.ALL_OPERATIONS{8}
                     returnArgs = {'N.R.'};
-                    obj.chanChange = 1;
+                    obj.storedArgs.('sLCentre') = [];
                     % chanChange is introduced here to ensure that when
                     % this operation is added after removal, it asks for
                     % argument during operation execution.
@@ -269,8 +274,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setChannelData(mean(processingData.selectedData, 2), channelNums, channelName);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{2}
-                    epochNums = 1;
-                    obj.procData.setEpochData(mean(processingData.selectedData, 3), epochNums);
+                    obj.procData.setGrandData(mean(processingData.selectedData, 3), processingData.dataType);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{3}
                     [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
@@ -278,42 +282,44 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setSelectedData(eegOperations.shapeSst(P, nT));
                     % args{1} should be 'linear' or 'constant'
                 case eegOperations.ALL_OPERATIONS{4}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    obj.procData = normc(P);
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    P = normc(P);
+                    obj.procData.setSelectedData(eegOperations.shapeSst(P, nT));
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{5}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
                     % Padding 64 samples
                     P = [P(1:64,:);P];
-                    obj.procData = filter(args{1}, P);
-                    obj.procData = obj.procData(65:end,:);
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    P = filter(args{1}, P);
+                    P = P(65:end,:);
+                    P = eegOperations.shapeSst(P, nT);
+                    obj.procData.setSelectedData(P);
                     % args{1} should be a filter object obtained from designfilter.
                 case eegOperations.ALL_OPERATIONS{6}
-                    indices = obj.dataSet.getSelectedIndices;
-                    processingData = processingData(indices, :,:);
-                    [m, n, o] = size(processingData);
-                    obj.procData = zeros(floor(m/2) + 1, n, o);
+                    P = processingData.selectedData;
+                    [m, n, o] = size(P);
+                    proc = zeros(floor(m/2) + 1, n, o);
                     for i=1:o
-                        [obj.procData(:,:,i), f] = computeFFT(processingData(:,:,i), args{1});
+                        [proc(:,:,i), f] = computeFFT(P(:,:,i), args{1});
                     end
-                    obj.abscissa = f;
-                    obj.dataDomain = {'Frequency'};
+                    obj.procData.setFrequencyData(proc, f, processingData.dataType);
                     % args{1} should be the data rate.
                 case eegOperations.ALL_OPERATIONS{7}
-                    if(obj.chanChange)
-                        options = cellstr(num2str(obj.channels'))';
+                    
+                    if(strcmp(obj.dataChangeName, eegData.EVENT_NAME_CHANNELS_CHANGED) || isempty(obj.storedArgs.('sLCentre')))
+                        options = processingData.channelNames;
                         [s,~] = listdlg('PromptString','Select centre:', 'SelectionMode','single',...
                             'ListString', options);
-                        centre = str2double(options(s));
-                        obj.sLCentre = centre;
+                        centre = processingData.channelNums(s);
+                        obj.storedArgs.('sLCentre') = centre;
                     else
-                        centre = obj.sLCentre;
+                        centre = obj.storedArgs.('sLCentre');
                     end
-                    filterCoffs = -1 .* ones(length(obj.channels), 1) ./ (length(obj.channels) - 1);
+                    filterCoffs = -1 .* ones(processingData.dataSize(2), 1) ./ ((processingData.dataSize(2)) - 1);
                     filterCoffs(centre) = 1;
-                    obj.procData = spatialFilterSstData(processingData, filterCoffs);
+                    channelName = sprintf('Surrogate of %s',processingData.channelNames{centre});
+                    channelNums = 1;
+                    obj.procData.setChannelData(spatialFilterSstData(processingData.selectedData, filterCoffs), channelNums, channelName);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{8}
                     [P, nT] = eegOperations.shapeProcessing(processingData);
