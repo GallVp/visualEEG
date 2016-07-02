@@ -46,9 +46,10 @@ properties (SetAccess = private)
         end
         
         function addDataSet(obj)
+            data = eegData;
             obj.numDataSets = obj.numDataSets + 1;
             obj.dataSetNum = obj.numDataSets;
-            obj.dSets{obj.dataSetNum} = eegData;
+            obj.dSets{obj.dataSetNum} = data;
             obj.oSuperSets{obj.dataSetNum} = operationSets(obj.dSets{obj.dataSetNum});
             
             % Getting dataset name

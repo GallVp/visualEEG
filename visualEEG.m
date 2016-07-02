@@ -69,15 +69,12 @@ set(handles.bgEpochs, 'Visible', 'Off');
 set(handles.upData, 'Visible', 'Off');
 set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menuExport, 'Enable', 'Off');
-set(handles.menuTools, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
-set(handles.menuInsert, 'Enable', 'Off');
-set(handles.menuStaticCue, 'Checked', 'Off');
 set(handles.menuView, 'Enable', 'Off');
 
 % Plot instructions
-text(0.38,0.5, 'Go to File->Import data');
+text(0.37,0.5, 'Go to File->Import dataset');
 
 % Add a dataSets class to the GUI
 handles.dSets = dataSets;
@@ -293,6 +290,7 @@ try
 handles.dSets.addDataSet;
 %Set operations box
 
+% Turn legend off
 handles.showLegend = 0;
 legend off;
 set(handles.toolShowLegend, 'State', 'Off');
@@ -406,12 +404,16 @@ set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
 set(handles.pumSubject, 'String', num2str(handles.dSets.getDataSet.listSubjects));
 set(handles.pumSubject, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
 
-set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listAllChannelNames));
+set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listChannelNames));
 
 set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
 set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
 
 set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
+
+set(handles.editGroupNum, 'Value', handles.dSets.getDataSet.groupNum);
+set(handles.editNumGroups, 'Value', handles.dSets.getDataSet.numGroups);
+
 
 %Update enable and checked property of apply
 if isempty(handles.dSets.getOperationSuperSet.getOperationSet.operations)
@@ -426,12 +428,17 @@ end
 
 
 %Update plot
-if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
-    plot(data.abscissa, data.getEpoch)
+dispEpoch = data.getEpoch;
+if(isempty(dispEpoch))
+    axis([0 1 0 1]);
+    text(0.38,0.5, 'No epochs available.');
 else
-    stem(data.abscissa, data.getEpoch)
+    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
+        plot(data.abscissa, dispEpoch)
+    else
+        stem(data.abscissa, dispEpoch)
+    end
 end
-
 
 % if(handles.staticCue)
 %     hold on
@@ -458,13 +465,11 @@ end
 
 
 %Update Legend
-% if(handles.showLegend)
-%     channelNames = handles.dataSet1.listChannelNames;
-%     channelNames = channelNames(handles.channels,:);
-%     legend(channelNames);
-% else
-%     legend off
-% end
+if(handles.showLegend)
+    legend(data.channelNames);
+else
+    legend off
+end
 
 %Update trial number to be displayed
 % totalEpochs = size(viewData, 3);
@@ -477,9 +482,10 @@ end
 
 
 %Show epoch info
+filDataSize = handles.dSets.getDataSet.getFileDataSize;
 
 set(handles.bgEpochs, 'Title', sprintf('Epoch:%d (%d)/%d; Excluded:%d', data.getAbsoluteEpochNum(data.currentEpochNum),...
-    data.currentEpochNum, data.dataSize(3), '0'));
+    data.currentEpochNum, data.dataSize(3), filDataSize(3) - data.dataSize(3)));
 
 % Set Visibility of next, previous buttons
 if data.isLastEpoch
@@ -494,7 +500,12 @@ else
 end
 
 %update visibility of discard checkbox
-set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
+if(data.currentEpochNum ~= 0)
+    set(handles.cbDiscard, 'Enable', 'On');
+    set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
+else
+    set(handles.cbDiscard, 'Enable', 'Off');
+end
 
 
 function editChannels_Callback(hObject, eventdata, handles)
@@ -505,7 +516,7 @@ function editChannels_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of editChannels as text
 %        str2double(get(hObject,'String')) returns contents of editChannels as a double
 channels = get(hObject,'String');
-channelNames = strsplit(channels);
+channelNames = strsplit(strtrim(channels));
 channelNums = str2num(channels);
 if(~isnan(channelNums))
     lia = ismember(channelNums, handles.dSets.getDataSet.listAllChannelNums);
@@ -515,7 +526,7 @@ if(~isnan(channelNums))
         updateView(handles);
     else
         errordlg('Wrong channel(s) selected.','Channel selection', 'modal');
-        set(hObject,'String', num2str(handles.dSets.getDataSet.channelNums));
+        set(hObject, 'String', strjoin(handles.dSets.getDataSet.listChannelNames));
     end
 else
     lia = ismember(channelNames, handles.dSets.getDataSet.listAllChannelNames);
@@ -525,7 +536,7 @@ else
         updateView(handles);
     else
         errordlg('Wrong channel(s) selected.','Channel selection', 'modal');
-        set(hObject,'String', strjoin(handles.dSets.getDataSet.listChannelNames));
+        set(hObject, 'String', strjoin(handles.dSets.getDataSet.listChannelNames));
     end
 end
 
@@ -696,25 +707,6 @@ function menuTools_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function menuMatchedFilter_Callback(hObject, eventdata, handles)
-% hObject    handle to menuMatchedFilter (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-dataIn.('dataSet') = copy(handles.dataSet1);
-dataIn.('channels') = handles.channels;
-gMatchedFilter(dataIn);
-
-% --------------------------------------------------------------------
-function menuSvm_Callback(hObject, eventdata, handles)
-% hObject    handle to menuSvm (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-dataIn.('dataSet') = copy(handles.dataSet1);
-dataIn.('channels') = handles.channels;
-gSVM(dataIn);
-
-
-% --------------------------------------------------------------------
 function toolShowLegend_ClickedCallback(hObject, eventdata, handles)
 % hObject    handle to toolShowLegend (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -722,93 +714,6 @@ function toolShowLegend_ClickedCallback(hObject, eventdata, handles)
 handles.showLegend = ~handles.showLegend;
 guidata(hObject, handles);
 updateView(handles);
-
-% --------------------------------------------------------------------
-function menuInsert_Callback(hObject, eventdata, handles)
-% hObject    handle to menuInsert (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function menuStaticCue_Callback(hObject, eventdata, handles)
-% hObject    handle to menuStaticCue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if(handles.staticCue == 1)
-    handles.staticCue = 0;
-    set(handles.menuStaticCue, 'Checked', 'Off');
-    guidata(hObject, handles);
-    updateView(handles);
-else
-    prompt = {'Enter cue time:'};
-    dlg_title = 'Cue time';
-    num_lines = 1;
-    defaultans = {'0'};
-    val = inputdlg(prompt,dlg_title,num_lines,defaultans);
-    
-    if(isempty(val))
-        return;
-    end
-    cueTime = str2double(val);
-    
-    if(~isnan(cueTime))
-        if(cueTime < 0 || cueTime > handles.dataSet1.epochTime)
-            errordlg('Invalid cue time.','Cue insertion', 'modal');
-        else
-            handles.cueTime = cueTime;
-            set(handles.menuStaticCue, 'Checked', 'On');
-            handles.staticCue = 1;
-            guidata(hObject, handles);
-            updateView(handles);
-        end
-    end
-end
-
-
-% --------------------------------------------------------------------
-function menuExportCues_Callback(hObject, eventdata, handles)
-% hObject    handle to menuExportCues (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-cues = extractCues(copy(handles.dataSet1), 1);
-save(fullfile(handles.folderName,...
-    'emg_cues.mat'), 'cues');
-
-
-% --------------------------------------------------------------------
-function menuDynamicCue_Callback(hObject, eventdata, handles)
-% hObject    handle to menuDynamicCue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if(handles.dynamicCue == 1)
-    handles.dynamicCue = 0;
-    set(handles.menuDynamicCue, 'Checked', 'Off');
-    guidata(hObject, handles);
-    updateView(handles);
-else
-    prompt = {'Enter cue offset:'};
-    dlg_title = 'Cue offset';
-    num_lines = 1;
-    defaultans = {'0'};
-    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
-    if(isempty(answer))
-        return;
-    end
-    handles.dynamicCueOffset = str2double(answer{1});
-    [filename, pathname] = ...
-     uigetfile({'*.mat'},'Select cues file', handles.dataSet1.folderName);
-    
-    if(isempty(filename))
-        return;
-    end
-    D = load(strcat(pathname, '/', filename),'cues');
-    handles.cues = D.cues;
-    set(handles.menuDynamicCue, 'Checked', 'On');
-    handles.dynamicCue = 1;
-    guidata(hObject, handles);
-    updateView(handles);
-end
 
 
 % --------------------------------------------------------------------
@@ -872,6 +777,20 @@ function editNumGroups_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of editNumGroups as text
 %        str2double(get(hObject,'String')) returns contents of editNumGroups as a double
 
+val = get(hObject,'String');
+numGroups = str2double(val);
+
+if(~isnan(numGroups))
+    try
+        handles.dSets.getDataSet.selectEpochGroup(numGroups, handles.dSets.getDataSet.groupNum);
+        guidata(hObject, handles);
+        updateView(handles);
+    catch ME
+        errordlg(ME.message,'Group selection', 'modal');
+        set(hObject,'String', num2str(handles.dSets.getDataSet.numGroups));
+    end
+end
+
 
 % --- Executes during object creation, after setting all properties.
 function editNumGroups_CreateFcn(hObject, eventdata, handles)
@@ -894,7 +813,19 @@ function editGroupNum_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of editGroupNum as text
 %        str2double(get(hObject,'String')) returns contents of editGroupNum as a double
+val = get(hObject,'String');
+groupNum = str2double(val);
 
+if(~isnan(groupNum))
+    try
+        handles.dSets.getDataSet.selectEpochGroup(handles.dSets.getDataSet.numGroups, groupNum);
+        guidata(hObject, handles);
+        updateView(handles);
+    catch ME
+        errordlg(ME.message,'Group selection', 'modal');
+        set(hObject,'String', num2str(handles.dSets.getDataSet.groupNum));
+    end
+end
 
 % --- Executes during object creation, after setting all properties.
 function editGroupNum_CreateFcn(hObject, eventdata, handles)

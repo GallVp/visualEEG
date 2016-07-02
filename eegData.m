@@ -16,6 +16,8 @@ classdef eegData < sstData
         epochTime       % Time of one epoch
         exEpochsOnOff   %Exclude epochs or not
         extrials        % Excluded trials; 0 means exclude
+        numGroups       % Number of groups
+        groupNum        % Currently selected group number
     end
     properties (Access = private)
         ssNfo           % Subject and session info.
@@ -27,9 +29,8 @@ classdef eegData < sstData
         dvOrient
         evName
         numChannels     % Total number of channels
-        fileData         % Data loaded from file
+        fileData        % Data loaded from file
         selectedEpochs  % A logical vector indicating selected epochs
-
     end
     events
         dataSelectionChanged
@@ -278,6 +279,8 @@ classdef eegData < sstData
             obj.exEpochsOnOff = 0;
             obj.selectedData = obj.fileData;
             obj.selectedEpochs = ones(1, obj.dataSize(3)) == 1;
+            obj.numGroups = 1;
+            obj.groupNum = 1;
         end
     end
     methods (Access = public)
@@ -285,6 +288,10 @@ classdef eegData < sstData
             obj.abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
             dataSst = obj.getSstData;
             plotData@sstData(dataSst);
+        end
+        
+        function [sz] = getFileDataSize(obj)
+            sz = [size(obj.fileData, 1) size(obj.fileData, 2) size(obj.fileData, 3)];
         end
         
         function updateEpochExStatus(obj, absoluteEpochNum, status)
@@ -459,6 +466,32 @@ classdef eegData < sstData
             else
                 ME = MException('eegData:load:noSuchEpochs', 'Invalid epochs selected.');
                 throw(ME)
+            end
+        end
+        
+        function selectEpochGroup(obj, numGroups, groupNum)
+            if(numGroups <= 0 || groupNum > numGroups || groupNum <=0)
+                ME = MException('eegData:select:invalidGrouping', 'Invalid grouping.');
+                throw(ME)
+            else
+                obj.groupNum = groupNum;
+                obj.numGroups = numGroups;
+                sz = obj.getFileDataSize;
+                allEPochNums = 1:sz(3);
+                numEpochPerGroup = round(sz(3) / numGroups);
+                absoluteEpochNums = numEpochPerGroup * (groupNum - 1) + 1 : numEpochPerGroup * groupNum;
+                absoluteEpochNums = absoluteEpochNums(absoluteEpochNums <= sz(3));
+                
+                obj.selectedEpochs = ismember(allEPochNums, absoluteEpochNums);
+                if(obj.exEpochsOnOff)
+                    obj.epochNums = allEPochNums(obj.extrials & obj.selectedEpochs);
+                else
+                    obj.epochNums = allEPochNums(obj.selectedEpochs);
+                end
+                obj.selectedData = obj.fileData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
+                obj.currentEpochNum = 1;
+                notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_EPOCHS_CHANGED));
             end
         end
     end

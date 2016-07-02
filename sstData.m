@@ -75,7 +75,14 @@ classdef sstData < matlab.mixin.Copyable
             indices = (obj.interval(1) + 1/obj.dataRate : 1/obj.dataRate : obj.interval(2)) .* obj.dataRate;
         end
         function [epoch] = getEpoch(obj)
-            epoch = obj.selectedData(:,:,obj.currentEpochNum);
+            try
+                epoch = obj.selectedData(:,:,obj.currentEpochNum);
+            catch ME
+                disp(ME);
+                epoch = [];
+                
+                obj.currentEpochNum = 0;
+            end
         end
         function [answer] = isempty(obj)
             answer = isempty(obj.selectedData);
@@ -84,7 +91,7 @@ classdef sstData < matlab.mixin.Copyable
             answer = obj.currentEpochNum == obj.dataSize(3);
         end
         function [answer] = isFirstEpoch(obj)
-            answer = obj.currentEpochNum == 1;
+            answer = obj.currentEpochNum == 1 || obj.currentEpochNum == 0;
         end
         function [epochNum] = getAbsoluteEpochNum(obj, relativeEpochNum)
             if nargin < 2
@@ -95,6 +102,7 @@ classdef sstData < matlab.mixin.Copyable
             catch ME
                 disp(ME);
                 disp('Invalid epochs selected.');
+                epochNum = 0;
             end
         end
         function [obj] = nextEpoch(obj)
