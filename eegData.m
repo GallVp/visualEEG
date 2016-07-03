@@ -38,6 +38,13 @@ classdef eegData < sstData
     methods
         function obj = eegData
             obj.uiLoad;
+            % Default selection of data
+            obj.channelNums = 1:obj.numChannels;
+            obj.interval = [0 obj.epochTime]; % Display interval starts from 0, actual interval starts from Ts
+            obj.currentEpochNum = 1;
+            obj.exEpochsOnOff = 0;
+            obj.numGroups = 1;
+            obj.groupNum = 1;
         end
         function data = getSstData(obj)
             data = sstData;
@@ -273,16 +280,17 @@ classdef eegData < sstData
                     save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
                 end
             end
-            % Default selection of data
-            obj.channelNums = 1:obj.numChannels;
-            obj.interval = [0 obj.epochTime]; % Display interval starts from 0, actual interval starts from Ts
-            obj.currentEpochNum = 1;
+            
             obj.epochNums = 1:obj.dataSize(3);
-            obj.exEpochsOnOff = 0;
             obj.selectedData = obj.fileData;
             obj.selectedEpochs = ones(1, obj.dataSize(3)) == 1;
-            obj.numGroups = 1;
-            obj.groupNum = 1;
+            allEPochNums = 1:size(obj.fileData, 3);
+            if(obj.exEpochsOnOff)
+                obj.epochNums = allEPochNums(obj.extrials & obj.selectedEpochs);
+                
+            else
+                obj.epochNums = allEPochNums(obj.selectedEpochs);
+            end
         end
     end
     methods (Access = public)
@@ -354,6 +362,8 @@ classdef eegData < sstData
                 sessions = obj.listSessions;
                 obj.sessionNum = sessions(1);
                 obj.loadSubSessFile;
+                obj.selectedData = obj.fileData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
                 notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SUBJECT_CHANGED));
             else
                 ME = MException('eegData:load:noSuchSubject', 'This subject number is not available.');
@@ -366,6 +376,8 @@ classdef eegData < sstData
             if(sum(ismember(obj.listSessions, sess)))
                 obj.sessionNum = sess;
                 obj.loadSubSessFile;
+                obj.selectedData = obj.fileData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
+                obj.dataSize = size(obj.selectedData);
                 notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SESSION_CHANGED));
             else
                 ME = MException('eegData:load:noSuchSession', 'This session number is not available.');

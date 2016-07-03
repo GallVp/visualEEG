@@ -54,7 +54,7 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.procData = data.getSstData;
             addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
             obj.storedArgs.('sLCentre') = [];
-            
+            obj.storedArgs.('eignVect') = [];
         end
         function handleDataSelectionChange(obj, src, eventData)
             obj.dataChangeName = eventData.changeName;
@@ -170,8 +170,8 @@ classdef eegOperations < matlab.mixin.Copyable
                     % opertion.
                 case eegOperations.ALL_OPERATIONS{8}
                     returnArgs = {'N.R.'};
-                    obj.storedArgs.('sLCentre') = [];
-                    % chanChange is introduced here to ensure that when
+                    obj.storedArgs.('eignVect') = [];
+                    % storedArgs is introduced here to ensure that when
                     % this operation is added after removal, it asks for
                     % argument during operation execution.
                     % No argument required. Which in fact is delayed to
@@ -322,8 +322,8 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setChannelData(spatialFilterSstData(processingData.selectedData, filterCoffs), channelNums, channelName);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{8}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    if(obj.chanChange)
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    if(strcmp(obj.dataChangeName, eegData.EVENT_NAME_CHANNELS_CHANGED) || isempty(obj.storedArgs.('eignVect')))
                         try
                             [eignVectors, ~] = pcamat(P',1,2,'gui');
                             
@@ -331,18 +331,28 @@ classdef eegOperations < matlab.mixin.Copyable
                             disp(me.identifier);
                             eignVectors = eye(size(P));
                         end
-                        obj.eignVect = eignVectors;
+                        obj.storedArgs.('eignVect') = eignVectors;
                     else
-                        eignVectors = obj.eignVect;
+                        eignVectors = obj.storedArgs.('eignVect');
                     end
-                    obj.procData = P * eignVectors;
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    proc = P * eignVectors;
+                    channelNums = 1:size(proc, 2);
+                    channelNames = cell(size(proc, 2), 1);
+                    for i=1:size(proc, 2)
+                        channelNames = sprintf('c%s',i);
+                    end
+                    obj.procData.setChannelData(eegOperations.shapeSst(proc, nT), channelNums, channelNames);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{9}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    obj.procData = fastica(P');
-                    obj.procData = obj.procData';
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    proc = fastica(P');
+                    proc = proc';
+                    channelNums = 1:size(proc, 2);
+                    channelNames = cell(size(proc, 2), 1);
+                    for i=1:size(proc, 2)
+                        channelNames = sprintf('c%s',i);
+                    end
+                    obj.procData.setChannelData(eegOperations.shapeSst(proc, nT), channelNums, channelNames);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{10}
                     signal_intvl = args{1};
