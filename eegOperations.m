@@ -14,7 +14,7 @@ classdef eegOperations < matlab.mixin.Copyable
     
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'OSTF', 'Remove Common Mode', 'Group Epochs'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'Remove Common Mode', 'Group Epochs'};
     end
     
     properties (SetAccess = private)
@@ -106,7 +106,7 @@ classdef eegOperations < matlab.mixin.Copyable
             % Operation clearup
             opName = obj.operations(index);
             
-            if(strcmp(opName, eegOperations.ALL_OPERATIONS(17)))
+            if(strcmp(opName, eegOperations.ALL_OPERATIONS(16)))
                 obj.availOps = eegOperations.ALL_OPERATIONS;
             end
             
@@ -188,14 +188,14 @@ classdef eegOperations < matlab.mixin.Copyable
                     if(isempty(answer))
                         returnArgs = {};
                     else
-                        epochs = str2num(answer{1}); %% Don't change it to str2double as it is an array
-                        noiseTime = str2num(answer{2});
-                        if(length(epochs) ~= 2 || epochs(2) <= epochs(1))
+                        signalInterval = str2num(answer{1}); %% Don't change it to str2double as it is an array
+                        noiseInterval = str2num(answer{2});
+                        if(length(signalInterval) ~= 2 || signalInterval(2) <= signalInterval(1))
                             errordlg('The format of intervals is invalid.', 'Interval Error', 'modal');
                             returnArgs = {};
                         else
                             
-                            returnArgs = {epochs; noiseTime; str2num(answer{3})};
+                            returnArgs = {signalInterval; noiseInterval; str2double(answer{3})};
                         end
                     end
                     % args{1} should be a 1 by 2 vector containing signal
@@ -206,7 +206,16 @@ classdef eegOperations < matlab.mixin.Copyable
                     name = 'Std number';
                     defaultans = {'1'};
                     answer = inputdlg(prompt,name,[1 40],defaultans);
-                    returnArgs = answer;
+                    answer = str2double(answer);
+                    if(isempty(answer))
+                        returnArgs = {};
+                    else
+                        if(isnan(answer) || answer <= 0)
+                            returnArgs = {};
+                        else
+                            returnArgs = {answer};
+                        end
+                    end
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{12}
                     returnArgs = {'N.R.'};
@@ -216,7 +225,17 @@ classdef eegOperations < matlab.mixin.Copyable
                     name = 'Detect peak';
                     defaultans = {'1', '1'};
                     answer = inputdlg(prompt,name,[1 40],defaultans);
-                    returnArgs = answer;
+                    answer = str2double(answer);
+                    answer(2) = round(answer(2));
+                    if(isempty(answer(1)) || isempty(answer(2)))
+                        returnArgs = {};
+                    else
+                        if(isnan(answer(1))  || answer(2) < 0 || isnan(answer(2)))
+                            returnArgs = {};
+                        else
+                            returnArgs = {answer(1), answer(2)};
+                        end
+                    end
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
                     prompt={'Cue Time:', 'Offset:'};
@@ -239,11 +258,11 @@ classdef eegOperations < matlab.mixin.Copyable
                         end
                     end
                     % args{1} should be the cueTime, args{2} should be the emg cues cell array.
-                case eegOperations.ALL_OPERATIONS{16}
+                case eegOperations.ALL_OPERATIONS{15}
                     returnArgs = {'N.R.'};
                     % No argument required.
                     
-                case eegOperations.ALL_OPERATIONS{17}
+                case eegOperations.ALL_OPERATIONS{16}
                     prompt = {'Enter total epoch groups:', 'Enter group number to select:'};
                     dlg_title = 'Select epochs';
                     num_lines = 1;
@@ -355,76 +374,83 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setChannelData(eegOperations.shapeSst(proc, nT), channelNums, channelNames);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{10}
-                    signal_intvl = args{1};
+                    signalInterval = args{1};
                     if(~isempty(args{2}))
-                        noise_intvl = args{2};
-                        noise_intvl = noise_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(2);
+                        noiseInterval = args{2};
+                        noiseInterval = noiseInterval(1) + 1/processingData.dataRate:1/processingData.dataRate:noiseInterval(2);
                     else
-                        noise_intvl = [0 signal_intvl(1) signal_intvl(2) obj.dataSet.epochTime];
-                        noise_intvl = [noise_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(2)...
-                            noise_intvl(3) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:noise_intvl(4)];
+                        noiseInterval = [0 signalInterval(1) signalInterval(2) processingData.interval(2)];
+                        noiseInterval = [noiseInterval(1) + 1/processingData.dataRate:1/processingData.dataRate:noiseInterval(2)...
+                            noiseInterval(3) + 1/processingData.dataRate:1/processingData.dataRate:noiseInterval(4)];
                     end
-                    signal_intvl = signal_intvl(1) + 1/obj.dataSet.dataRate:1/obj.dataSet.dataRate:signal_intvl(2);
+                    signalInterval = signalInterval(1) + 1/processingData.dataRate:1/processingData.dataRate:signalInterval(2);
                     
-                    signal_intvl = round(signal_intvl .* obj.dataSet.dataRate);
-                    noise_intvl = round(noise_intvl .* obj.dataSet.dataRate);
-                    signalData = processingData(signal_intvl,:,:);
-                    noiseData = processingData(noise_intvl,:,:);
+                    signalInterval = round(signalInterval .* processingData.dataRate);
+                    noiseInterval = round(noiseInterval .* processingData.dataRate);
+                    signalData = processingData.selectedData(signalInterval,:,:);
+                    noiseData = processingData.selectedData(noiseInterval,:,:);
                     
                     if(args{3})
-                        obj.procData = zeros(size(processingData, 1), 1, size(processingData, 3));
+                        proc = zeros(size(processingData.selectedData, 1), 1, size(processingData.selectedData, 3));
                         
                         for i = 1:size(signalData, 3)
                             w = osf(signalData(:,:,i)', noiseData(:,:,i)');
-                            obj.procData(:,:,i) = spatialFilterSstData(processingData(:,:,i), w);
+                            proc(:,:,i) = spatialFilterSstData(processingData.selectedData(:,:,i), w);
                         end
                     else
                         [signalData, ~] = eegOperations.shapeProcessing(signalData);
                         [noiseData, ~] = eegOperations.shapeProcessing(noiseData);
                         w = osf(signalData', noiseData');
-                        [P, nT] = eegOperations.shapeProcessing(processingData);
-                        obj.procData =  P * w;
-                        obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                        [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                        proc =  P * w;
+                        proc = eegOperations.shapeSst(proc, nT);
                     end
+                    
+                    channelName = 'Optimal surrogate';
+                    channelNums = 1;
+                    obj.procData.setChannelData(proc, channelNums, channelName);
+                    
                     % args{1} should be a 1 by 2 vector containing signal
-                    % time. args{2} should be a 1 by 2 vector containing
-                    % noise time. args{3} should be 1,0.
+                    % interval. args{2} should be a 1 by 2 vector containing
+                    % noise interval. args{3} should be 1,0.
                     
                 case eegOperations.ALL_OPERATIONS{11}
-                    numEpochs = size(processingData, 3);
-                    numChannels = size(processingData, 2);
-                    numStds = str2double(args{1});
-                    obj.procData = zeros(size(processingData));
+                    numEpochs = processingData.dataSize(3);
+                    numChannels = processingData.dataSize(2);
+                    numStds = args{1};
+                    proc = zeros(size(processingData.selectedData));
                     for i=1:numEpochs
                         for j=1:numChannels
-                            dataStd = std(processingData(:,j, i));
-                            obj.procData(:,j, i) = processingData(:,j, i) > dataStd * numStds;
+                            dataStd = std(processingData.selectedData(:,j, i));
+                            proc(:, j, i) = processingData.selectedData(:, j, i) > dataStd * numStds;
                         end
                     end
+                    obj.procData.setSelectedData(proc);
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{12}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    obj.procData = abs(P);
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    proc = abs(P);
+                    proc = eegOperations.shapeSst(proc, nT);
+                    obj.procData.setSelectedData(proc);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{13}
-                    numEpochs = size(processingData, 3);
-                    numChannels = size(processingData, 2);
-                    numSamples = size(processingData, 1);
-                    thresh = str2double(args{1});
-                    peakNumber = round(str2double(args{2}));
-                    obj.procData = zeros(size(processingData));
+                    numEpochs = processingData.dataSize(3);
+                    numChannels = processingData.dataSize(2);
+                    numSamples = processingData.dataSize(1);
+                    thresh = args{1};
+                    peakNumber = args{2};
+                    proc = zeros(size(processingData.selectedData));
                     for i=1:numEpochs
                         for j=1:numChannels
                             pn = 0;
                             for k=1:numSamples
-                                if(processingData(k,j,i) >= thresh)
+                                if(processingData.selectedData(k,j,i) >= thresh)
                                     pn = pn +1;
                                     if(peakNumber == 0)
-                                        obj.procData(k,j,i) = 1;
+                                        proc(k,j,i) = 1;
                                         continue;
                                     elseif(peakNumber == pn)
-                                        obj.procData(k,j,i) = 1;
+                                        proc(k,j,i) = 1;
                                         break;
                                     else
                                         continue;
@@ -435,6 +461,7 @@ classdef eegOperations < matlab.mixin.Copyable
                             end
                         end
                     end
+                    obj.procData.setSelectedData(proc);
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
                     numEpochs = size(processingData, 3);
@@ -449,15 +476,15 @@ classdef eegOperations < matlab.mixin.Copyable
                         obj.procData(:,:, i) = circshift(processingData(:,:,i), n, 1);
                     end
                     % args{1} should be number of stds to use.
-                case eegOperations.ALL_OPERATIONS{16}
-                    [P, nT] = eegOperations.shapeProcessing(processingData);
-                    N_ch = size(P, 2);
-                    M=eye(N_ch)-1/N_ch*ones(N_ch);
-                    obj.procData= P * M;
-                    obj.procData = eegOperations.shapeSst(obj.procData, nT);
+                case eegOperations.ALL_OPERATIONS{15}
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    numChannels = processingData.dataSize(2);
+                    M=eye(numChannels)-1/numChannels*ones(numChannels);
+                    proc= P * M;
+                    proc = eegOperations.shapeSst(proc, nT);
+                    obj.procData.setSelectedData(proc);
                     % No argument required.
-                    
-                case eegOperations.ALL_OPERATIONS{17}
+                case eegOperations.ALL_OPERATIONS{16}
                     numEpochs = round(size(processingData,3) / args{1});
                     groupNum = args{2};
                     epochs = numEpochs * (groupNum - 1) + 1 : numEpochs * groupNum;

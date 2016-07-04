@@ -88,8 +88,8 @@ classdef operationSets < handle
         
         function rmOperationSet(obj)
             if(obj.operationSetNum ~= 1)
-                obj.oSets{obj.operationSetNum} = [];
-                obj.names{obj.operationSetNum} = [];
+                obj.oSets(obj.operationSetNum) = [];
+                obj.names(obj.operationSetNum) = [];
                 obj.numOperationSets = obj.numOperationSets - 1;
                 obj.operationSetNum = obj.operationSetNum - 1;
             else

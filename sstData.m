@@ -30,7 +30,7 @@ classdef sstData < matlab.mixin.Copyable
         DATA_TYPE_FREQUENCY_SERIES = 'FREQUENCY_SERIES';
         DATA_TYPE_GRAND_TIME_SERIES = 'GRAND_TIME_SERIES';
         DATA_TYPE_GRAND_FREQUENCY_SERIES = 'GRAND_FREQUENCY_SERIES';
-                
+        
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
     end
@@ -107,7 +107,7 @@ classdef sstData < matlab.mixin.Copyable
             sstData.plotSstData(obj);
         end
         function [indices] = getSelectedIndices(obj)
-            indices = (obj.interval(1) + 1/obj.dataRate : 1/obj.dataRate : obj.interval(2)) .* obj.dataRate;
+            indices = round((obj.interval(1) + 1/obj.dataRate : 1/obj.dataRate : obj.interval(2)) .* obj.dataRate);
         end
         function [epoch] = getEpoch(obj)
             try
