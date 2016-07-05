@@ -16,8 +16,8 @@ classdef eegData < sstData
         epochTime       % Time of one epoch
         exEpochsOnOff   %Exclude epochs or not
         extrials        % Excluded trials; 0 means exclude
-        numGroups       % Number of groups
-        groupNum        % Currently selected group number
+        groupNum
+        numGroups
     end
     properties (Access = private)
         ssNfo           % Subject and session info.

@@ -119,6 +119,21 @@ classdef sstData < matlab.mixin.Copyable
                 obj.currentEpochNum = 0;
             end
         end
+        function selectEpochGroup(obj, numGroups, groupNum)
+            if(numGroups <= 0 || groupNum > numGroups || groupNum <=0)
+                ME = MException('sstData:select:invalidGrouping', 'Invalid grouping.');
+                throw(ME)
+            else
+                allEPochNums = 1:obj.dataSize(3);
+                numEpochPerGroup = round(obj.dataSize(3) / numGroups);
+                eNs = numEpochPerGroup * (groupNum - 1) + 1 : numEpochPerGroup * groupNum;
+                eNs = eNs(eNs <= obj.dataSize(3));
+                obj.epochNums = allEPochNums(eNs);
+                obj.selectedData = obj.selectedData(:,:,eNs);
+                obj.dataSize = size(obj.selectedData);
+                obj.currentEpochNum = 1;
+            end
+        end
         function [answer] = isempty(obj)
             answer = isempty(obj.selectedData);
         end

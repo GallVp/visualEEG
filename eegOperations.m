@@ -14,7 +14,7 @@ classdef eegOperations < matlab.mixin.Copyable
     
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by std.', 'Abs', 'Detect Peak', 'Shift with Cue', 'Remove Common Mode', 'Group Epochs'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with Cues', 'Remove Common Mode', 'Group Epochs'};
     end
     
     properties (SetAccess = private)
@@ -53,6 +53,8 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.availOps = eegOperations.ALL_OPERATIONS;
             obj.procData = data.getSstData;
             addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
+            
+            % Stored args
             obj.storedArgs.('sLCentre') = [];
             obj.storedArgs.('eignVect') = [];
         end
@@ -104,12 +106,6 @@ classdef eegOperations < matlab.mixin.Copyable
         end
         function rmOperation (obj, index)                   % Here index refers to operations.
             % Operation clearup
-            opName = obj.operations(index);
-            
-            if(strcmp(opName, eegOperations.ALL_OPERATIONS(16)))
-                obj.availOps = eegOperations.ALL_OPERATIONS;
-            end
-            
             
             selection = 1:length(obj.operations);
             selection = selection ~= index;
@@ -238,24 +234,15 @@ classdef eegOperations < matlab.mixin.Copyable
                     end
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
-                    prompt={'Cue Time:', 'Offset:'};
-                    name = 'Cue timing';
-                    defaultans = {'1', '1'};
-                    answer = inputdlg(prompt,name,[1 40],defaultans);
                     
-                    if(isempty(answer))
+                    [filename, pathname] = ...
+                        uigetfile({'*.mat'},'Select cues file');
+                    
+                    if(isempty(filename))
                         returnArgs = {};
                     else
-                        cueTime = answer{1};
-                        [filename, pathname] = ...
-                            uigetfile({'*.mat'},'Select Emg cues file');
-                        
-                        if(isempty(filename))
-                            returnArgs = {};
-                        else
-                            cueFile = load(strcat(pathname, '/', filename),'cues');
-                            returnArgs = {cueTime, cueFile.cues, answer{2}};
-                        end
+                        cueFile = load(strcat(pathname, '/', filename),'cues');
+                        returnArgs = {cueFile.cues};
                     end
                     % args{1} should be the cueTime, args{2} should be the emg cues cell array.
                 case eegOperations.ALL_OPERATIONS{15}
@@ -263,20 +250,20 @@ classdef eegOperations < matlab.mixin.Copyable
                     % No argument required.
                     
                 case eegOperations.ALL_OPERATIONS{16}
-                    prompt = {'Enter total epoch groups:', 'Enter group number to select:'};
+                    prompt = {'Epoch groups:', 'Group number to select:'};
                     dlg_title = 'Select epochs';
                     num_lines = 1;
                     defaultans = {'2', '1'};
                     answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
-                    if(isempty(answer))
+                    numGroups = str2double(answer{1});
+                    groupNum = str2double(answer{2});
+                    if(isempty(numGroups) || isempty(groupNum))
                         returnArgs = {};
                     else
-                        e_start = str2double(answer{1});
-                        e_end = str2double(answer{2});
-                        if(~isnan(e_start) && ~isnan(e_end))
-                            returnArgs = {e_start, e_end};
-                        else
+                        if(numGroups <= 0 || groupNum > numGroups || groupNum <=0 || isnan(numGroups) || isnan(groupNum))
                             returnArgs = {};
+                        else
+                            returnArgs = {numGroups, groupNum};
                         end
                     end
                     % args{1} should a vector containing the numbers of
@@ -464,17 +451,17 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setSelectedData(proc);
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
-                    numEpochs = size(processingData, 3);
-                    cueTime = str2double(args{1});
-                    cues = args{2};
-                    offset = args{3};
-                    obj.procData = zeros(size(processingData));
+                    numEpochs = processingData.dataSize(3);
+                    cues = args{1};
+                    proc = zeros(size(processingData));
+                    trigger = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,3));
+                    cue = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,4));
                     for i=1:numEpochs
-                        ext = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,3));
-                        cue = ext(i);
-                        n = round((cueTime - cue - offset) * obj.dataSet.dataRate);
-                        obj.procData(:,:, i) = circshift(processingData(:,:,i), n, 1);
+                        n = round((trigger(i) - cue(i)) * obj.dataSet.dataRate);
+                        proc(:,:, i) = circshift(processingData(:,:,i), n, 1);
+                        proc(n+1:end,:,i) = processingData.selectedData(1:end-n,:,i);
                     end
+                    obj.procData.setSelectedData(proc);
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{15}
                     [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
@@ -485,15 +472,8 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setSelectedData(proc);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{16}
-                    numEpochs = round(size(processingData,3) / args{1});
-                    groupNum = args{2};
-                    epochs = numEpochs * (groupNum - 1) + 1 : numEpochs * groupNum;
-                    epochs = epochs(epochs <= size(processingData,3));
-                    obj.procData = processingData(:,:,epochs);
-                    obj.procEpochs = obj.procEpochs(epochs);
-                    opsNum = ones(1,length(eegOperations.ALL_OPERATIONS));
-                    opsNum(17) = 0;
-                    obj.availOps = eegOperations.ALL_OPERATIONS(opsNum == 1);
+                    processingData.selectEpochGroup(args{1}, args{2});
+                    obj.procData = processingData;
                     % args{1} should a vector containing the numbers of
                     % required epochs.
                 otherwise
