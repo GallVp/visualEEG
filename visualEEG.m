@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 06-Jul-2016 12:25:42
+% Last Modified by GUIDE v2.5 06-Jul-2016 15:57:43
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -442,13 +442,17 @@ else
     end
 end
 
-% if(handles.staticCue)
-%     hold on
-%     a = axis;
-%     line([handles.cueTime handles.cueTime], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
-%     axis(a);
-%     hold off
-% end
+% Show Static Cue
+if(handles.showCues)
+    hold on
+    a = axis;
+    cuedata = data.getCueTime;
+    for i=1:length(cuedata)
+        line([cuedata(i) cuedata(i)], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
+    end
+    axis(a);
+    hold off
+end
 % if(handles.dynamicCue)
 %     hold on
 %     a = axis;
@@ -867,3 +871,4 @@ else
     handles.showCues = 1;
 end
 guidata(hObject, handles);
+updateView(handles);

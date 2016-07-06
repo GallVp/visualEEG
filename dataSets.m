@@ -37,8 +37,13 @@ properties (SetAccess = private)
             answer = obj.numDataSets == 0;
         end
         
-        function [oSS] = getOperationSuperSet(obj)
-            oSS = obj.oSuperSets{obj.dataSetNum};
+        function [oSS] = getOperationSuperSet(obj, dataSetNum)
+            if nargin < 2
+                oSS = obj.oSuperSets{obj.dataSetNum};
+            else
+                 oSS = obj.oSuperSets{dataSetNum};
+            end
+            
         end
         
         function [dataSet] = getDataSet(obj)
@@ -50,7 +55,7 @@ properties (SetAccess = private)
             obj.numDataSets = obj.numDataSets + 1;
             obj.dataSetNum = obj.numDataSets;
             obj.dSets{obj.dataSetNum} = data;
-            obj.oSuperSets{obj.dataSetNum} = operationSets(obj.dSets{obj.dataSetNum});
+            obj.oSuperSets{obj.dataSetNum} = operationSets(obj.dSets{obj.dataSetNum}, obj);
             
             % Getting dataset name
             str = obj.dSets{obj.dataSetNum}.folderName;

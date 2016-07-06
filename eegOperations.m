@@ -14,7 +14,9 @@ classdef eegOperations < matlab.mixin.Copyable
     
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with Cues', 'Remove Common Mode', 'Group Epochs'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with Cues',...
+            'Remove Common Mode', 'Group Epochs', 'Shift Cue', 'Combine Data'};
+        COMBINE_OPTIONS = {'Across Channels'};
     end
     
     properties (SetAccess = private)
@@ -31,6 +33,8 @@ classdef eegOperations < matlab.mixin.Copyable
         storedArgs      % A structure with stored volatile args.
                         % Volatile args are the one which are asked during
                         % application of operation
+        dSets           % A reference to dataSets class
+        dSet            % A reference to corresponding eegData class
     end
     
     methods(Access = protected)
@@ -41,13 +45,20 @@ classdef eegOperations < matlab.mixin.Copyable
             % Make a deep copy of the DeepCp object
             cpObj.procData = copy(obj.procData);
             cpObj.dataSet = copy(obj.dataSet);
+            addlistener(cpObj.dSet,'dataSelectionChanged',@cpObj.handleDataSelectionChange);
         end
     end
     methods (Access = public)
         
-        function [obj] = eegOperations(data)
+        function [obj] = eegOperations(data, dSets)
             obj.dataSet = data.getSstData;
-            
+            obj.dSet = data;
+            if nargin < 2
+                obj.dSets = [];
+            else
+                obj.dSets = dSets;
+            end
+
             % Default properties
             obj.numApldOps = 0;
             obj.availOps = eegOperations.ALL_OPERATIONS;
@@ -268,6 +279,46 @@ classdef eegOperations < matlab.mixin.Copyable
                     end
                     % args{1} should a vector containing the numbers of
                     % required epochs.
+                case eegOperations.ALL_OPERATIONS{17}
+                    prompt={'Enter delay for each cue:',};
+                    name = 'Shift Cue';
+                    defaultans = {'1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
+                    if(isempty(answer))
+                        returnArgs = {};
+                    else
+                        answer = str2num(answer{:});
+                        if(isnan(answer))
+                            returnArgs = {};
+                        else
+                            returnArgs = {answer};
+                        end
+                    end
+                    % args{1} should be a vector of delays.
+                case eegOperations.ALL_OPERATIONS{18}
+                    if(isempty(obj.dSets))
+                        uiwait(errordlg('No datasets attached.','Combine Data', 'modal'));
+                        
+                        returnArgs = {};
+                    else
+                        dataIn.('dSets') = obj.dSets;
+                        
+                        dataIn.('availableCombinations') = obj.COMBINE_OPTIONS;
+                        dataOut = combineDataDlg(dataIn);
+                        if(isempty(dataOut))
+                            returnArgs = {};
+                        else
+                            if(dataOut.('dataSetNum') == obj.dSets.dataSetNum && dataOut.('operationSetNum')...
+                                    == obj.dSets.getOperationSuperSet.operationSetNum)
+                                uiwait(errordlg('Combining data from the same operation set is not allowed.','Combine Data', 'modal'));
+                                returnArgs = {};
+                            else
+                                returnArgs = {dataOut.('combinationNum'), dataOut.('dataSetNum'),...
+                                    dataOut.('operationSetNum')};
+                            end
+                        end
+                    end
+                    % args{1} should be a vector of delays.
                 otherwise
                     returnArgs = {};
             end
@@ -472,12 +523,40 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setSelectedData(proc);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{16}
-                    processingData.selectEpochGroup(args{1}, args{2});
-                    obj.procData = processingData;
+                    obj.procData.selectEpochGroup(args{1}, args{2});
+                    % args{1} should a vector containing the numbers of
+                    % required epochs.
+                case eegOperations.ALL_OPERATIONS{17}
+                    obj.procData.shiftCues(args{1})
+                    % args{1} should a vector containing the numbers of
+                    % required epochs.
+                    
+                case eegOperations.ALL_OPERATIONS{18}
+                    % Prepare data to be combined
+                    combineType = args{1};
+                    dSetNum = args{2};
+                    opSetNum = args{3};
+                    
+                    combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                    
+                    switch (combineType)
+                        case 1
+                            if(processingData.dataSize(1) == combineData.dataSize(1) && processingData.dataSize(3) == combineData.dataSize(3))
+                                selectedData = cat(2,processingData.selectedData, combineData.selectedData);
+                                channelNums = [processingData.channelNums combineData.channelNums];
+                                channelNames = [processingData.channelNames ; combineData.channelNames];
+                                obj.procData.setChannelData(selectedData, channelNums, channelNames);
+                            else
+                                uiwait(errordlg('Combination failed due to size mismatch.', 'Combination Operation', 'modal'));
+                            end
+                        otherwise
+                            disp('Combination operation not implemented');
+                    end
+
                     % args{1} should a vector containing the numbers of
                     % required epochs.
                 otherwise
-                    obj.procData = processingData;
+                    disp('Operation not implemented');
             end
         end
     end

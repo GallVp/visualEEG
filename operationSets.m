@@ -17,14 +17,16 @@ classdef operationSets < handle
         dataEeg             % Handle of data set (eegData) attached to these operationSets.
         operationSetNum     % Serial number of current operation set.
         operationSetOptions % Options for the operation set. A row cell array.
+        dSets               % A reference to dataSets class
     end
     
     methods
-        function [obj] = operationSets(data)
+        function [obj] = operationSets(data, dSets)
             obj.numOperationSets = 1;
             obj.operationSetNum = 1;
             obj.dataEeg = data;
-            obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
+            obj.dSets = dSets;
+            obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg, dSets);
             obj.names{obj.operationSetNum} = 'Set 1';
             obj.operationSetOptions{obj.operationSetNum, 1} = 0;
         end
@@ -40,8 +42,12 @@ classdef operationSets < handle
             answer = obj.numOperationSets == 0;
         end
         
-        function [oSet] = getOperationSet(obj)
-            oSet = obj.oSets{obj.operationSetNum};
+        function [oSet] = getOperationSet(obj, opSetNum)
+            if nargin < 2
+                oSet = obj.oSets{obj.operationSetNum};
+            else
+                oSet = obj.oSets{opSetNum};
+            end
         end
         
         function [success] = addOperationSet(obj)
@@ -55,7 +61,7 @@ classdef operationSets < handle
                 
                 obj.numOperationSets = obj.numOperationSets + 1;
                 obj.operationSetNum = obj.numOperationSets;
-                obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg);
+                obj.oSets{obj.operationSetNum} = eegOperations(obj.dataEeg, obj.dSets);
                 obj.names{obj.operationSetNum} = name;
                 obj.operationSetOptions{obj.operationSetNum, 1} = 0;
                 

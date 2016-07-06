@@ -132,8 +132,21 @@ classdef sstData < matlab.mixin.Copyable
                 eNs = eNs(eNs <= obj.dataSize(3));
                 obj.epochNums = allEPochNums(eNs);
                 obj.selectedData = obj.selectedData(:,:,eNs);
+                obj.staticCues = obj.staticCues(:, eNs);
                 obj.dataSize = size(obj.selectedData);
                 obj.currentEpochNum = 1;
+            end
+        end
+        function shiftCues(obj, delayVect)
+            if(length(delayVect) <= size(obj.staticCues,1))
+                for i=1:length(delayVect)
+                    obj.staticCues(i,:) = obj.staticCues(i,:) + delayVect(i);
+                end
+            else
+                obj.staticCues = [obj.staticCues; zeros(length(delayVect) - 1, size(obj.staticCues,2))];
+                for i=1:length(delayVect)
+                    obj.staticCues(i,:) = obj.staticCues(i,:) + delayVect(i);
+                end
             end
         end
         function [answer] = isempty(obj)
@@ -156,6 +169,9 @@ classdef sstData < matlab.mixin.Copyable
                 disp('Invalid epochs selected.');
                 epochNum = 0;
             end
+        end
+        function [cueTime] = getCueTime(obj)
+            cueTime = obj.staticCues(:,obj.currentEpochNum);
         end
         function [obj] = nextEpoch(obj)
             if(obj.isLastEpoch)

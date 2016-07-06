@@ -53,8 +53,9 @@ classdef eegData < sstData
             numExcludedEpochs = sz(3) - sum(obj.selectedEpochs & obj.extrials);
             abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
             dataType = sstData.DATA_TYPE_TIME_SERIES;
+            staticCues = obj.staticCues(:,obj.epochNums);
             data.setData(obj.selectedData, obj.subjectNum, obj.sessionNum, obj.dataRate, obj.channelNums, obj.listChannelNames, obj.interval, ...
-                obj.epochNums, currentEpochNum, abscissa, dataType, numExcludedEpochs, obj.staticCues);
+                obj.epochNums, currentEpochNum, abscissa, dataType, numExcludedEpochs, staticCues);
         end
     end
     properties(Constant)
@@ -138,7 +139,7 @@ classdef eegData < sstData
                 else
                     indices = [D.(obj.evName)(i)-bIndex D.(obj.evName)(i)+aIndex-1];
                     sessionData(:,:,i) = getTrialByEpochIndex(obj, rawEegData,indices,channels);
-                    staticCues = D.(obj.evName) ./ obj.dataRate;
+                    staticCues = ones(1, numTrial) .* (obj.beforeIndex);
                 end
             end
         end
@@ -261,6 +262,7 @@ classdef eegData < sstData
                 obj.fileData = D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values;
                 obj.epochTime = size(obj.fileData, 1);
                 obj.epochTime = obj.epochTime / obj.dataRate;
+                obj.staticCues = zeros(1, size(obj.fileData, 3));
             else
                 [obj.fileData, obj.staticCues] = getSubject(obj, 1:obj.numChannels);
             end
