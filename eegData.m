@@ -54,7 +54,7 @@ classdef eegData < sstData
             abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
             dataType = sstData.DATA_TYPE_TIME_SERIES;
             data.setData(obj.selectedData, obj.subjectNum, obj.sessionNum, obj.dataRate, obj.channelNums, obj.listChannelNames, obj.interval, ...
-                obj.epochNums, currentEpochNum, abscissa, dataType, numExcludedEpochs);
+                obj.epochNums, currentEpochNum, abscissa, dataType, numExcludedEpochs, obj.staticCues);
         end
     end
     properties(Constant)
@@ -106,11 +106,11 @@ classdef eegData < sstData
                 throw(ME)
             end
         end
-        function [ subjectData ] = getSubject(obj, channels)
-            subjectData = getSession(obj, channels);
+        function [ subjectData, staticCues ] = getSubject(obj, channels)
+            [subjectData, staticCues] = getSession(obj, channels);
         end
         
-        function [ sessionData] = getSession(obj, channels)
+        function [ sessionData, staticCues] = getSession(obj, channels)
             
             ts = 1/obj.dataRate;
             bIndex = obj.beforeIndex / ts;
@@ -134,9 +134,11 @@ classdef eegData < sstData
             for i=1:numTrial
                 if(strcmp(obj.importMethod, eegData.IMPORT_METHOD_BY_TIME))
                     sessionData(:,:,i) = getTrialByTrialTime(obj, rawEegData,i,channels, obj.dataRate);
+                    staticCues = zeros(1, numTrial);
                 else
                     indices = [D.(obj.evName)(i)-bIndex D.(obj.evName)(i)+aIndex-1];
                     sessionData(:,:,i) = getTrialByEpochIndex(obj, rawEegData,indices,channels);
+                    staticCues = D.(obj.evName) ./ obj.dataRate;
                 end
             end
         end
@@ -260,7 +262,7 @@ classdef eegData < sstData
                 obj.epochTime = size(obj.fileData, 1);
                 obj.epochTime = obj.epochTime / obj.dataRate;
             else
-                obj.fileData = getSubject(obj, 1:obj.numChannels);
+                [obj.fileData, obj.staticCues] = getSubject(obj, 1:obj.numChannels);
             end
             
             obj.dataSize = size(obj.fileData);
@@ -280,7 +282,7 @@ classdef eegData < sstData
                     save(strcat(obj.folderName,'/ex_trials.mat'), 'ex_trials');
                 end
             end
-            
+
             obj.epochNums = 1:obj.dataSize(3);
             obj.selectedData = obj.fileData;
             obj.selectedEpochs = ones(1, obj.dataSize(3)) == 1;
@@ -362,6 +364,10 @@ classdef eegData < sstData
                 sessions = obj.listSessions;
                 obj.sessionNum = sessions(1);
                 obj.loadSubSessFile;
+                % Check to see if new file has less data samples
+                if(obj.interval(2) > obj.epochTime)
+                    obj.interval = [0 obj.epochTime];
+                end
                 obj.selectedData = obj.fileData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
                 obj.dataSize = size(obj.selectedData);
                 notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SUBJECT_CHANGED));
@@ -376,6 +382,10 @@ classdef eegData < sstData
             if(sum(ismember(obj.listSessions, sess)))
                 obj.sessionNum = sess;
                 obj.loadSubSessFile;
+                % Check to see if new file has less data samples
+                if(obj.interval(2) > obj.epochTime)
+                    obj.interval = [0 obj.epochTime];
+                end
                 obj.selectedData = obj.fileData(obj.getSelectedIndices,obj.channelNums,obj.epochNums);
                 obj.dataSize = size(obj.selectedData);
                 notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_SESSION_CHANGED));
@@ -417,7 +427,7 @@ classdef eegData < sstData
                 obj.dataSize = size(obj.selectedData);
                 notify(obj,'dataSelectionChanged',eegDataEvent(eegData.EVENT_NAME_INTERVAL_CHANGED));
             else
-                ME = MException('eegData:load:noSuchInterval', 'Invalid interval selected.');
+                ME = MException('eegData:load:noSuchInterval', sprintf('Invalid interval selected. The interval should be [0 %d]', obj.epochTime));
                 throw(ME)
             end
         end

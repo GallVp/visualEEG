@@ -24,6 +24,7 @@ classdef sstData < matlab.mixin.Copyable
         abscissa            % x-axis data
         dataType            % Type of data contained in selected Data
         numExcludedEpochs   % Number of excluded epochs
+        staticCues
     end
     properties (Constant)
         DATA_TYPE_TIME_SERIES = 'TIME_SERIES';
@@ -37,7 +38,7 @@ classdef sstData < matlab.mixin.Copyable
     
     methods (Access = public)
         function setData(obj, selectedData, subjectNum, sessionNum, dataRate, channelNums, channelNames, interval, epochNums,...
-                currentEpochNum, abscissa, dataType, numExcludedEpochs)
+                currentEpochNum, abscissa, dataType, numExcludedEpochs, staticCues)
             obj.selectedData = selectedData;
             obj.subjectNum = subjectNum;
             obj.sessionNum = sessionNum;
@@ -50,6 +51,7 @@ classdef sstData < matlab.mixin.Copyable
             obj.abscissa = abscissa;
             obj.dataType = dataType;
             obj.numExcludedEpochs = numExcludedEpochs;
+            obj.staticCues = staticCues;
             
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end

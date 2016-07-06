@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 01-Jul-2016 12:26:02
+% Last Modified by GUIDE v2.5 06-Jul-2016 12:25:42
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -289,12 +289,15 @@ function menuImport_Callback(hObject, eventdata, handles)
 
 try
 handles.dSets.addDataSet;
-%Set operations box
 
 % Turn legend off
 handles.showLegend = 0;
 legend off;
 set(handles.toolShowLegend, 'State', 'Off');
+
+% turn off cues
+handles.showCues = 0;
+set(handles.menuShowCues, 'Label', 'Show Cues');
 
 %enable most controls
 set(handles.bgEpochs, 'Visible', 'On');
@@ -849,3 +852,18 @@ if(handles.dSets.getOperationSuperSet.superAddOperationSet)
     guidata(hObject, handles);
     updateView(handles);
 end
+
+
+% --------------------------------------------------------------------
+function menuShowCues_Callback(hObject, eventdata, handles)
+% hObject    handle to menuShowCues (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.showCues)
+    set(handles.menuShowCues, 'Label', 'Show Cues');
+    handles.showCues = 0;
+else
+    set(handles.menuShowCues, 'Label', 'Hide Cues');
+    handles.showCues = 1;
+end
+guidata(hObject, handles);
