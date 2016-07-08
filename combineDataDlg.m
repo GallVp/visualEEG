@@ -20,6 +20,14 @@ function varargout = combineDataDlg(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
+% Copyright (c) <2016> <Usman Rashid>
+%
+% This program is free software; you can redistribute it and/or
+% modify it under the terms of the GNU General Public License as
+% published by the Free Software Foundation; either version 2 of the
+% License, or (at your option) any later version.  See the file
+% LICENSE included with this distribution for more information.
+
 % Edit the above text to modify the response to help combineDataDlg
 
 % Last Modified by GUIDE v2.5 06-Jul-2016 16:02:08

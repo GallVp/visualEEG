@@ -14,8 +14,8 @@ classdef eegOperations < matlab.mixin.Copyable
     
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
-            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with Cues',...
-            'Remove Common Mode', 'Group Epochs', 'Shift Cue', 'Combine Data'};
+            'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with EMG Cue',...
+            'Remove Common Mode', 'Group Epochs', 'Shift Cue', 'Combine Data', 'Resample', 'Delay', 'Gain', 'Detect EMG Cue'};
         COMBINE_OPTIONS = {'Across Channels'};
     end
     
@@ -74,6 +74,13 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.numApldOps = 0;
             obj.procData = src.getSstData;
             obj.dataSet = src.getSstData;
+            applyAllOperations(obj);
+        end
+        function explicitHandleDataSelectionChange(obj)
+            obj.dataChangeName = 'EXPLICIT_CHANGE';
+            obj.numApldOps = 0;
+            obj.procData = obj.dSet.getSstData;
+            obj.dataSet = obj.dSet.getSstData;
             applyAllOperations(obj);
         end
         function [returnData] = getProcData(obj, apply)
@@ -245,17 +252,38 @@ classdef eegOperations < matlab.mixin.Copyable
                     end
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
-                    
-                    [filename, pathname] = ...
-                        uigetfile({'*.mat'},'Select cues file');
-                    
-                    if(isempty(filename))
+                    if(isempty(obj.dSets))
+                        uiwait(errordlg('No datasets attached.','Combine Data', 'modal'));
+                        
                         returnArgs = {};
                     else
-                        cueFile = load(strcat(pathname, '/', filename),'cues');
-                        returnArgs = {cueFile.cues};
+                        dataIn.('dSets') = obj.dSets;
+                        
+                        dataIn.('availableCombinations') = {'Shift with EMG cues'};
+                        dataOut = combineDataDlg(dataIn);
+                        if(isempty(dataOut))
+                            returnArgs = {};
+                        else
+                            if(dataOut.('dataSetNum') == obj.dSets.dataSetNum && dataOut.('operationSetNum')...
+                                    == obj.dSets.getOperationSuperSet.operationSetNum)
+                                uiwait(errordlg('Combining data from the same operation set is not allowed.','Shift Data', 'modal'));
+                                returnArgs = {};
+                            else
+                                dSetNum = dataOut.('dataSetNum');
+                                opSetNum = dataOut.('operationSetNum');
+                                obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                                combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                                if(strcmp(combineData.dataType, sstData.DATA_TYPE_TIME_EVENT))
+                                    returnArgs = {dataOut.('combinationNum'), dataOut.('dataSetNum'),...
+                                        dataOut.('operationSetNum')};
+                                else
+                                    uiwait(errordlg('Source data type is not appropriate.','Shift Data', 'modal'));
+                                    returnArgs = {};
+                                end
+                            end
+                        end
                     end
-                    % args{1} should be the cueTime, args{2} should be the emg cues cell array.
+                    % args{1} should be a vector of delays.
                 case eegOperations.ALL_OPERATIONS{15}
                     returnArgs = {'N.R.'};
                     % No argument required.
@@ -266,15 +294,15 @@ classdef eegOperations < matlab.mixin.Copyable
                     num_lines = 1;
                     defaultans = {'2', '1'};
                     answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
-                    numGroups = str2double(answer{1});
-                    groupNum = str2double(answer{2});
-                    if(isempty(numGroups) || isempty(groupNum))
+                    p = str2double(answer{1});
+                    q = str2double(answer{2});
+                    if(isempty(p) || isempty(q))
                         returnArgs = {};
                     else
-                        if(numGroups <= 0 || groupNum > numGroups || groupNum <=0 || isnan(numGroups) || isnan(groupNum))
+                        if(p <= 0 || q > p || q <=0 || isnan(p) || isnan(q))
                             returnArgs = {};
                         else
-                            returnArgs = {numGroups, groupNum};
+                            returnArgs = {p, q};
                         end
                     end
                     % args{1} should a vector containing the numbers of
@@ -319,6 +347,59 @@ classdef eegOperations < matlab.mixin.Copyable
                         end
                     end
                     % args{1} should be a vector of delays.
+                case eegOperations.ALL_OPERATIONS{19}
+                    prompt = {'Epoch p:', 'Epoch q:'};
+                    dlg_title = 'Select resampling ratio p/q';
+                    num_lines = 1;
+                    defaultans = {'1', '2'};
+                    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+                    p = str2double(answer{1});
+                    q = str2double(answer{2});
+                    if(isempty(p) || isempty(q))
+                        returnArgs = {};
+                    else
+                        if(p <= 0 || q <=0 || isnan(p) || isnan(q))
+                            returnArgs = {};
+                        else
+                            returnArgs = {p, q};
+                        end
+                    end
+                    % args{1} should be p and args{2} should be q.
+                case eegOperations.ALL_OPERATIONS{20}
+                    prompt={'Delay time:'};
+                    name = 'Delay Signal';
+                    defaultans = {'1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
+                    answer = str2double(answer);
+                    if(isempty(answer))
+                        returnArgs = {};
+                    else
+                        if(isnan(answer))
+                            returnArgs = {};
+                        else
+                            returnArgs = {answer};
+                        end
+                    end
+                    % args{1} should be time in seconds
+                case eegOperations.ALL_OPERATIONS{21}
+                    prompt={'Enter gain:'};
+                    name = 'Signal Gain';
+                    defaultans = {'1'};
+                    answer = inputdlg(prompt,name,[1 40],defaultans);
+                    answer = str2double(answer);
+                    if(isempty(answer))
+                        returnArgs = {};
+                    else
+                        if(isnan(answer))
+                            returnArgs = {};
+                        else
+                            returnArgs = {answer};
+                        end
+                    end
+                    % args{1} should be gain
+                case eegOperations.ALL_OPERATIONS{22}
+                    returnArgs = {'N.R.'};
+                    % No argument required.
                 otherwise
                     returnArgs = {};
             end
@@ -331,7 +412,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setChannelData(mean(processingData.selectedData, 2), channelNums, channelName);
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{2}
-                    obj.procData.setGrandData(mean(processingData.selectedData, 3), processingData.dataType);
+                    obj.procData.setGrandData(mean(processingData.selectedData, 3));
                     % No argument required.
                 case eegOperations.ALL_OPERATIONS{3}
                     [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
@@ -359,7 +440,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     for i=1:o
                         [proc(:,:,i), f] = computeFFT(P(:,:,i), args{1});
                     end
-                    obj.procData.setFrequencyData(proc, f, processingData.dataType);
+                    obj.procData.setFrequencyData(proc, f);
                     % args{1} should be the data rate.
                 case eegOperations.ALL_OPERATIONS{7}
                     
@@ -502,18 +583,40 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.procData.setSelectedData(proc);
                     % args{1} should be number of stds to use.
                 case eegOperations.ALL_OPERATIONS{14}
-                    numEpochs = processingData.dataSize(3);
-                    cues = args{1};
-                    proc = zeros(size(processingData));
-                    trigger = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,3));
-                    cue = cell2mat(cues(cell2mat(cues(:,1))==obj.dataSet.subjectNum & cell2mat(cues(:,2))==obj.dataSet.sessionNum,4));
-                    for i=1:numEpochs
-                        n = round((trigger(i) - cue(i)) * obj.dataSet.dataRate);
-                        proc(:,:, i) = circshift(processingData(:,:,i), n, 1);
-                        proc(n+1:end,:,i) = processingData.selectedData(1:end-n,:,i);
+                    % Prepare data to be combined
+                    combineType = args{1};
+                    dSetNum = args{2};
+                    opSetNum = args{3};
+                    obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                    combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                    
+                    if(processingData.dataSize(1) == combineData.dataSize(1))
+                        numEpochs = processingData.dataSize(3);
+                        proc = zeros(size(processingData.selectedData));
+                        for i=1:numEpochs
+                            absoluteEpochNum = processingData.getAbsoluteEpochNum(i);
+                            if(combineData.isEpochPresent(absoluteEpochNum))
+                                trigger = combineData.abscissa(combineData.selectedData(:,2,absoluteEpochNum)==1);
+                                cue = combineData.abscissa(combineData.selectedData(:,1,absoluteEpochNum)==1);
+                                n = round((cue - trigger) * obj.dataSet.dataRate);
+                                if(n < 0)
+                                    proc(1:end+n,:,i) = processingData.selectedData(-n+1:end,:,i);
+                                else
+                                    proc(n+1:end,:,i) = processingData.selectedData(1:end-n,:,i);
+                                end
+                            else
+                                 proc(:,:,i) = processingData.selectedData(:,:,i);
+                                continue;
+                            end
+                            
+                        end
+                        obj.procData.setSelectedData(proc);
+                    else
+                        uiwait(errordlg(strcat('Shifting failed due to size mismatch.',...
+                            sprintf('\nSource samples: %d\nDest. samples: %d',...
+                            combineData.dataSize(1), processingData.dataSize(1))), 'Shifting Operation', 'modal'));
                     end
-                    obj.procData.setSelectedData(proc);
-                    % args{1} should be number of stds to use.
+
                 case eegOperations.ALL_OPERATIONS{15}
                     [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
                     numChannels = processingData.dataSize(2);
@@ -536,7 +639,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     combineType = args{1};
                     dSetNum = args{2};
                     opSetNum = args{3};
-                    
+                    obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
                     combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
                     
                     switch (combineType)
@@ -547,7 +650,10 @@ classdef eegOperations < matlab.mixin.Copyable
                                 channelNames = [processingData.channelNames ; combineData.channelNames];
                                 obj.procData.setChannelData(selectedData, channelNums, channelNames);
                             else
-                                uiwait(errordlg('Combination failed due to size mismatch.', 'Combination Operation', 'modal'));
+                                uiwait(errordlg(strcat('Combination failed due to size mismatch.',...
+                                    sprintf('\nSource samples: %d\nDest. samples: %d\nSource epochs: %d\nDest. epochs: %d',...
+                                    combineData.dataSize(1), processingData.dataSize(1), combineData.dataSize(3),...
+                                    processingData.dataSize(3))), 'Combination Operation', 'modal'));
                             end
                         otherwise
                             disp('Combination operation not implemented');
@@ -555,6 +661,78 @@ classdef eegOperations < matlab.mixin.Copyable
 
                     % args{1} should a vector containing the numbers of
                     % required epochs.
+                case eegOperations.ALL_OPERATIONS{19}
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    p = args{1};
+                    q = args{2};
+                    proc = resample(P, p, q);
+                    proc = eegOperations.shapeSst(proc, nT);
+                    obj.procData.setResampledData(proc, processingData.dataRate * p / q);
+                    % No argument required.
+                case eegOperations.ALL_OPERATIONS{20}
+                    numEpochs = processingData.dataSize(3);
+                    delay = args{1};
+                    proc = zeros(size(processingData.selectedData));
+                    for i=1:numEpochs
+                        n = round(delay * processingData.dataRate);
+                        if(n < 0)
+                            proc(1:end+n,:,i) = processingData.selectedData(-n+1:end,:,i);
+                        else
+                            proc(n+1:end,:,i) = processingData.selectedData(1:end-n,:,i);
+                        end
+                    end
+                    obj.procData.setSelectedData(proc);
+                    % args{1} should be delay time in seconds.
+                case eegOperations.ALL_OPERATIONS{21}
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    gain = args{1};
+                    proc = P .* gain;
+                    proc = eegOperations.shapeSst(proc, nT);
+                    obj.procData.setSelectedData(proc);
+                    % No argument required.
+                case eegOperations.ALL_OPERATIONS{22}
+                    % take absolute
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    proc = abs(P);
+                    proc = eegOperations.shapeSst(proc, nT);
+                    
+                    numEpochs = processingData.dataSize(3);
+                    numChannels = processingData.dataSize(2);
+                    numStds = 2;
+                    for i=1:numEpochs
+                        for j=1:numChannels
+                            dataStd = std(proc(:,j, i));
+                            proc(:, j, i) = proc(:, j, i) > dataStd * numStds;
+                        end
+                    end
+                    
+                    numSamples = processingData.dataSize(1);
+                    thresh = 1;
+                    peakNumber = 1;
+                    proc2 = zeros(size(processingData.selectedData));
+                    for i=1:numEpochs
+                        for j=1:numChannels
+                            pn = 0;
+                            for k=1:numSamples
+                                if(proc(k,j,i) >= thresh)
+                                    pn = pn +1;
+                                    if(peakNumber == 0)
+                                        proc2(k,j,i) = 1;
+                                        continue;
+                                    elseif(peakNumber == pn)
+                                        proc2(k,j,i) = 1;
+                                        break;
+                                    else
+                                        continue;
+                                    end
+                                else
+                                    continue;
+                                end
+                            end
+                        end
+                    end
+                    obj.procData.setTimeEventData(proc2);
+                    % No argument required.
                 otherwise
                     disp('Operation not implemented');
             end

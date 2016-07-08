@@ -358,30 +358,30 @@ function saveFigure_ClickedCallback(hObject, eventdata, handles)
 % hObject    handle to saveFigure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-h = findobj(gca,'Type','line');
-figXData = get(h, 'XData');
-figYData = get(h, 'YData');
-H = figure;
-if(iscell(figXData))
-    hold on;
-    for i=1:size(figXData, 1)
-        plot(cell2mat(figXData(i,1)), cell2mat(figYData(i,1)), 'linewidth', 2);
-    end
-    hold off;
-else
-    plot(figXData, figYData, 'linewidth', 2);
-end
-xlabel('Time (s)')
-ylabel('Amplitude')
-set(gca,'FontName','Helvetica');
-set(gca,'FontSize',12);
-set(gca,'LineWidth',2);
-set(H,'Color',[1 1 1]);
-[~,~,~] = mkdir(handles.folderName, 'Output Figures');
-export_fig(fullfile(strcat(handles.folderName, '/Output Figures'),...
-    sprintf('sub%02d_sess%02d_%s.pdf',handles.subjectNum, handles.sessionNum,...
-    datestr(now))));
-close(H);
+% h = findobj(gca,'Type','line');
+% figXData = get(h, 'XData');
+% figYData = get(h, 'YData');
+% H = figure;
+% if(iscell(figXData))
+%     hold on;
+%     for i=1:size(figXData, 1)
+%         plot(cell2mat(figXData(i,1)), cell2mat(figYData(i,1)), 'linewidth', 2);
+%     end
+%     hold off;
+% else
+%     plot(figXData, figYData, 'linewidth', 2);
+% end
+% xlabel('Time (s)')
+% ylabel('Amplitude')
+% set(gca,'FontName','Helvetica');
+% set(gca,'FontSize',12);
+% set(gca,'LineWidth',2);
+% set(H,'Color',[1 1 1]);
+[~,~,~] = mkdir(handles.dSets.getDataSet.folderName, 'Output Figures');
+export_fig(fullfile(strcat(handles.dSets.getDataSet.folderName, '/Output Figures'),...
+    sprintf('sub%02d_sess%02d_%s.pdf',handles.dSets.getDataSet.subjectNum, handles.dSets.getDataSet.sessionNum,...
+    datestr(now))), '-transparent', gca);
+% close(H);
 
 % ---Update View function
 function updateView(handles)
@@ -435,7 +435,7 @@ if(isempty(dispEpoch))
     axis([0 1 0 1]);
     text(0.38,0.5, 'No epochs available.');
 else
-    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES) || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_TIME_SERIES))
+    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
         plot(data.abscissa, dispEpoch)
     else
         stem(data.abscissa, dispEpoch)
@@ -505,8 +505,7 @@ else
 end
 
 %update visibility of discard checkbox
-if(data.currentEpochNum == 0 || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_FREQUENCY_SERIES)...
-        || strcmp(data.dataType, sstData.DATA_TYPE_GRAND_TIME_SERIES))
+if(data.currentEpochNum == 0 || data.warpedEpochs)
     set(handles.cbDiscard, 'Enable', 'Off');
 else
     set(handles.cbDiscard, 'Enable', 'On');

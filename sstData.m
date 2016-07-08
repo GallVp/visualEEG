@@ -25,12 +25,12 @@ classdef sstData < matlab.mixin.Copyable
         dataType            % Type of data contained in selected Data
         numExcludedEpochs   % Number of excluded epochs
         staticCues
+        warpedEpochs        % 1 if number of epochs has been changed due to any process
     end
     properties (Constant)
         DATA_TYPE_TIME_SERIES = 'TIME_SERIES';
         DATA_TYPE_FREQUENCY_SERIES = 'FREQUENCY_SERIES';
-        DATA_TYPE_GRAND_TIME_SERIES = 'GRAND_TIME_SERIES';
-        DATA_TYPE_GRAND_FREQUENCY_SERIES = 'GRAND_FREQUENCY_SERIES';
+        DATA_TYPE_TIME_EVENT = 'TIME_EVENT';
         
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
@@ -38,7 +38,7 @@ classdef sstData < matlab.mixin.Copyable
     
     methods (Access = public)
         function setData(obj, selectedData, subjectNum, sessionNum, dataRate, channelNums, channelNames, interval, epochNums,...
-                currentEpochNum, abscissa, dataType, numExcludedEpochs, staticCues)
+                currentEpochNum, abscissa, dataType, numExcludedEpochs, staticCues, warpedEpochs)
             obj.selectedData = selectedData;
             obj.subjectNum = subjectNum;
             obj.sessionNum = sessionNum;
@@ -52,6 +52,7 @@ classdef sstData < matlab.mixin.Copyable
             obj.dataType = dataType;
             obj.numExcludedEpochs = numExcludedEpochs;
             obj.staticCues = staticCues;
+            obj.warpedEpochs = warpedEpochs;
             
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
@@ -63,45 +64,44 @@ classdef sstData < matlab.mixin.Copyable
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         
-        function setFrequencyData(obj, selectedData, f, dataType)
-            
-            if(strcmp(dataType, sstData.DATA_TYPE_TIME_SERIES))
-                nDataType = sstData.DATA_TYPE_FREQUENCY_SERIES;
-            elseif(strcmp(dataType, sstData.DATA_TYPE_GRAND_TIME_SERIES))
-                nDataType = sstData.DATA_TYPE_GRAND_FREQUENCY_SERIES;
-            else
-                nDataType = dataType;
-            end
+        function setResampledData(obj, selectedData, dataRate)
+            obj.selectedData = selectedData;
+            obj.dataRate = dataRate;
+            obj.abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
+
+        end
+        
+        function setFrequencyData(obj, selectedData, f)
             
             obj.selectedData = selectedData;
             obj.abscissa = f;
-            obj.dataType = nDataType;
+            obj.dataType = sstData.DATA_TYPE_FREQUENCY_SERIES;
             
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         
-        function setGrandData(obj, selectedData, dataType)
-            
-            if(strcmp(dataType, sstData.DATA_TYPE_TIME_SERIES))
-                nDataType = sstData.DATA_TYPE_GRAND_TIME_SERIES;
-            elseif(strcmp(dataType, sstData.DATA_TYPE_FREQUENCY_SERIES))
-                nDataType = sstData.DATA_TYPE_GRAND_FREQUENCY_SERIES;
-            else
-                nDataType = dataType;
-            end
+        function setGrandData(obj, selectedData)
                     
             obj.selectedData = selectedData;
             obj.epochNums = 1;
             obj.currentEpochNum = 1;
+            obj.warpedEpochs = 1;
             
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
             obj.channelNames = strcat('Grand\b', obj.channelNames);
             obj.channelNames = strrep(obj.channelNames, '\b', ' ');
-            obj.dataType = nDataType;
         end
         function setSelectedData(obj, selectedData)
             obj.selectedData = selectedData;
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
+        end
+        
+        function setTimeEventData(obj, selectedData)
+            obj.selectedData = selectedData;
+            obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
+            
+            obj.dataType = sstData.DATA_TYPE_TIME_EVENT;
         end
     end
     methods (Access = public)
@@ -151,6 +151,9 @@ classdef sstData < matlab.mixin.Copyable
         end
         function [answer] = isempty(obj)
             answer = isempty(obj.selectedData);
+        end
+        function [answer] = isEpochPresent(obj, absoluteEpochNum)
+            answer = sum(ismember(obj.epochNums, absoluteEpochNum));
         end
         function [answer] = isLastEpoch(obj)
             answer = obj.currentEpochNum == obj.dataSize(3);
