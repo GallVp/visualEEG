@@ -31,6 +31,7 @@ classdef sstData < matlab.mixin.Copyable
         DATA_TYPE_TIME_SERIES = 'TIME_SERIES';
         DATA_TYPE_FREQUENCY_SERIES = 'FREQUENCY_SERIES';
         DATA_TYPE_TIME_EVENT = 'TIME_EVENT';
+        DATA_TYPE_PREDICTION = 'PREDICTION';
         
         PLOT_TYPE_PLOT = 'PLOT';
         PLOT_TYPE_STEM = 'STEM';
@@ -81,6 +82,15 @@ classdef sstData < matlab.mixin.Copyable
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
         end
         
+        function setPredictionData(obj, y, pred)
+            obj.warpedEpochs = 1;
+            obj.selectedData = [y  pred];
+            obj.dataSize = [size(obj.selectedData,1) size(obj.selectedData,2) size(obj.selectedData,3)];
+            obj.channelNums = [1 2];
+            obj.channelNames = {'Ground Truth','Prediction'};
+            obj.abscissa = 1 : obj.dataSize(1);
+            obj.dataType = sstData.DATA_TYPE_PREDICTION;
+        end
         function setGrandData(obj, selectedData)
                     
             obj.selectedData = selectedData;
@@ -194,69 +204,57 @@ classdef sstData < matlab.mixin.Copyable
         end
     end
     methods (Access = public, Static)
-        function [ X, Xcv, Xtest, y, ycv, ytest] = splitData(fileData, intvla, intvlb, dataRate,  trainPer, cvPer, testPer)
+        function [ X, y] = splitData(dataSst, segAInterval, segBInterval, dataRate, permu)
             
             
             %loading data
-            indicesa = round([intvla(1)+1/dataRate intvla(2)] .* dataRate);
-            indicesb = round([intvlb(1)+1/dataRate intvlb(2)] .* dataRate);
-            subjectData1 = fileData(indicesa(1):indicesa(2),:,:,:);
-            subjectData2 = fileData(indicesb(1):indicesb(2),:,:,:);
+            indicesa = round([segAInterval(1)+1/dataRate segAInterval(2)] .* dataRate);
+            indicesb = round([segBInterval(1)+1/dataRate segBInterval(2)] .* dataRate);
+            segment1 = dataSst(indicesa(1):indicesa(2),:,:);
+            segment2 = dataSst(indicesb(1):indicesb(2),:,:);
             
             
-            subjectData = cat(3,subjectData1,subjectData2);
+            segmentedData = cat(3,segment1,segment2);
             
             
-            [m, n, o, p] = size(subjectData);
+            [m, n, o] = size(segmentedData);
             
             %Dimension Description
             %m=samples
             %n=channels
             %o=trials
-            %p=sessions
             
             
-            X = zeros(o*p,m*n);
-            for j=1:p
-                for k=1:o
-                    temp = subjectData(:,:,k,j);
-                    X(j*k,:) = temp(:);
-                end
+            X = zeros(o,m*n);
+            for k=1:o
+                temp = segmentedData(:,:,k);
+                X(k,:) = temp(:);
             end
             
-            total_examples = o*p;
+            total_examples = o;
             y = [zeros(total_examples/2,1); ones(total_examples/2,1)];
             
-            
-            % Taking a random permutation of X and y.
-            %P = randperm(total_examples);
-            
-            P = [1:total_examples/2; total_examples/2+1:total_examples];
-            P = P(:);
-            
-            X_y = [X y];
-            
-            X_y = X_y(P,:);
-            
-            X = X_y(:,1:end-1);
-            y = X_y(:,end);
-            
-            %Dividing the feature matrix
-            
-            train_samples = floor(total_examples * trainPer / 100);
-            cv_samples = floor(total_examples * cvPer / 100);
-            test_samples = floor(total_examples * testPer / 100);
-            
-            Xtest = X(train_samples+cv_samples + 1:end,:);
-            Xcv = X(train_samples+1:train_samples+cv_samples,:);
-            X = X(1:train_samples,:);
-            
-            
-            % Labels
-            
-            ytest = y(train_samples+cv_samples + 1:end);
-            ycv = y(train_samples+1:train_samples+cv_samples);
-            y = y(1:train_samples);
+            switch permu
+                case 0
+                    P = randperm(total_examples);
+                    X_y = [X y];
+                    X_y = X_y(P,:);
+                    X = X_y(:,1:end-1);
+                    y = X_y(:,end);
+                case 1
+                    P = ones(1,total_examples) == 1;
+                    X_y = [X y];
+                    X_y = X_y(P,:);
+                    X = X_y(:,1:end-1);
+                    y = X_y(:,end);
+                case 2
+                    P = [1:total_examples/2; total_examples/2+1:total_examples];
+                    P = P(:);
+                    X_y = [X y];
+                    X_y = X_y(P,:);
+                    X = X_y(:,1:end-1);
+                    y = X_y(:,end);
+            end
         end
         function [ X, Xcv, Xtest] = splitDataMF(fileData, tIntvl, roiIntvl, dataRate,  trainPer, cvPer, testPer)
             

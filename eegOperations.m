@@ -15,7 +15,8 @@ classdef eegOperations < matlab.mixin.Copyable
     properties (Constant)
         ALL_OPERATIONS = {'Mean', 'Grand Mean', 'Detrend', 'Normalize', 'Filter', 'FFT', 'Spatial Laplacian',...
             'PCA', 'FAST ICA', 'Optimal SF', 'Threshold by Std.', 'Abs', 'Detect Peak', 'Shift with EMG Cue',...
-            'Remove Common Mode', 'Group Epochs', 'Shift Cue', 'Combine Data', 'Resample', 'Delay', 'Gain', 'Detect EMG Cue'};
+            'Remove Common Mode', 'Group Epochs', 'Shift Cue', 'Combine Data', 'Resample', 'Delay', 'Gain', 'Detect EMG Cue',...
+            'Two Segment SVM Train', 'Two Segment SVM Test', 'Two Segment SVM Validate'};
         COMBINE_OPTIONS = {'Across Channels'};
     end
     
@@ -68,6 +69,7 @@ classdef eegOperations < matlab.mixin.Copyable
             % Stored args
             obj.storedArgs.('sLCentre') = [];
             obj.storedArgs.('eignVect') = [];
+            obj.storedArgs.('SVM_Model') = [];
         end
         function handleDataSelectionChange(obj, src, eventData)
             obj.dataChangeName = eventData.changeName;
@@ -400,6 +402,128 @@ classdef eegOperations < matlab.mixin.Copyable
                 case eegOperations.ALL_OPERATIONS{22}
                     returnArgs = {'N.R.'};
                     % No argument required.
+                case eegOperations.ALL_OPERATIONS{23}
+                    interval = obj.procData.interval;
+                    prompt = {'Segment 1 start:', 'Segment 1 end:','Segment 2 start:','Segment 2 end:',...
+                        'Regulization C:','Passes:', sprintf('Data permutation\nRandom=0/Sequential=1/Alternate=2')};
+                    dlg_title = 'SVM Train';
+                    num_lines = 1;
+                    defaultans = {num2str(interval(1)), num2str(interval(2)/2), num2str(interval(2)/2), num2str(interval(2)), '100', '20', '0'};
+                    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+                    s1s = str2double(answer(1));
+                    s1e = str2double(answer(2));
+                    s2s = str2double(answer(3));
+                    s2e = str2double(answer(4));
+                    c = str2double(answer(5));
+                    p = round(str2double(answer(6)));
+                    permu = str2double(answer(7));
+                    if(isempty(s1s) || isempty(s1e) || isempty(s2s) || isempty(s2e) || isempty(c) || isempty(p) || isempty(permu))
+                        returnArgs = {};
+                    else
+                        if(isnan(s1s) || isnan(s1e) || isnan(s2s) || isnan(s2e) || isnan(c) || isnan(p) || isnan(permu))
+                            returnArgs = {};
+                        else
+                            if(s1s < interval(1) || s2e > interval(2) || c < 0 || p <= 0 ||...
+                                    permu < 0 || permu > 2 || s1s >= s1e || s2s >= s2e)
+                                returnArgs = {};
+                            else
+                                if(abs(s1s - s1e) ~= abs(s2s - s2e))
+                                    uiwait(errordlg('Both intervals should be equal.','SVM Train', 'modal'));
+                                    returnArgs = {};
+                                else
+                                    returnArgs = {s1s, s1e, s2s, s2e, c, p, permu};
+                                end
+                            end
+                        end
+                    end
+                    obj.storedArgs.('SVM_Model') = [];
+                    % returnArgs = {s1s, s1e, s2s, s2e, c, p, permu};
+                case eegOperations.ALL_OPERATIONS{24}
+                    if(isempty(obj.dSets))
+                        uiwait(errordlg('No datasets attached.','SVM Test', 'modal'));
+                        
+                        returnArgs = {};
+                    else
+                        dataIn.('dSets') = obj.dSets;
+                        
+                        dataIn.('availableCombinations') = {'Load SVM Model'};
+                        dataOut = combineDataDlg(dataIn);
+                        if(isempty(dataOut))
+                            returnArgs = {};
+                        else
+                            if(dataOut.('dataSetNum') == obj.dSets.dataSetNum && dataOut.('operationSetNum')...
+                                    == obj.dSets.getOperationSuperSet.operationSetNum)
+                                uiwait(errordlg('Combining data from the same operation set is not allowed.','SVM Test', 'modal'));
+                                returnArgs = {};
+                            else
+                                dSetNum = dataOut.('dataSetNum');
+                                opSetNum = dataOut.('operationSetNum');
+                                obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                                combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                                if(strcmp(combineData.dataType, sstData.DATA_TYPE_PREDICTION))
+                                    returnArgs = {dataOut.('combinationNum'), dataOut.('dataSetNum'),...
+                                        dataOut.('operationSetNum')};
+                                else
+                                    uiwait(errordlg('Source data type is not appropriate.','SVM Test', 'modal'));
+                                    returnArgs = {};
+                                end
+                            end
+                        end
+                    end
+                    % args{1} should be a vector of delays.
+                case eegOperations.ALL_OPERATIONS{25}
+                    if(isempty(obj.dSets))
+                        uiwait(errordlg('No datasets attached.','SVM Validate', 'modal'));
+                        
+                        returnArgs = {};
+                    else
+                        dataIn.('dSets') = obj.dSets;
+                        
+                        dataIn.('availableCombinations') = {'Load SVM Model'};
+                        dataOut = combineDataDlg(dataIn);
+                        if(isempty(dataOut))
+                            returnArgs = {};
+                        else
+                            if(dataOut.('dataSetNum') == obj.dSets.dataSetNum && dataOut.('operationSetNum')...
+                                    == obj.dSets.getOperationSuperSet.operationSetNum)
+                                uiwait(errordlg('Combining data from the same operation set is not allowed.','SVM Validate', 'modal'));
+                                returnArgs = {};
+                            else
+                                dSetNum = dataOut.('dataSetNum');
+                                opSetNum = dataOut.('operationSetNum');
+                                obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                                combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                                if(strcmp(combineData.dataType, sstData.DATA_TYPE_PREDICTION))
+                                    prompt = {'C initial:', 'Step:','C final:'};
+                                    dlg_title = 'SVM Validate';
+                                    num_lines = 1;
+                                    defaultans = {'1', '10', '100'};
+                                    answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+                                    cInit = str2double(answer(1));
+                                    cStep = str2double(answer(2));
+                                    cFinal = str2double(answer(3));
+                                    if(isempty(cInit) || isempty(cStep) || isempty(cFinal))
+                                        returnArgs = {};
+                                    else
+                                        if(isnan(cInit) || isnan(cStep) || isnan(cFinal))
+                                            returnArgs = {};
+                                        else
+                                            if(cInit >= s2s || cStep >= cFinal)
+                                                returnArgs = {};
+                                            else
+                                                returnArgs = {dataOut.('combinationNum'), dataOut.('dataSetNum'),...
+                                                    dataOut.('operationSetNum'), cInit, cStep, cFinal};
+                                            end
+                                        end
+                                    end
+                                else
+                                    uiwait(errordlg('Source data type is not appropriate.','SVM Validate', 'modal'));
+                                    returnArgs = {};
+                                end
+                            end
+                        end
+                    end
+                    % args{1} should be a vector of delays.
                 otherwise
                     returnArgs = {};
             end
@@ -733,6 +857,71 @@ classdef eegOperations < matlab.mixin.Copyable
                     end
                     obj.procData.setTimeEventData(proc2);
                     % No argument required.
+                case eegOperations.ALL_OPERATIONS{23}
+                    [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
+                    proc = abs(P);
+                    proc = eegOperations.shapeSst(proc, nT);
+                    obj.procData.setSelectedData(proc);
+                    % No argument required.
+                    
+                    s1s = args{1};
+                    s1e = args{2};
+                    s2s = args{3};
+                    s2e = args{4};
+                    c = args{5};
+                    p = args{6};
+                    permu = args{7};
+                    
+                    [X,y] = sstData.splitData(processingData.selectedData, [s1s s1e], [s2s s2e], processingData.dataRate, permu);
+                    model = svmTrain(X, y, c, @linearKernel, 1e-3, p);
+                    pred = svmPredict(model, X);
+                    uiwait(msgbox(strcat('Training Set Accuracy:', sprintf(' %f',...
+                        mean(double(pred == y)) * 100)),'Training results'));
+                    
+                    obj.procData.setPredictionData(y, pred);
+                    obj.storedArgs.('SVM_Model') = {model, [s1s s1e], [s2s s2e], p};
+                    
+                case eegOperations.ALL_OPERATIONS{24}
+                    % Prepare data to be combined
+                    combineType = args{1};
+                    dSetNum = args{2};
+                    opSetNum = args{3};
+                    obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                    model = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).storedArgs.('SVM_Model');
+                    permu = 1; % Sequential
+                    [X,y] = sstData.splitData(processingData.selectedData, model{2}, model{3}, processingData.dataRate, permu);
+                    pred = svmPredict(model{1}, X);
+                    uiwait(msgbox(strcat('Testing Set Accuracy:', sprintf(' %f',...
+                        mean(double(pred == y)) * 100)),'Testing results'));
+                    
+                    obj.procData.setPredictionData(y, pred);
+                case eegOperations.ALL_OPERATIONS{25}
+                    % Prepare data to be combined
+                    combineType = args{1};
+                    dSetNum = args{2};
+                    opSetNum = args{3};
+                    cInit = args{4};
+                    cStep = args{5};
+                    cFinal = args{6};
+                    obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).explicitHandleDataSelectionChange;
+                    model = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).storedArgs.('SVM_Model');
+                    combineData = obj.dSets.getOperationSuperSet(dSetNum).getOperationSet(opSetNum).getProcData;
+                    permu = 0; % Random
+                    [X,y] = sstData.splitData(processingData.selectedData, model{2}, model{3}, processingData.dataRate, permu);
+                    cRange = cInit:cStep:cFinal;
+                    
+                    accur = zeros(length(cRange), 2);
+                    
+                    for i=1:length(cRange)
+                        model = svmTrain(X, y, cRange(i), @linearKernel, 1e-3, model{4});
+                        pred = svmPredict(model, X);
+                        predCv = svmPredict(model, handles.Xcv);
+                        
+                        accur(i,1) = mean(double(pred == handles.y)) * 100;
+                        accur(i,2) = mean(double(predCv == handles.ycv)) * 100;
+                    end
+                    
+                    obj.procData.setPredictionData(y, pred);
                 otherwise
                     disp('Operation not implemented');
             end

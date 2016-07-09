@@ -437,6 +437,11 @@ if(isempty(dispEpoch))
 else
     if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
         plot(data.abscissa, dispEpoch)
+    elseif(strcmp(data.dataType, sstData.DATA_TYPE_PREDICTION))
+        plot(data.abscissa, dispEpoch(:,1,:), 'o', 'color', 'red')
+        hold on
+        plot(data.abscissa, dispEpoch(:,2,:), '*', 'color', 'blue')
+        hold off
     else
         stem(data.abscissa, dispEpoch)
     end
