@@ -574,6 +574,7 @@ classdef eegOperations < matlab.mixin.Copyable
                             'ListString', options);
                         centre = processingData.channelNums(s);
                         obj.storedArgs.('sLCentre') = centre;
+                        obj.dataChangeName = [];
                     else
                         centre = obj.storedArgs.('sLCentre');
                     end
@@ -594,6 +595,7 @@ classdef eegOperations < matlab.mixin.Copyable
                             eignVectors = eye(size(P));
                         end
                         obj.storedArgs.('eignVect') = eignVectors;
+                        obj.dataChangeName = [];
                     else
                         eignVectors = obj.storedArgs.('eignVect');
                     end
