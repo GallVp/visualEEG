@@ -304,9 +304,11 @@ classdef sstData < matlab.mixin.Copyable
             persistant.totalEpochs = size(persistant.ordinate, 3);
             
             
-            H = figure('Visible','off', 'Units', 'pixels','SizeChangedFcn',@handleResize);
+            H = figure('Visible','off', 'Units', 'pixels','ResizeFcn',@handleResize);
             persistant.enlargeFactor = 50;
-            H.Position(4) = H.Position(4) + persistant.enlargeFactor;
+            hPos = get(H, 'Position');
+            hPos(4) = hPos(4) + persistant.enlargeFactor;
+            set(H, 'Position', hPos);
             
             % Create push button
             persistant.btnNext = uicontrol('Style', 'pushbutton', 'String', 'Next',...
@@ -325,7 +327,7 @@ classdef sstData < matlab.mixin.Copyable
             updateView
             
             % Make figure visble after adding all components
-            H.Visible = 'on';
+            set(H, 'Visible','on');
             % This code uses dot notation to set properties.
             % Dot notation runs in R2014b and later.
             % For R2014a and earlier: set(f,'Visible','on');
