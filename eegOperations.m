@@ -1,14 +1,32 @@
 classdef eegOperations < matlab.mixin.Copyable
-    
-    
-    
-    % Copyright (c) <2016> <Usman Rashid>
-    %
-    % This program is free software; you can redistribute it and/or
-    % modify it under the terms of the GNU General Public License as
-    % published by the Free Software Foundation; either version 2 of the
-    % License, or (at your option) any later version.  See the file
-    % LICENSE included with this distribution for more information.
+%EEGOPERATIONS A class which can be connected to an eegData class and can
+%perform different operations on the data.
+%
+% Constructors eegOperations(eegData) and eegOperations(eegData, dataSets)
+% instantiate an object. If a dataSets object is not passed,
+% inter-operation set and inter-data set operations can not be added.
+%
+% getProcData(apply) returns an object of sstData class containing the
+% processed data. If apply is 1, processed data is returned. If apply is 0,
+% unprocessed data is returned. Default value of apply is 1.
+%
+% addOperation shows a gui which can be used to add an operation.
+%
+% rmOperation(index) removes the operation at index in the list of
+% operations.
+%
+% 
+% Public properties: operations -- A read-only property which lists the
+% added operations.
+
+
+% Copyright (c) <2016> <Usman Rashid>
+%
+% This program is free software; you can redistribute it and/or modify it
+% under the terms of the GNU General Public License as published by the
+% Free Software Foundation; either version 2 of the License, or (at your
+% option) any later version.  See the file LICENSE included with this
+% distribution for more information.
     
     
     
@@ -41,9 +59,9 @@ classdef eegOperations < matlab.mixin.Copyable
     methods(Access = protected)
         % Override copyElement method:
         function cpObj = copyElement(obj)
-            % Make a shallow copy of all four properties
+            % Make a shallow copy of all properties
             cpObj = copyElement@matlab.mixin.Copyable(obj);
-            % Make a deep copy of the DeepCp object
+            % Make a deep copy of the procData, dataSet, listener objects
             cpObj.procData = copy(obj.procData);
             cpObj.dataSet = copy(obj.dataSet);
             addlistener(cpObj.dSet,'dataSelectionChanged',@cpObj.handleDataSelectionChange);
@@ -66,7 +84,8 @@ classdef eegOperations < matlab.mixin.Copyable
             obj.procData = data.getSstData;
             addlistener(data,'dataSelectionChanged',@obj.handleDataSelectionChange);
             
-            % Stored args
+            % Stored args. These arguments are asked for during
+            % applyOperation function rather than askArgs function.
             obj.storedArgs.('sLCentre') = [];
             obj.storedArgs.('eignVect') = [];
             obj.storedArgs.('SVM_Model') = [];
@@ -95,7 +114,7 @@ classdef eegOperations < matlab.mixin.Copyable
                 returnData = obj.dataSet;
             end
         end
-        function [success] = addOperation (obj)      % Here index refers to ALL_OPERATIONS.
+        function [success] = addOperation (obj)
             [s,~] = listdlg('PromptString','Select an operation:', 'SelectionMode','single', 'ListString', ...
                 obj.availOps);
             if(isempty(s))
@@ -124,8 +143,7 @@ classdef eegOperations < matlab.mixin.Copyable
             end
             applyAllOperations(obj);
         end
-        function rmOperation (obj, index)                   % Here index refers to operations.
-            % Operation clearup
+        function rmOperation (obj, index)                   % Here index refers to index of operations.
             
             selection = 1:length(obj.operations);
             selection = selection ~= index;
@@ -150,22 +168,22 @@ classdef eegOperations < matlab.mixin.Copyable
         end
         function [returnArgs] = askArgs(obj, index)
             switch eegOperations.ALL_OPERATIONS{index}
-                case eegOperations.ALL_OPERATIONS{1}
+                case eegOperations.ALL_OPERATIONS{1} % Mean
                     returnArgs = {'N.R.'};
                     % No argument required.
-                case eegOperations.ALL_OPERATIONS{2}
+                case eegOperations.ALL_OPERATIONS{2} % Grand Mean
                     returnArgs = {'N.R.'};
                     % No argument required.
-                case eegOperations.ALL_OPERATIONS{3}
+                case eegOperations.ALL_OPERATIONS{3} % Detrend
                     options = {'constant', 'linear'};
                     [s,~] = listdlg('PromptString','Select type:', 'SelectionMode','single',...
                         'ListString', options, 'ListSize', [160 25]);
                     returnArgs = options(s);
-                    % args{1} should be 'linear' or 'constant'
-                case eegOperations.ALL_OPERATIONS{4}
+                    % args{1} should be 'linear' or 'constant'.
+                case eegOperations.ALL_OPERATIONS{4} % Normalize
                     returnArgs = {'N.R.'};
                     % No argument required.
-                case eegOperations.ALL_OPERATIONS{5}
+                case eegOperations.ALL_OPERATIONS{5} % Filter
                     dataOut = selectFilterDlg;
                     if(isempty(dataOut))
                         returnArgs = {};
@@ -173,29 +191,29 @@ classdef eegOperations < matlab.mixin.Copyable
                         returnArgs = {dataOut.selectedFilter};
                         % args{1} should be a filter object obtained from designfilter.
                     end
-                case eegOperations.ALL_OPERATIONS{6}
-                    returnArgs = {obj.dataSet.dataRate};
-                    % args{1} should be the data rate.
-                case eegOperations.ALL_OPERATIONS{7}
-                    returnArgs = {'N.R.'};
-                    obj.storedArgs.('sLCentre') = [];
-                    % chanChange is introduced here to ensure that when
-                    % this operation is added after removal, it asks for
-                    % argument during operation execution.
-                    % No argument required. Which in fact is delayed to
-                    % opertion.
-                case eegOperations.ALL_OPERATIONS{8}
-                    returnArgs = {'N.R.'};
-                    obj.storedArgs.('eignVect') = [];
-                    % storedArgs is introduced here to ensure that when
-                    % this operation is added after removal, it asks for
-                    % argument during operation execution.
-                    % No argument required. Which in fact is delayed to
-                    % opertion.
-                case eegOperations.ALL_OPERATIONS{9}
+                case eegOperations.ALL_OPERATIONS{6} % FFT
                     returnArgs = {'N.R.'};
                     % No argument required.
-                case eegOperations.ALL_OPERATIONS{10}
+                case eegOperations.ALL_OPERATIONS{7} % Spatial Laplacian
+                    returnArgs = {'N.R.'};
+                    obj.storedArgs.('sLCentre') = [];
+                    % storedArgs is cleared here to ensure that when
+                    % this operation is added after removal, it asks for
+                    % argument during operation execution.
+                    % No argument required. Which in fact is delayed to
+                    % applyOpertion.
+                case eegOperations.ALL_OPERATIONS{8} % PCA
+                    returnArgs = {'N.R.'};
+                    obj.storedArgs.('eignVect') = [];
+                    % storedArgs is cleared here to ensure that when
+                    % this operation is added after removal, it asks for
+                    % argument during operation execution.
+                    % No argument required. Which in fact is delayed to
+                    % applyOpertion.
+                case eegOperations.ALL_OPERATIONS{9} % FAST ICA
+                    returnArgs = {'N.R.'};
+                    % No argument required.
+                case eegOperations.ALL_OPERATIONS{10} % Optimal SF
                     prompt = {'Enter signal time [Si Sf]:','Enter noise time [Ni Nf] (empty = ~[Si Sf]):', 'Per epoch?(1,0):'};
                     dlg_title = 'Input';
                     num_lines = 1;
@@ -216,8 +234,9 @@ classdef eegOperations < matlab.mixin.Copyable
                     end
                     % args{1} should be a 1 by 2 vector containing signal
                     % time. args{2} should be a 1 by 2 vector containing
-                    % noise time. arg{3} should be 1,0
-                case eegOperations.ALL_OPERATIONS{11}
+                    % noise time. arg{3} should be 1/0 for per epoch
+                    % processing
+                case eegOperations.ALL_OPERATIONS{11} % Threshold by Std.
                     prompt={'Enter number of stds:'};
                     name = 'Std number';
                     defaultans = {'1'};
@@ -233,10 +252,10 @@ classdef eegOperations < matlab.mixin.Copyable
                         end
                     end
                     % args{1} should be number of stds to use.
-                case eegOperations.ALL_OPERATIONS{12}
+                case eegOperations.ALL_OPERATIONS{12} % Abs
                     returnArgs = {'N.R.'};
                     % No argument required.
-                case eegOperations.ALL_OPERATIONS{13}
+                case eegOperations.ALL_OPERATIONS{13} % Detect Peak
                     prompt={'Amplitude >=:', 'Nth peak (0 for all):'};
                     name = 'Detect peak';
                     defaultans = {'1', '1'};
@@ -252,8 +271,9 @@ classdef eegOperations < matlab.mixin.Copyable
                             returnArgs = {answer(1), answer(2)};
                         end
                     end
-                    % args{1} should be number of stds to use.
-                case eegOperations.ALL_OPERATIONS{14}
+                    % args{1} should be the threshold amplitude. args{2}
+                    % should be the peak number.
+                case eegOperations.ALL_OPERATIONS{14} % Shift with EMG Cue
                     if(isempty(obj.dSets))
                         uiwait(errordlg('No datasets attached.','Combine Data', 'modal'));
                         
