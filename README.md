@@ -8,7 +8,7 @@ VisualEEG is a MATLAB/GUIDE based toolbox which can be used for visual analysis 
 Currently visualEEG is being developed on mac OSX El Capitan, Matlab version R2015b. Windows/Linux users can experience some problems with the GUI layout.
 
 ## Installation
-Copy the *visualEEG* folder to *Matlab* folder. From Matlab file explorer add the folder to path by selecting the *Selected folders and subfolders* option. Run *visualEEG.fig* from **guide** tool.
+Copy the *visualEEG* folder to *Matlab* folder. From Matlab file explorer add the folder to path by selecting the *Selected folders and subfolders* option. Run *visualEEG.m* file.
 
 ## Importing Data
 visualEEG can only import data saved in **.mat** files. All the files should be stored in a single directory. Following naming scheme should be used for files.
