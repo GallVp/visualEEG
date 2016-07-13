@@ -1,0 +1,6 @@
+Information about data:
+
+Sampling rate: 128
+Trial Time: 14 (sec.)
+EEG data variable name: EEGdata
+Import method: By trial time

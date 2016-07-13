@@ -203,8 +203,9 @@ classdef eegData < sstData
         
         function loadNumChannels(obj)
             if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
-                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), sprintf('sub%02d_sess%02d',  obj.subjectNum, obj.sessionNum));
-                nChannels = size(D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values);
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)));
+                fdNames = fieldnames(D);
+                nChannels = size(D.(fdNames{1}).values);
                 nChannels = nChannels(2); %% This is how Signal exports its files.
             else
                 D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)), obj.dvName);
@@ -258,9 +259,9 @@ classdef eegData < sstData
         
         function loadSubSessFile(obj)
             if(strcmp(eegData.IMPORT_METHOD_SIGNAL_MAT_FILES, obj.importMethod))
-                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)),...
-                    sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum));
-                obj.fileData = D.(sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)).values;
+                D = load(strcat(obj.folderName, sprintf('/sub%02d_sess%02d.mat', obj.subjectNum, obj.sessionNum)));
+                fdNames = fieldnames(D);
+                obj.fileData = D.(fdNames{1}).values;
                 obj.epochTime = size(obj.fileData, 1);
                 obj.epochTime = obj.epochTime / obj.dataRate;
                 obj.staticCues = zeros(1, size(obj.fileData, 3));
