@@ -406,7 +406,7 @@ set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
 set(handles.pumSubject, 'String', num2str(handles.dSets.getDataSet.listSubjects));
 set(handles.pumSubject, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
 
-set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listChannelNames));
+set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listChannelNames'));
 
 set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
 set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
