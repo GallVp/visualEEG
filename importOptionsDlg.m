@@ -219,6 +219,9 @@ function rbByTrialTime_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of rbByTrialTime
+set(handles.cbChannAcrossRow1, 'Enable', 'On');
+set(handles.editDataVariable, 'String', 'EEGdata');
+set(handles.editDataVariable, 'Enable', 'On');
 handles.importMethod = 'BYEPOCHTIME';
 set(handles.upByTrialTime, 'Visible', 'On');
 set(handles.upByEpochIndex, 'Visible', 'Off');
@@ -246,6 +249,9 @@ function rbByEpochIndex_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of rbByEpochIndex
+set(handles.cbChannAcrossRow1, 'Enable', 'On');
+set(handles.editDataVariable, 'String', 'EEGdata');
+set(handles.editDataVariable, 'Enable', 'On');
 handles.importMethod = 'BYEPOCHEVENT';
 set(handles.upByTrialTime, 'Visible', 'Off');
 set(handles.upByEpochIndex, 'Visible', 'On');

@@ -1,2 +1,3 @@
 *.mat -crlf -diff -merge
 *.fig -crlf -diff -merge
+*.xls -crlf -diff -merge

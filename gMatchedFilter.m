@@ -22,7 +22,7 @@ function varargout = gMatchedFilter(varargin)
 
 % Edit the above text to modify the response to help gMatchedFilter
 
-% Last Modified by GUIDE v2.5 15-Mar-2016 12:32:43
+% Last Modified by GUIDE v2.5 24-Jun-2016 15:25:04
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -96,11 +96,21 @@ handles.Ti = 0;
 handles.Ts = 0.1;
 handles.Tf = 1;
 
+handles.negTime = 0.5;
+
 % Update centre channels pop up menu
 txtChannels = cellstr(num2str(handles.channels'))';
 set(handles.pumCentreChannel, 'String', txtChannels);
 set(handles.pumCentreChannel, 'Value', 1);
 
+
+% Update rectifying channels pop up menu
+txtChannels = cellstr(num2str(handles.dataSet1.listChannels))';
+set(handles.pumRectifyingChannel, 'String', txtChannels);
+set(handles.pumRectifyingChannel, 'Value', length(handles.dataSet1.listChannels));
+
+handles.rectifyingChannel = handles.dataSet1.listChannels;
+handles.rectifyingChannel = handles.rectifyingChannel(length(handles.dataSet1.listChannels));
 
 %Startup data selection
 
@@ -156,10 +166,19 @@ else
     exepochs = ones(1, length(handles.dataSet1.extrials));
     exepochs = exepochs == 1;
 end
+
+rectifyingData = handles.dataSet1.sstData(:,handles.rectifyingChannel,:);
+
 processingData = handles.dataSet1.sstData(:, handles.channels, exepochs);
+
+rectifyingData = rectifyingData(:, :, exepochs);
+[rectifyingData, ~] = eegOperations.shapeProcessing(rectifyingData);
+
 [P, nT] = eegOperations.shapeProcessing(processingData);
 P = detrend(P, 'constant');
 %P = normc(P);
+
+rectifyingData = detrend(rectifyingData, 'constant');
 
 fOrder = 2;
 fLow = 1;
@@ -170,13 +189,27 @@ fLow = 1;
 padSamples = 64;
 P = [P(1:padSamples,:); P(:,:)];
 
+rectifyingData = [rectifyingData(1:padSamples,:); rectifyingData(:,:)];
+
 P = filter(bl,al, P);
 P = P(padSamples+1:end,:);
 processedData = eegOperations.shapeSst(P, nT);
 
+rectifyingData = filter(bl,al, rectifyingData);
+rectifyingData = rectifyingData(padSamples+1:end,:);
+rectifyingData = eegOperations.shapeSst(rectifyingData, nT);
+
 filterCoffs = -1 .* ones(1, length(handles.channels)) ./ (length(handles.channels) - 1);
 filterCoffs(handles.centreChannel) = 1;
 processedData = spatialFilterSstData(processedData, filterCoffs');
+
+
+
+processedData = rectifySstData(processedData, 20, rectifyingData);
+
+if(handles.verbose)
+    eegData.plotSstData({1/handles.dataSet1.dataRate:1/handles.dataSet1.dataRate:handles.dataSet1.epochTime}, {processedData}, {'Extracted Events'}, {'PLOT'}, -1);
+end
 
 [ handles.X, handles.Xcv, handles.Xtest]...
     = eegData.splitDataMF(processedData, [handles.templateStart handles.templateEnd],...
@@ -269,10 +302,21 @@ if(handles.verbose)
     eegData.plotSstData({timeVect}, {threshData}, {'Threshold Result'}, {'STEM'}, -1);
 end
 
-[eventData, averageDelay, tpr, fpr] = processEvents(threshData, timeVect, handles.ncws, handles.cueTime);
-eegData.plotSstData({timeVect}, {eventData}, {'Events'}, {'STEM'}, -1);
+eventData = extractEvents(threshData, handles.ncws);
 
-msgbox(sprintf('True positive rate: %.1f\nFalse negative rate: %.1f\nAverage detection delay: %.1f',tpr, fpr, averageDelay),'Test results');
+if(handles.verbose)
+    eegData.plotSstData({timeVect}, {eventData}, {'Extracted Events'}, {'STEM'}, -1);
+end
+
+prunedData = pruneEvents(eventData, 1000/handles.step, handles.negTime);
+
+if(handles.verbose)
+    eegData.plotSstData({timeVect}, {prunedData}, {'Pruned data'}, {'STEM'}, -1);
+end
+
+[averageDelay, tpr, fpr] = countEvents(prunedData, timeVect, handles.cueTime, handles.negTime);
+
+msgbox(sprintf('True positive rate: %.1f\nFalse positive rate: %.1f\nAverage detection delay: %.1f',tpr, fpr, averageDelay),'Test results');
 
 
 % --- Executes on selection change in pum_session.
@@ -1174,3 +1218,141 @@ tpr = truePositives/size(eventData, 3) * 100;
 fpr = falsePositives/size(eventData, 3) * 100;
 
 averageDelay = sum(eventDelay(1,eventDelay(2,:) ~= 0))/sum(eventDelay(2,:) ~= 0);
+
+
+function [eventData] = extractEvents(threshData, ncws)
+
+% Generating events
+% ThreshData and eventData should have only one channel
+eventData = zeros(size(threshData));
+
+for i = 1:size(threshData, 3)
+    shiftReg = zeros(1, ncws);
+    for j = 1:size(threshData, 1)
+        shiftReg(ncws) = threshData(j,1,i);
+        if(sum(shiftReg) == ncws)
+            eventData(j,1,i) = 1;
+        end
+        shiftReg = circshift(shiftReg, [1, -1]);
+        shiftReg(ncws) = 0;
+    end
+end
+
+function [prunedData] = pruneEvents(eventData, dataRate, negTime)
+
+prunedData = zeros(size(eventData));
+negSamples = round(negTime * dataRate);
+
+for i = 1:size(eventData, 3)
+    j = 1;
+    while(j <= size(eventData, 1))
+        if(eventData(j,1,i))
+            prunedData(j,1,i) = 1;
+            j = j + negSamples;
+        else
+            j = j + 1;
+        end
+    end
+end
+
+function [averageDelay, tpr, fpr] = countEvents(prunedData, timeVect, cueTime, negTime)
+
+%Generating events
+% Delay is taken positive. cueTime - eventTime
+eventDelay = zeros(2, size(prunedData, 3));
+truePositives = 0;
+falsePositives = 0;
+for i = 1:size(prunedData, 3)
+    tpCounted = 0;
+    for j = 1:size(prunedData, 1)
+        if(prunedData(j, 1, i))
+            if(tpCounted)
+                falsePositives = falsePositives + 1;
+            else
+                if(abs(cueTime - timeVect(j)) <= negTime)
+                    truePositives = truePositives + 1;
+                    eventDelay(1,j) = cueTime - timeVect(j);
+                    eventDelay(2,j) = j;
+                    tpCounted = 1;
+                else
+                    falsePositives = falsePositives + 1;
+                end
+            end
+        end
+    end
+end
+
+tpr = truePositives/size(prunedData, 3) * 100;
+fpr = falsePositives/size(prunedData, 3) * 100;
+
+averageDelay = sum(eventDelay(1,eventDelay(2,:) ~= 0))/sum(eventDelay(2,:) ~= 0);
+
+function [rectifiedData] = rectifySstData(sstData, threshold, rectChannel)
+
+[P1, ~] = eegOperations.shapeProcessing(rectChannel);
+[P, nT] = eegOperations.shapeProcessing(sstData);
+P(abs(P1) > threshold, :) = 0;
+
+rectifiedData = eegOperations.shapeSst(P, nT);
+
+
+function editNegTime_Callback(hObject, eventdata, handles)
+% hObject    handle to editNegTime (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editNegTime as text
+%        str2double(get(hObject,'String')) returns contents of editNegTime as a double
+val = get(hObject,'String');
+negTime = str2double(val);
+if(~isnan(negTime))
+    if(negTime < 0)
+        errordlg('Invalid neglect time. This value should be a positive.','Neglect time selection', 'modal');
+        set(hObject, 'String', num2str(handles.negTime));
+    else
+        handles.negTime = negTime;
+        guidata(hObject, handles);
+    end
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function editNegTime_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editNegTime (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in pumRectifyingChannel.
+function pumRectifyingChannel_Callback(hObject, eventdata, handles)
+% hObject    handle to pumRectifyingChannel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns pumRectifyingChannel contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pumRectifyingChannel
+
+val = get(hObject,'Value');
+handles.rectifyingChannel = val;
+set(handles.pb_validate, 'Enable', 'Off');
+set(handles.pb_test, 'Enable', 'Off');
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function pumRectifyingChannel_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pumRectifyingChannel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
