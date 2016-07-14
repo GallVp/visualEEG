@@ -164,23 +164,7 @@ classdef sstData < matlab.mixin.Copyable
                 axis(a);
                 hold off
             end
-            % if(handles.dynamicCue)
-            %     hold on
-            %     a = axis;
-            %     ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
-            %     try
-            %         cueTime = ext(handles.epochNum);
-            %         line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)],...
-            % 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
-            %     catch ME
-            %         disp(ME)
-            %         disp('Probable cause: Dynamic cues not available for selected subject/session.')
-            %     end
-            %     axis(a);
-            %     hold off
-            % end
-            
-            
+
             %Update Legend
             if(showLegend)
                 legend(obj.channelNames);
