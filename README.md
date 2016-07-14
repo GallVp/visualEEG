@@ -5,10 +5,17 @@
 VisualEEG is a MATLAB/GUIDE based toolbox which can be used for visual analysis of EEG/EMG/TMS data.
 
 ## Compatibility
-Currently visualEEG is being developed on mac OSX El Capitan, Matlab version R2015b. Windows/Linux users can experience some problems with the GUI layout.
+Currently visualEEG is being developed on OSX El Capitan, MATLAB version R2015b. Windows/Linux users can experience some problems with the GUI layout.
 
 ## Installation
-From Matlab file explorer, add the folder *visualEEG* to path by selecting the *Selected folders and subfolders* option. Run `visualEEG.m` file.
+
+1. Clone the git repository.
+
+    ```
+    $ git clone --recursive https://github.com/GallVp/visualEEG
+    ```
+
+2. From MATLAB file explorer, add the folder/repository *visualEEG* to `path` by selecting the *Selected folders and subfolders* option. Run `visualEEG.m` file.
 
 ## Importing Data
 visualEEG can only import data saved in `.mat` files. All the files should be stored in a single directory. Following naming scheme should be used for files.
@@ -17,9 +24,9 @@ visualEEG can only import data saved in `.mat` files. All the files should be st
 
 There are three ways in which data can be imported.
 
-1.  By epoch time
-2.  By epoch event
-3.  Signal mat files
+1. By epoch time
+2. By epoch event
+3. Signal mat files
 
 In method 1, only *epoch time* and *sampling rate* are needed. In method 2, *sampling rate*, *time before epoch event* and *time after epoch event* are needed. In this case, each `.mat` file should also contain another vector variable for event information. This variable should be a vector whose length is equal to total number of epochs. By method 3, mat fies exported from CED Signal program can be imported.
 
@@ -32,6 +39,6 @@ This feature is optional. If channel naming is required, a `.xls` file should be
 ## Implementing New Operations
 New operations can be implemented easily in visualEEG by carrying out three steps in    `eegOperations` class.
 
-1.  Adding the name of the operation to `AVAILABLE_OPERATIONS` property.
-2.  Implementing user interaction dialog boxes in `askArgs` function to acquire operation parameters.
-3.  Implementing the operation in `applyOperation` function.
+1. Adding the name of the operation to `AVAILABLE_OPERATIONS` property.
+2. Implementing user interaction dialog boxes in `askArgs` function to acquire operation parameters.
+3. Implementing the operation in `applyOperation` function.
