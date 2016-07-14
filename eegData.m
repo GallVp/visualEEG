@@ -89,14 +89,13 @@ classdef eegData < sstData
                         obj.anchorFolder;
                     catch ME
                         if (strcmp(ME.identifier,'eegData:load:noFileFound'))
-                            errordlg('Folder does not contain any valid data file(s).','Import Data', 'modal');
-                            return
+                            throw(ME);
                         elseif(strcmp(ME.identifier,'MATLAB:nonExistentField'))
-                            disp(ME);
-                            disp('Probable cause: Incorrect variable name used.')
+                            me = MException('eegData:load:nonExistentField', 'Incorrect variable name used.');
+                            throw(me)
                         else
-                            disp(ME);
-                            disp('Probable cause: Unknown.')
+                            me = MException('eegData:load:unknown', 'Cause unknown. uiLoad function in eegData.m');
+                            throw(me)
                         end
                     end
                 else
