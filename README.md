@@ -36,8 +36,16 @@ In method 1, only *epoch time* and *sampling rate* are needed. In method 2, *sam
 ## Channel Naming
 This feature is optional. If channel naming is required, a `.xls` file should be placed in the data directory. This spreadsheet should have two columns. First column containing channel numbers, while the second column containing channel names.
 
-## Implementing New Operations
-New operations can be implemented easily in visualEEG by carrying out three steps in    `eegOperations` class.
+## How to Contribute?
+I would be very thankful if you contributed to the project in one or all of these ways:
+
+* Adding issues
+* Participating in discussions about issues here on GitHub and on Gitter
+* Improving the documentation
+* Forking the project and implementing new operations
+
+### Implementing New Operations
+New operations can be implemented easily in visualEEG by carrying out three steps in `eegOperations` class.
 
 1. Adding the name of the operation to `AVAILABLE_OPERATIONS` property.
 2. Implementing user interaction dialog boxes in `askArgs` function to acquire operation parameters.
