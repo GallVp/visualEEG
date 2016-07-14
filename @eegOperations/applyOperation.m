@@ -50,7 +50,7 @@ switch operationName
         [m, n, o] = size(P);
         proc = zeros(floor(m/2) + 1, n, o);
         for i=1:o
-            [proc(:,:,i), f] = computeFFT(P(:,:,i), args{1});
+            [proc(:,:,i), f] = computeFFT(P(:,:,i), processingData.dataRate);
         end
         obj.procData.setFrequencyData(proc, f);
         

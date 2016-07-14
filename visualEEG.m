@@ -324,19 +324,23 @@ saveOptions = exportOptionsDlg;
 if(isempty(saveOptions))
 else
     switch saveOptions.('selectedOption')
-        case 1%Window data
-        case 2%Selected trial
-        case 3%Selected session
-            if(saveOptions.('doPreprocess') == 1)
-                [mydata, ~, ~] = handles.operationSets{1,2}.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-            else
-                mydata = handles.dataSet1.sstData;
-            end
-            uisave({'mydata'},fullfile(handles.folderName,...
-                sprintf('vEEG_sub%02d_sess%02d',handles.subjectNum, handles.sessionNum)));
-        case 4%Selected subject
-        case 5%All subjects
-        case 6%NeuCube
+        case 1%Selected epoch
+            data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+            selectedEpoch = data.getEpoch;
+            uisave({'selectedEpoch'},fullfile(handles.dSets.getDataSet.folderName,...
+                sprintf('ep%02d_sub%02d_sess%02d',data.getAbsoluteEpochNum, data.subjectNum, data.sessionNum)));
+        case 2%Selected session
+            selectedSession = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+            uisave({'selectedSession'},fullfile(handles.dSets.getDataSet.folderName,...
+                sprintf('sub%02d_sess%02d', selectedSession.subjectNum, selectedSession.sessionNum)));
+        case 3%Selected subject
+            disp('Export option not implemented');
+        case 4%All subjects
+            disp('Export option not implemented');
+        case 5%Selected Session (NeuCube)
+            disp('Export option not implemented');
+        otherwise
+            disp('Export option not implemented');
     end
 end
 % --------------------------------------------------------------------
@@ -358,30 +362,28 @@ function saveFigure_ClickedCallback(hObject, eventdata, handles)
 % hObject    handle to saveFigure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
 % h = findobj(gca,'Type','line');
 % figXData = get(h, 'XData');
 % figYData = get(h, 'YData');
-% H = figure;
-% if(iscell(figXData))
-%     hold on;
-%     for i=1:size(figXData, 1)
-%         plot(cell2mat(figXData(i,1)), cell2mat(figYData(i,1)), 'linewidth', 2);
-%     end
-%     hold off;
-% else
-%     plot(figXData, figYData, 'linewidth', 2);
-% end
-% xlabel('Time (s)')
-% ylabel('Amplitude')
-% set(gca,'FontName','Helvetica');
-% set(gca,'FontSize',12);
-% set(gca,'LineWidth',2);
-% set(H,'Color',[1 1 1]);
+
+H = figure;
+verbose = 1;
+data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
+
 [~,~,~] = mkdir(handles.dSets.getDataSet.folderName, 'Output Figures');
-export_fig(fullfile(strcat(handles.dSets.getDataSet.folderName, '/Output Figures'),...
+imgName = fullfile(strcat(handles.dSets.getDataSet.folderName, '/Output Figures'),...
     sprintf('sub%02d_sess%02d_%s.pdf',handles.dSets.getDataSet.subjectNum, handles.dSets.getDataSet.sessionNum,...
-    datestr(now))), '-transparent', gca);
-% close(H);
+    datestr(now)));
+try
+    export_fig(imgName, '-transparent', H);
+    uiwait(msgbox(imgName,'Saved image...','modal'));
+catch ME
+    uiwait(errordlg('Failed to export using export_fig. Now using matlab print function.','Figure export', 'modal'));
+    print(imgName, '-dpdf', H);
+    uiwait(msgbox(imgName,'Saved image...','modal'));
+end
+close(H);
 
 % ---Update View function
 function updateView(handles)
@@ -430,57 +432,8 @@ end
 
 
 %Update plot
-dispEpoch = data.getEpoch;
-if(isempty(dispEpoch))
-    axis([0 1 0 1]);
-    text(0.38,0.5, 'No epochs available.');
-else
-    if(strcmp(data.dataType, sstData.DATA_TYPE_TIME_SERIES))
-        plot(data.abscissa, dispEpoch)
-    elseif(strcmp(data.dataType, sstData.DATA_TYPE_PREDICTION))
-        plot(data.abscissa, dispEpoch(:,1,:), 'o', 'color', 'red')
-        hold on
-        plot(data.abscissa, dispEpoch(:,2,:), '*', 'color', 'blue')
-        hold off
-    else
-        stem(data.abscissa, dispEpoch)
-    end
-end
-
-% Show Static Cue
-if(handles.showCues)
-    hold on
-    a = axis;
-    cuedata = data.getCueTime;
-    for i=1:length(cuedata)
-        line([cuedata(i) cuedata(i)], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
-    end
-    axis(a);
-    hold off
-end
-% if(handles.dynamicCue)
-%     hold on
-%     a = axis;
-%     ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
-%     try
-%         cueTime = ext(handles.epochNum);
-%         line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)],...
-% 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
-%     catch ME
-%         disp(ME)
-%         disp('Probable cause: Dynamic cues not available for selected subject/session.')
-%     end
-%     axis(a);
-%     hold off
-% end
-
-
-%Update Legend
-if(handles.showLegend)
-    legend(data.channelNames);
-else
-    legend off
-end
+verbose = 0;
+data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
 
 %Update trial number to be displayed
 % totalEpochs = size(viewData, 3);

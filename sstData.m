@@ -70,7 +70,7 @@ classdef sstData < matlab.mixin.Copyable
             obj.dataRate = dataRate;
             obj.abscissa = obj.interval(1) + 1/obj.dataRate:1/obj.dataRate:obj.interval(2);
             obj.dataSize = [size(selectedData,1) size(selectedData,2) size(selectedData,3)];
-
+            
         end
         
         function setFrequencyData(obj, selectedData, f)
@@ -92,7 +92,7 @@ classdef sstData < matlab.mixin.Copyable
             obj.dataType = sstData.DATA_TYPE_PREDICTION;
         end
         function setGrandData(obj, selectedData)
-                    
+            
             obj.selectedData = selectedData;
             obj.epochNums = 1;
             obj.currentEpochNum = 1;
@@ -117,6 +117,82 @@ classdef sstData < matlab.mixin.Copyable
     methods (Access = public)
         function plotData(obj)
             sstData.plotSstData(obj);
+        end
+        function plotCurrentEpoch(obj, showCue, showLegend, verbose)
+            if nargin < 2
+                showCue = 0;
+                showLegend = 0;
+                verbose = 1;
+            end
+            dispEpoch = obj.getEpoch;
+            if(isempty(dispEpoch))
+                axis([0 1 0 1]);
+                text(0.38,0.5, 'No epochs available.');
+            else
+                if(strcmp(obj.dataType, sstData.DATA_TYPE_TIME_SERIES))
+                    plot(obj.abscissa, dispEpoch)
+                    if(verbose)
+                        xlabel('Time (s)')
+                        ylabel('Amplitude')
+                    end
+                elseif(strcmp(obj.dataType, sstData.DATA_TYPE_PREDICTION))
+                    plot(obj.abscissa, dispEpoch(:,1,:), 'o', 'color', 'red')
+                    hold on
+                    plot(obj.abscissa, dispEpoch(:,2,:), '*', 'color', 'blue')
+                    hold off
+                    if(verbose)
+                        xlabel('Sample Number')
+                        ylabel('Label')
+                    end
+                else
+                    stem(obj.abscissa, dispEpoch)
+                    if(verbose)
+                        xlabel('Frequency (Hz)')
+                        ylabel('Amplitude')
+                    end
+                end
+            end
+            
+            % Show Static Cue
+            if(showCue)
+                hold on
+                a = axis;
+                cuedata = obj.getCueTime;
+                for i=1:length(cuedata)
+                    line([cuedata(i) cuedata(i)], [a(3) a(4)], 'LineStyle','--', 'Color', 'red', 'LineWidth', 1);
+                end
+                axis(a);
+                hold off
+            end
+            % if(handles.dynamicCue)
+            %     hold on
+            %     a = axis;
+            %     ext = cell2mat(handles.cues(cell2mat(handles.cues(:,1))==handles.subjectNum & cell2mat(handles.cues(:,2))==handles.sessionNum,3));
+            %     try
+            %         cueTime = ext(handles.epochNum);
+            %         line([cueTime+handles.dynamicCueOffset cueTime+handles.dynamicCueOffset], [a(3) a(4)],...
+            % 'LineStyle','--', 'Color', 'blue', 'LineWidth', 1);
+            %     catch ME
+            %         disp(ME)
+            %         disp('Probable cause: Dynamic cues not available for selected subject/session.')
+            %     end
+            %     axis(a);
+            %     hold off
+            % end
+            
+            
+            %Update Legend
+            if(showLegend)
+                legend(obj.channelNames);
+            else
+                legend off
+            end
+            if(verbose)
+                set(gca,'FontName','Helvetica');
+                set(gca,'FontSize',12);
+                set(gca,'LineWidth',2);
+                set(gcf,'Color',[1 1 1]);
+            end
         end
         function [indices] = getSelectedIndices(obj)
             indices = round((obj.interval(1) + 1/obj.dataRate : 1/obj.dataRate : obj.interval(2)) .* obj.dataRate);
@@ -274,6 +350,107 @@ classdef sstData < matlab.mixin.Copyable
             Xcv = fileData(indicesR(1):indicesR(2),:,train_trials+1:train_trials+cv_trials);
             Xtest = fileData(indicesR(1):indicesR(2),:, train_trials+cv_trials + 1:end);
         end
+        
+        function [xSst, y] = splitIntoSegments(dataSst, indicesA, indicesB)
+            xSst1 = dataSst(indicesA(1):indicesA(2),:,:);
+            Sst2 = dataSst(indicesB(1):indicesB(2),:,:);
+            xSst = cat(3,xSst1,XSst2);
+            
+            totalEpochs = size(xSst, 3); % Total epochs are always even
+            y = [ones(totalEpochs/2,1); ones(totalEpochs/2,1).*2]; % Label the epochs
+        end
+        
+        function [shuffledXSst, shuffledY] = shuffleEpochs(xSst, y, permu)
+            
+            totalEpochs = size(xSst, 3); % Total epochs are always even
+            
+            switch permu
+                case 0 % Random
+                    p = randperm(totalEpochs);
+                    shuffledXSst = xSst(:,:,p);
+                    shuffledY = y(p);
+                case 1 % Sequential
+                    p = ones(1,totalEpochs) == 1;
+                    shuffledXSst = xSst(:,:,p);
+                    shuffledY = y(p);
+                case 2 % Alternative
+                    p = [1:totalEpochs/2; totalEpochs/2+1:totalEpochs];
+                    p = p(:);
+                    shuffledXSst = xSst(:,:,p);
+                    shuffledY = y(p);
+                otherwise
+                    ME = MException('sstData:noSuchPermutation', 'Permutation option not available');
+                    throw(ME);
+            end
+        end
+        
+        
+        function exportNeuCubeData(folderName, subjectNum, sessionNum, rawData, intvla,...
+                intvlb, datarate, testpc)
+            
+            
+            %loading data
+            indicesA = [intvla(1)+1/datarate intvla(2)] .* datarate;
+            indicesB = [intvlb(1)+1/datarate intvlb(2)] .* datarate;
+            
+            [m, n, o, p] = size(subjectData);
+            
+            %Dimension Description
+            %m=samples
+            %n=channels
+            %o=trials
+            %p=sessions
+            
+            %Features
+            % Raw data is taken as features
+            % X is two dimensional. Datasamples are along rows and features are along
+            % columns.
+            
+            X = zeros(o*p,m*n);
+            for j=1:p
+                for k=1:o
+                    temp = subjectData(:,:,k,j);
+                    X(j*k,:) = temp(:);
+                end
+            end
+            
+            total_examples = o*p;       %Total examples are always even
+            y = [ones(total_examples/2,1); ones(total_examples/2,1).*2];
+            
+            %Copy data from end of X and y to create Xtest and ytest
+            test_examples = floor(testpc / 100 * (total_examples/2));
+            nt_examples = total_examples/2 - test_examples;
+            
+            ytest = [y(nt_examples+1:total_examples/2);y(total_examples/2+nt_examples+1:end)];
+            Xtest = [X(nt_examples+1:total_examples/2,:); X(total_examples/2+nt_examples+1:end,:)];
+            
+            [~,~,~] = mkdir(folderName, 'NeuCube Data');
+            [~,~,~] = rmdir(strcat(folderName, '/NeuCube Data/', sprintf('sub%02d_sess%02d',...
+                subjectNum, sessionNum)), 's');
+            [~,~,~] = mkdir(strcat(folderName, '/NeuCube Data'), sprintf('sub%02d_sess%02d',...
+                subjectNum, sessionNum));
+            [~,~,~] = mkdir(strcat(folderName, '/NeuCube Data/', sprintf('sub%02d_sess%02d',...
+                subjectNum, sessionNum)), 'TestData');
+            
+            for i=1:total_examples
+                A = reshape(X(i,:),[m n]);
+                csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                    subjectNum, sessionNum)), sprintf('sam%d.csv',i)),A);
+            end
+            
+            csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                subjectNum, sessionNum)), 'tar_class_labels.csv'), y);
+            
+            %Saving Test Data
+            for i=1:test_examples*2
+                A = reshape(Xtest(i,:),[m n]);
+                csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                    subjectNum, sessionNum),'/TestData'), sprintf('sam%d.csv',i)),A);
+            end
+            
+            csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                subjectNum, sessionNum),'/TestData'), 'tar_class_labels.csv'), ytest);
+        end
         function H = plotSstData(dataSst, titleText, plotType, xAxisLimits)
             % Create a figure and axes
             % xAxisLimits = -1 means that this argument is not used
@@ -356,7 +533,7 @@ classdef sstData < matlab.mixin.Copyable
                     dat = persistant.ordinate;
                     stem(persistant.abscissa, dat(:,:,persistant.trialNum), 'LineWidth', 2)
                 end
-
+                
                 xlabel('Time (s)')
                 ylabel('Amplitude')
                 title(persistant.titleText)

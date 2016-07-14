@@ -114,7 +114,6 @@ function pbOK_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles.dataOut.('selectedOption') = get(handles.pumOptions, 'Value');
-handles.dataOut.('doPreprocess') = get(handles.cbPreprocess, 'Value');
 guidata(hObject, handles);
 close(handles.figure1);
 
