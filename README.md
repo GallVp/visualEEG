@@ -1,6 +1,6 @@
 # VisualEEG
 
-[![Gitter](https://badges.gitter.im/usmanayubsh/visualEEG.svg)](https://gitter.im/usmanayubsh/visualEEG?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/GallVp/visualEEG.svg)](https://gitter.im/GallVp/visualEEG?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 VisualEEG is a MATLAB/GUIDE based toolbox which can be used for visual analysis of EEG/EMG/TMS data.
 
