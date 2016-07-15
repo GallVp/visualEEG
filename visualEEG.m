@@ -326,19 +326,21 @@ else
     switch saveOptions.('selectedOption')
         case 1%Selected epoch
             data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-            selectedEpoch = data.getEpoch;
-            uisave({'selectedEpoch'},fullfile(handles.dSets.getDataSet.folderName,...
-                sprintf('ep%02d_sub%02d_sess%02d',data.getAbsoluteEpochNum, data.subjectNum, data.sessionNum)));
+            data.saveCurrentEpoch(handles.dSets.getDataSet.folderName);
         case 2%Selected session
-            selectedSession = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-            uisave({'selectedSession'},fullfile(handles.dSets.getDataSet.folderName,...
-                sprintf('sub%02d_sess%02d', selectedSession.subjectNum, selectedSession.sessionNum)));
+            data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+            data.saveToFile(handles.dSets.getDataSet.folderName);
         case 3%Selected subject
             disp('Export option not implemented');
         case 4%All subjects
             disp('Export option not implemented');
         case 5%Selected Session (NeuCube)
-            disp('Export option not implemented');
+            try
+                data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+                data.saveNeuCubeData(handles.dSets.getDataSet.folderName);
+            catch ME
+                uiwait(errordlg(ME.message,'Export NeuCube Data', 'modal'));
+            end
         otherwise
             disp('Export option not implemented');
     end

@@ -164,7 +164,7 @@ classdef sstData < matlab.mixin.Copyable
                 axis(a);
                 hold off
             end
-
+            
             %Update Legend
             if(showLegend)
                 legend(obj.channelNames);
@@ -262,6 +262,70 @@ classdef sstData < matlab.mixin.Copyable
                 obj.currentEpochNum = obj.currentEpochNum - 1;
             end
         end
+        function saveCurrentEpoch(obj, rootFolder)
+            epochData = obj.getEpoch;
+            channelNames = obj.channelNames;
+            abscissa = obj.abscissa;
+            dataRate = obj.dataRate;
+            dataType = obj.dataType;
+            subjectNum = obj.subjectNum;
+            sessionNum = obj.sessionNum;
+            epochNum = obj.getAbsoluteEpochNum;
+            uisave({'epochData', 'channelNames', 'abscissa', 'dataRate', 'dataType', 'subjectNum', 'sessionNum', 'epochNum'},...
+                fullfile(rootFolder, sprintf('sub%02d_sess%02d_epo%02d', obj.subjectNum, obj.sessionNum, obj.getAbsoluteEpochNum)));
+        end
+        
+        function saveToFile(obj, rootFolder)
+            epochData = obj.selectedData;
+            channelNames = obj.channelNames;
+            abscissa = obj.abscissa;
+            dataRate = obj.dataRate;
+            dataType = obj.dataType;
+            subjectNum = obj.subjectNum;
+            sessionNum = obj.sessionNum;
+            epochNumbers = obj.epochNums;
+            events = obj.staticCues;
+            uisave({'epochData', 'channelNames', 'abscissa', 'dataRate', 'dataType', 'subjectNum', 'sessionNum', 'epochNumbers', 'events'},...
+                fullfile(rootFolder, sprintf('sub%02d_sess%02d', obj.subjectNum, obj.sessionNum)));
+        end
+        
+        function saveNeuCubeData(obj, rootFolder)
+            
+            prompt = {'Segment 1 start:', 'Segment 1 end:','Segment 2 start:','Segment 2 end:',...
+                'Training percentage:', 'Validation percentage:', 'Testing percentage:',...
+                sprintf('Data permutation\nRandom=0/Sequential=1/Alternate=2')};
+            dlg_title = 'Export NeuCube Data';
+            num_lines = 1;
+            defaultans = {num2str(obj.interval(1)), num2str(obj.interval(2)/2), num2str(obj.interval(2)/2),...
+                num2str(obj.interval(2)), '50', '0', '50', '0'};
+            answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+            options(1) = str2double(answer(1)); % Segment 1 start
+            options(2) = str2double(answer(2)); % Segment 1 end
+            options(3) = str2double(answer(3)); % segment 2 start
+            options(4) = str2double(answer(4)); % Segment 2 end
+            options(5) = str2double(answer(5)); % Training percentage
+            options(6) = str2double(answer(6)); % Validation percentage
+            options(7) = str2double(answer(7)); % Testing percentage
+            options(8) = str2double(answer(8)); % Permutaions
+            if(sum(isempty(options)))
+                options = [];
+            else
+                if(sum(isnan(options)))
+                    options = [];
+                else
+                    % Do nothing
+                end
+            end
+            if(isempty(options))
+                ME = MException('sstData:saveNeuCubeData:missingOption', 'Export option(s) missing.');
+                throw(ME)
+            else
+                sstData.exportNeuCubeData(rootFolder, obj.subjectNum, obj.sessionNum,...
+                    obj.selectedData, [options(1) options(2)], [options(3) options(4)], obj.dataRate, options(5),...
+                    options(6), options(7), options(8));
+                uiwait(msgbox(sprintf('Data saved to %s/NeuCube Data.', rootFolder),'Saved NeuCube Data...','modal'));
+            end
+        end
     end
     methods (Access = public, Static)
         function [ X, y] = splitData(dataSst, segAInterval, segBInterval, dataRate, permu)
@@ -337,8 +401,8 @@ classdef sstData < matlab.mixin.Copyable
         
         function [xSst, y] = splitIntoSegments(dataSst, indicesA, indicesB)
             xSst1 = dataSst(indicesA(1):indicesA(2),:,:);
-            Sst2 = dataSst(indicesB(1):indicesB(2),:,:);
-            xSst = cat(3,xSst1,XSst2);
+            xSst2 = dataSst(indicesB(1):indicesB(2),:,:);
+            xSst = cat(3,xSst1,xSst2);
             
             totalEpochs = size(xSst, 3); % Total epochs are always even
             y = [ones(totalEpochs/2,1); ones(totalEpochs/2,1).*2]; % Label the epochs
@@ -363,50 +427,71 @@ classdef sstData < matlab.mixin.Copyable
                     shuffledXSst = xSst(:,:,p);
                     shuffledY = y(p);
                 otherwise
-                    ME = MException('sstData:noSuchPermutation', 'Permutation option not available');
+                    ME = MException('sstData:noSuchPermutation', 'Permutation option not available.');
                     throw(ME);
             end
         end
+        function [sstX, Y, sstXcv, ycv, sstXtest, ytest] = splitIntoSets(xSst, y, trainPer, cvPer, testPer)
+            totalEpochs = size(xSst, 3); % Total epochs are always even
+            % This function assumes that first half of epochs belong to
+            % class 1 and 2nd half belongs to class 2
+            
+            trainEpochs = round(totalEpochs/2 * trainPer / 100);
+            cvEpochs = round(totalEpochs/2 * cvPer / 100);
+            %testEpochs = round(totalEpochs/2 * testPer / 100);
+            
+            if(trainPer + cvPer + testPer ~= 100)
+                ME = MException('sstData:invalidSplit', 'Train, Test, and Validation data percentages should add up to 100.');
+                throw(ME);
+            end
+            
+            xSst1 = xSst(:,:, 1:totalEpochs/2);
+            xSst2 = xSst(:,:, totalEpochs/2 + 1 : end);
+            
+            y1 = y(1:totalEpochs/2);
+            y2 = y(totalEpochs/2 + 1 : end);
+            
+            sstX1 = xSst1(:,:, 1:trainEpochs);
+            sstX2 = xSst2(:,:, 1:trainEpochs);
+            sstX = cat(3, sstX1, sstX2);
+            
+            Y1 = y1(1:trainEpochs);
+            Y2 = y2(1:trainEpochs);
+            Y = cat(3, Y1, Y2);
+            
+            sstXcv1 = xSst1(:,:, trainEpochs + 1: trainEpochs + cvEpochs);
+            sstXcv2 = xSst2(:,:, trainEpochs + 1: trainEpochs + cvEpochs);
+            sstXcv = cat(3, sstXcv1, sstXcv2);
+            
+            ycv1 = y1(trainEpochs + 1: trainEpochs + cvEpochs);
+            ycv2 = y2(trainEpochs + 1: trainEpochs + cvEpochs);
+            ycv = cat(3, ycv1, ycv2);
+            
+            sstXtest1 = xSst1(:,:, trainEpochs + cvEpochs + 1: end);
+            sstXtest2 = xSst2(:,:, trainEpochs + cvEpochs + 1: end);
+            sstXtest = cat(3, sstXtest1, sstXtest2);
+            
+            ytest1 = y1(trainEpochs + cvEpochs + 1: end);
+            ytest2 = y2(trainEpochs + cvEpochs + 1: end);
+            ytest = cat(3, ytest1, ytest2);
+        end
         
-        
-        function exportNeuCubeData(folderName, subjectNum, sessionNum, rawData, intvla,...
-                intvlb, datarate, testpc)
+        function exportNeuCubeData(folderName, subjectNum, sessionNum, dataSst, intvlA,...
+                intvlB, datarate, trainPer, cvPer, testPer, permu)
             
             
             %loading data
-            indicesA = [intvla(1)+1/datarate intvla(2)] .* datarate;
-            indicesB = [intvlb(1)+1/datarate intvlb(2)] .* datarate;
+            indicesA = [intvlA(1)+1/datarate intvlA(2)] .* datarate;
+            indicesB = [intvlB(1)+1/datarate intvlB(2)] .* datarate;
             
-            [m, n, o, p] = size(subjectData);
+            [xSst, y] = sstData.splitIntoSegments(dataSst, indicesA, indicesB);
+            [sstX, Y, sstXcv, ycv, sstXtest, ytest] = sstData.splitIntoSets(xSst, y, trainPer, cvPer, testPer);
             
-            %Dimension Description
-            %m=samples
-            %n=channels
-            %o=trials
-            %p=sessions
+            [sstX, Y] = sstData.shuffleEpochs(sstX, Y, permu);
+            [sstXcv, ycv] = sstData.shuffleEpochs(sstXcv, ycv, permu);
+            [sstXtest, ytest] = sstData.shuffleEpochs(sstXtest, ytest, permu);
             
-            %Features
-            % Raw data is taken as features
-            % X is two dimensional. Datasamples are along rows and features are along
-            % columns.
             
-            X = zeros(o*p,m*n);
-            for j=1:p
-                for k=1:o
-                    temp = subjectData(:,:,k,j);
-                    X(j*k,:) = temp(:);
-                end
-            end
-            
-            total_examples = o*p;       %Total examples are always even
-            y = [ones(total_examples/2,1); ones(total_examples/2,1).*2];
-            
-            %Copy data from end of X and y to create Xtest and ytest
-            test_examples = floor(testpc / 100 * (total_examples/2));
-            nt_examples = total_examples/2 - test_examples;
-            
-            ytest = [y(nt_examples+1:total_examples/2);y(total_examples/2+nt_examples+1:end)];
-            Xtest = [X(nt_examples+1:total_examples/2,:); X(total_examples/2+nt_examples+1:end,:)];
             
             [~,~,~] = mkdir(folderName, 'NeuCube Data');
             [~,~,~] = rmdir(strcat(folderName, '/NeuCube Data/', sprintf('sub%02d_sess%02d',...
@@ -414,26 +499,39 @@ classdef sstData < matlab.mixin.Copyable
             [~,~,~] = mkdir(strcat(folderName, '/NeuCube Data'), sprintf('sub%02d_sess%02d',...
                 subjectNum, sessionNum));
             [~,~,~] = mkdir(strcat(folderName, '/NeuCube Data/', sprintf('sub%02d_sess%02d',...
-                subjectNum, sessionNum)), 'TestData');
+                subjectNum, sessionNum)), 'Test Data');
+            [~,~,~] = mkdir(strcat(folderName, '/NeuCube Data/', sprintf('sub%02d_sess%02d',...
+                subjectNum, sessionNum)), 'Validation Data');
             
-            for i=1:total_examples
-                A = reshape(X(i,:),[m n]);
+            % Saving train data
+            for i=1:length(Y)
+                A = sstX(:,:, i);
                 csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
                     subjectNum, sessionNum)), sprintf('sam%d.csv',i)),A);
             end
             
             csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
-                subjectNum, sessionNum)), 'tar_class_labels.csv'), y);
+                subjectNum, sessionNum)), 'tar_class_labels.csv'), Y);
             
-            %Saving Test Data
-            for i=1:test_examples*2
-                A = reshape(Xtest(i,:),[m n]);
+            %Saving validation Data
+            for i=1:length(ycv)
+                A = sstXcv(:,:, i);
                 csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
-                    subjectNum, sessionNum),'/TestData'), sprintf('sam%d.csv',i)),A);
+                    subjectNum, sessionNum),'/Validation Data'), sprintf('sam%d.csv',i)),A);
             end
             
             csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
-                subjectNum, sessionNum),'/TestData'), 'tar_class_labels.csv'), ytest);
+                subjectNum, sessionNum),'/Validation Data'), 'tar_class_labels.csv'), ycv);
+            
+            %Saving Test Data
+            for i=1:length(ytest)
+                A = sstXtest(:,:, i);
+                csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                    subjectNum, sessionNum),'/Test Data'), sprintf('sam%d.csv',i)),A);
+            end
+            
+            csvwrite(fullfile(strcat(folderName, sprintf('/NeuCube Data/sub%02d_sess%02d',...
+                subjectNum, sessionNum),'/Test Data'), 'tar_class_labels.csv'), ytest);
         end
         function H = plotSstData(dataSst, titleText, plotType, xAxisLimits)
             % Create a figure and axes
