@@ -144,6 +144,9 @@ classdef eegOperations < matlab.mixin.Copyable
             applyAllOperations(obj);
         end
         function rmOperation (obj, index)                   % Here index refers to index of operations.
+            if nargin < 2
+                index = length(obj.operations);
+            end
             
             selection = 1:length(obj.operations);
             selection = selection ~= index;
@@ -158,7 +161,7 @@ classdef eegOperations < matlab.mixin.Copyable
     
     methods (Access = private) % Functions defined in separate files
         [returnArgs] = askArgs(obj, index)
-        applyOperation(obj, operationName, args,  processingData)
+        applyOperation(obj, operationName, args,  processingData, operationNum)
     end
     
     methods (Access = private)
@@ -166,7 +169,16 @@ classdef eegOperations < matlab.mixin.Copyable
             
             numOperations = length(obj.operations);
             for i=obj.numApldOps + 1 :numOperations
-                obj.applyOperation(obj.operations{i}, obj.arguments{i}, obj.procData);
+                try
+                    obj.applyOperation(obj.operations{i}, obj.arguments{i}, obj.procData, i);
+                catch ME
+                    if(strcmp(ME.identifier, 'eegOperations:applyOperation:operationFailed'))
+                        fprintf('%s failed. Reason: %s \nIt is being removed from the operation list.',obj. operations{i}, ME.message);
+                        obj.rmOperation(i);
+                    else
+                        throw(ME)
+                    end
+                end
             end
             obj.numApldOps = length(obj.operations);
         end

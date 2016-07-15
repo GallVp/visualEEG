@@ -1,4 +1,4 @@
-function applyOperation(obj, operationName, args,  processingData)
+function applyOperation(obj, operationName, args,  processingData, operationNum)
 switch operationName
     case eegOperations.ALL_OPERATIONS{1} % Mean
         % No argument required.
@@ -59,23 +59,32 @@ switch operationName
     case eegOperations.ALL_OPERATIONS{7} % Spatial Laplacian
         % No argument required.
         if(strcmp(obj.dataChangeName, eegData.EVENT_NAME_CHANNELS_CHANGED) || isempty(obj.storedArgs.('sLCentre')))
-            options = processingData.channelNames;
-            [s,~] = listdlg('PromptString','Select centre:', 'SelectionMode','single',...
-                'ListString', options);
-            centre = processingData.channelNums(s);
-            obj.storedArgs.('sLCentre') = centre;
-            obj.dataChangeName = [];
+            if(sum(ismember(processingData.channelNums, obj.storedArgs.('sLCentre'))))
+                centre = obj.storedArgs.('sLCentre');
+                obj.dataChangeName = [];
+            else
+                options = processingData.channelNames;
+                [s,~] = listdlg('PromptString','Select centre:', 'SelectionMode','single',...
+                    'ListString', options);
+                if(isempty(s))
+                    ME = MException('eegOperations:applyOperation:operationFailed', 'Selection of laplacian centre cancelled.');
+                    throw(ME)
+                else
+                    centre = processingData.channelNums(s);
+                    obj.storedArgs.('sLCentre') = centre;
+                    obj.dataChangeName = [];
+                end
+            end
         else
             centre = obj.storedArgs.('sLCentre');
         end
+        % Map to relative index
+        centre = find(processingData.channelNums == centre);
         filterCoffs = -1 .* ones(processingData.dataSize(2), 1) ./ ((processingData.dataSize(2)) - 1);
         filterCoffs(centre) = 1;
         channelName = sprintf('Surrogate of %s',processingData.channelNames{centre});
         channelNums = 1;
         obj.procData.setChannelData(spatialFilterSstData(processingData.selectedData, filterCoffs), channelNums, channelName);
-        
-        
-        
     case eegOperations.ALL_OPERATIONS{8} % PCA
         % No argument required.
         [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
