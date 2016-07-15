@@ -173,7 +173,7 @@ classdef eegOperations < matlab.mixin.Copyable
                     obj.applyOperation(obj.operations{i}, obj.arguments{i}, obj.procData, i);
                 catch ME
                     if(strcmp(ME.identifier, 'eegOperations:applyOperation:operationFailed'))
-                        fprintf('%s failed. Reason: %s \nIt is being removed from the operation list.',obj. operations{i}, ME.message);
+                        fprintf('%s failed. Reason: %s \nIt is being removed from the operation list.\n',obj. operations{i}, ME.message);
                         obj.rmOperation(i);
                     else
                         throw(ME)
