@@ -92,6 +92,9 @@ set(hObject,'units','characters');
 windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
+% Set focus to OK
+uicontrol(handles.editSampleRate);
+
 % UIWAIT makes importOptionsDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 

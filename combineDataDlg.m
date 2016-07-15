@@ -99,6 +99,9 @@ set(hObject,'units','characters');
 windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
+% Set focus to pumCombine
+uicontrol(handles.pumCombine);
+
 % UIWAIT makes combineDataDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 

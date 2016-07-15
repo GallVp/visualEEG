@@ -325,6 +325,9 @@ set(handles.saveFigure, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
 set(handles.menuView, 'Enable', 'On');
 
+% Set focus to next
+uicontrol(handles.pbNext);
+
 guidata(hObject, handles);
 updateView(handles);
 catch ME

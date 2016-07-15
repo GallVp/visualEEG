@@ -84,6 +84,9 @@ set(hObject,'units','characters');
 windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
+% Set focus to pumOptions
+uicontrol(handles.pumOptions);
+
 % UIWAIT makes exportOptionsDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 

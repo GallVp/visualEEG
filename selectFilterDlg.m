@@ -104,6 +104,9 @@ set(hObject,'units','characters');
 windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
+% Set focus to pumFilters
+uicontrol(handles.pumFilters);
+
 % Update handles structure
 guidata(hObject, handles);
 
