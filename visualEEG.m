@@ -89,10 +89,10 @@ displayResolution = get(0,'screensize');
 
 width = displayResolution(3) * widthRatio;
 height = displayResolution(4) * heightRatio;
+x = (displayResolution(3) - width) / 2;
+y = (displayResolution(4) - height) / 2;
 set(hObject,'units','characters');
-windowPosition = get(hObject, 'pos');
-windowPosition(3) = width;
-windowPosition(4) = height;
+windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
 
