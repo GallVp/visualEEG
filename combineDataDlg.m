@@ -83,6 +83,22 @@ handles.dataOut = [];
 % Update handles structure
 guidata(hObject, handles);
 
+% Set window size  according to optimal ratio
+heightRatio = 0.246;
+widthRatio = 0.252;
+
+set(0,'units','characters');
+
+displayResolution = get(0,'screensize');
+
+width = displayResolution(3) * widthRatio;
+height = displayResolution(4) * heightRatio;
+x = (displayResolution(3) - width) / 2;
+y = (displayResolution(4) - height) / 2;
+set(hObject,'units','characters');
+windowPosition = [x y width height];
+set(hObject, 'pos', windowPosition);
+
 % UIWAIT makes combineDataDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 
