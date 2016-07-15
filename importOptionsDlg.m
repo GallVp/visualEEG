@@ -76,6 +76,22 @@ handles.afterIndex = str2double(get(handles.editAfterIndex, 'String'));
 % Update handles structure
 guidata(hObject, handles);
 
+% Set window size  according to optimal ratio
+heightRatio = 0.607;
+widthRatio = 0.234;
+
+set(0,'units','characters');
+
+displayResolution = get(0,'screensize');
+
+width = displayResolution(3) * widthRatio;
+height = displayResolution(4) * heightRatio;
+set(hObject,'units','characters');
+windowPosition = get(hObject, 'pos');
+windowPosition(3) = width;
+windowPosition(4) = height;
+set(hObject, 'pos', windowPosition);
+
 % UIWAIT makes importOptionsDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 

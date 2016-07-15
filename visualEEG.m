@@ -79,6 +79,23 @@ text(0.37,0.5, 'Go to File->Import dataset');
 % Add a dataSets class to the GUI
 handles.dSets = dataSets;
 
+% Set window size  according to optimal ratio
+heightRatio = 0.770;
+widthRatio = 0.657;
+
+set(0,'units','characters');
+
+displayResolution = get(0,'screensize');
+
+width = displayResolution(3) * widthRatio;
+height = displayResolution(4) * heightRatio;
+set(hObject,'units','characters');
+windowPosition = get(hObject, 'pos');
+windowPosition(3) = width;
+windowPosition(4) = height;
+set(hObject, 'pos', windowPosition);
+
+
 % Update handles structure
 guidata(hObject, handles);
 % UIWAIT makes visualEEG wait for user response (see UIRESUME)
