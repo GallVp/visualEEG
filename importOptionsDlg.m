@@ -145,9 +145,13 @@ handles.dataStructureDefault.fileNames          = [];
 handles.dataStructureDefault.fileName           = [];     % Name of the loaded file
 handles.dataStructureDefault.fileData           = [];
 handles.dataStructureDefault.folderName         = [];
+handles.dataStructureDefault.fsVariable         = [];
 
 handles.dataOut.dataStructure = assignOptions(handles.dataStructure, handles.dataStructureDefault);
 
+if(isnan(handles.dataOut.dataStructure.fs))
+    handles.dataOut.dataStructure.fs = [];
+end
 
 guidata(hObject, handles);
 close(handles.figure1);
@@ -325,7 +329,7 @@ end
 guidata(hObject, handles);
 
 % --- Executes on button press in pbSelectFs.
-function pbSelectFs_Callback(hObject, eventdata, handles)
+function pbSelectFs_Callback(hObject, ~, handles)
 % hObject    handle to pbSelectFs (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -337,7 +341,14 @@ end
     'ListString', handles.dataStructure.variableNames);
 if(v)
     try
-        handles.dataStructure.fs = handles.dataStructure.fileData.(handles.dataStructure.variableNames{s});
+        handles.dataStructure.fsVariable        = handles.dataStructure.variableNames{s};
+        handles.dataStructure.fs                = handles.dataStructure.fileData.(handles.dataStructure.fsVariable);
+        if(~isscalar(handles.dataStructure.fs))
+            handles.dataStructure.fsVariable    = [];
+            handles.dataStructure.fs            = [];
+            errordlg('Inappropriate variable for sample rate.', 'Sample Rate', 'modal');
+            return;
+        end
         set(handles.editSampleRate, 'String', num2str(handles.dataStructure.fs));
     catch me
         errordlg(me.message, 'Sample Rate', 'modal');
