@@ -22,10 +22,10 @@ function varargout = importOptionsDlg(varargin)
 
 % Edit the above text to modify the response to help importOptionsDlg
 
-% Last Modified by GUIDE v2.5 13-Jun-2016 12:49:26
+% Last Modified by GUIDE v2.5 30-Jan-2018 13:58:10
 
 % Copyright (c) <2016> <Usman Rashid>
-% 
+%
 % This program is free software; you can redistribute it and/or
 % modify it under the terms of the GNU General Public License as
 % published by the Free Software Foundation; either version 2 of the
@@ -35,11 +35,11 @@ function varargout = importOptionsDlg(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @importOptionsDlg_OpeningFcn, ...
-                   'gui_OutputFcn',  @importOptionsDlg_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @importOptionsDlg_OpeningFcn, ...
+    'gui_OutputFcn',  @importOptionsDlg_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -63,44 +63,40 @@ function importOptionsDlg_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for importOptionsDlg
 handles.output = hObject;
 
+% Constants
+handles.OPEN_TYPE_FILE = 1;
+
 %Defaults
-set(handles.upByEpochIndex, 'Visible', 'Off');
-set(handles.upByTrialTime, 'Visible', 'On');
 handles.dataOut = [];
-handles.importMethod = 'BYEPOCHTIME';
-handles.sampleRate = str2double(get(handles.editSampleRate, 'String'));
-handles.trialTime = str2double(get(handles.editTrialTime, 'String'));
-handles.beforeIndex = str2double(get(handles.editBeforeIndex, 'String'));
-handles.afterIndex = str2double(get(handles.editAfterIndex, 'String'));
+
+% Startup data
+handles.dataStructure = [];
 
 % Update handles structure
 guidata(hObject, handles);
 
-% Set window size  according to optimal ratio
-heightRatio = 0.607;
-widthRatio = 0.234;
-
+% View setup
+heightRatio = 0.5;
+widthRatio = 0.35;
 set(0,'units','characters');
 
 displayResolution = get(0,'screensize');
 
 width = displayResolution(3) * widthRatio;
 height = displayResolution(4) * heightRatio;
-x = (displayResolution(3) - width) / 2;
+x_x = (displayResolution(3) - width) / 2;
 y = (displayResolution(4) - height) / 2;
-set(hObject,'units','characters');
-windowPosition = [x y width height];
-set(hObject, 'pos', windowPosition);
+set(handles.figure1,'units','characters');
+windowPosition = [x_x y width height];
+set(handles.figure1, 'pos', windowPosition);
 
-% Set focus to OK
-uicontrol(handles.editSampleRate);
 
 % UIWAIT makes importOptionsDlg wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = importOptionsDlg_OutputFcn(hObject, eventdata, handles) 
+function varargout = importOptionsDlg_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -119,6 +115,8 @@ function editSampleRate_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of editSampleRate as text
 %        str2double(get(hObject,'String')) returns contents of editSampleRate as a double
+handles.dataStructure.fs = str2double(get(handles.editSampleRate, 'String'));
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -139,19 +137,18 @@ function pbOk_Callback(hObject, eventdata, handles)
 % hObject    handle to pbOk (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.dataOut.('importMethod') = handles.importMethod;
-handles.dataOut.('sampleRate') = str2double(get(handles.editSampleRate, 'String'));
-handles.dataOut.('beforeIndex') = str2double(get(handles.editBeforeIndex, 'String'));
-handles.dataOut.('afterIndex') = str2double(get(handles.editAfterIndex, 'String'));
-handles.dataOut.('dvName') = get(handles.editDataVariable, 'String');
-handles.dataOut.('evName') = get(handles.editEventVariable, 'String');
-handles.dataOut.('dvOrient') = get(handles.cbChannAcrossRow1, 'Value'); % A value of 1 means channels are across rows. This is Default!
-if(strcmp(handles.importMethod, 'BYEPOCHEVENT'))
-    handles.dataOut.('trialTime') = str2double(get(handles.editBeforeIndex, 'String'))...
-        + str2double(get(handles.editAfterIndex, 'String'));
-else
-    handles.dataOut.('trialTime') = str2double(get(handles.editTrialTime, 'String'));
-end
+handles.dataStructureDefault.fs                 = str2double(get(handles.editSampleRate, 'String'));
+handles.dataStructureDefault.dataVariable       = get(handles.editDataVariable, 'String');
+handles.dataStructureDefault.eventVariable      = get(handles.editEventVariable, 'String');
+handles.dataStructureDefault.channelsAcrossRows = get(handles.cbChannAcrossRow, 'Value');
+handles.dataStructureDefault.fileNames          = [];
+handles.dataStructureDefault.fileName           = [];     % Name of the loaded file
+handles.dataStructureDefault.fileData           = [];
+handles.dataStructureDefault.folderName         = [];
+
+handles.dataOut.dataStructure = assignOptions(handles.dataStructure, handles.dataStructureDefault);
+
+
 guidata(hObject, handles);
 close(handles.figure1);
 
@@ -161,90 +158,6 @@ function pbCancel_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 close(handles.figure1);
-
-
-function editTrialTime_Callback(hObject, eventdata, handles)
-% hObject    handle to editTrialTime (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of editTrialTime as text
-%        str2double(get(hObject,'String')) returns contents of editTrialTime as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function editTrialTime_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editTrialTime (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function editAfterIndex_Callback(hObject, eventdata, handles)
-% hObject    handle to editAfterIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of editAfterIndex as text
-%        str2double(get(hObject,'String')) returns contents of editAfterIndex as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function editAfterIndex_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editAfterIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function editBeforeIndex_Callback(hObject, eventdata, handles)
-% hObject    handle to editBeforeIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of editBeforeIndex as text
-%        str2double(get(hObject,'String')) returns contents of editBeforeIndex as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function editBeforeIndex_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editBeforeIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in rbByTrialTime.
-function rbByTrialTime_Callback(hObject, eventdata, handles)
-% hObject    handle to rbByTrialTime (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of rbByTrialTime
-set(handles.cbChannAcrossRow1, 'Enable', 'On');
-set(handles.editDataVariable, 'String', 'EEGdata');
-set(handles.editDataVariable, 'Enable', 'On');
-handles.importMethod = 'BYEPOCHTIME';
-set(handles.upByTrialTime, 'Visible', 'On');
-set(handles.upByEpochIndex, 'Visible', 'Off');
-guidata(hObject, handles);
 
 
 % --- Executes when user attempts to close figure1.
@@ -261,38 +174,6 @@ else
 end
 
 
-% --- Executes on button press in rbByEpochIndex.
-function rbByEpochIndex_Callback(hObject, eventdata, handles)
-% hObject    handle to rbByEpochIndex (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of rbByEpochIndex
-set(handles.cbChannAcrossRow1, 'Enable', 'On');
-set(handles.editDataVariable, 'String', 'EEGdata');
-set(handles.editDataVariable, 'Enable', 'On');
-handles.importMethod = 'BYEPOCHEVENT';
-set(handles.upByTrialTime, 'Visible', 'Off');
-set(handles.upByEpochIndex, 'Visible', 'On');
-guidata(hObject, handles);
-
-
-% --- Executes on button press in rbSignalMatFiles.
-function rbSignalMatFiles_Callback(hObject, eventdata, handles)
-% hObject    handle to rbSignalMatFiles (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of rbSignalMatFiles
-handles.importMethod = 'SIGNALMATFILES';
-set(handles.upByTrialTime, 'Visible', 'Off');
-set(handles.upByEpochIndex, 'Visible', 'Off');
-set(handles.cbChannAcrossRow1, 'Enable', 'Off');
-set(handles.editDataVariable, 'String', 'subXX_sessYY');
-set(handles.editDataVariable, 'Enable', 'Off');
-guidata(hObject, handles);
-
-
 
 function editDataVariable_Callback(hObject, eventdata, handles)
 % hObject    handle to editDataVariable (see GCBO)
@@ -301,6 +182,8 @@ function editDataVariable_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of editDataVariable as text
 %        str2double(get(hObject,'String')) returns contents of editDataVariable as a double
+handles.dataStructure.dataVariable = get(handles.editDataVariable, 'String');
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -324,6 +207,8 @@ function editEventVariable_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of editEventVariable as text
 %        str2double(get(hObject,'String')) returns contents of editEventVariable as a double
+handles.dataStructure.evetVariable = get(handles.editEventVariable, 'String');
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -339,19 +224,156 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in cbChannAcrossRow1.
-function cbChannAcrossRow1_Callback(hObject, eventdata, handles)
-% hObject    handle to cbChannAcrossRow1 (see GCBO)
+% --- Executes on button press in cbChannAcrossRow.
+function cbChannAcrossRow_Callback(hObject, eventdata, handles)
+% hObject    handle to cbChannAcrossRow (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of cbChannAcrossRow1
+% Hint: get(hObject,'Value') returns toggle state of cbChannAcrossRow
 
 
-% --- Executes on button press in cbChannAcrossRow2.
-function cbChannAcrossRow2_Callback(hObject, eventdata, handles)
-% hObject    handle to cbChannAcrossRow2 (see GCBO)
+
+function editFileFolderPath_Callback(hObject, eventdata, handles)
+% hObject    handle to editFileFolderPath (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of cbChannAcrossRow2
+% Hints: get(hObject,'String') returns contents of editFileFolderPath as text
+%        str2double(get(hObject,'String')) returns contents of editFileFolderPath as a double
+handles.dataStructure.folderName = get(handles.editDataVariable, 'String');
+guidata(hObject, handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function editFileFolderPath_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editFileFolderPath (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pbBrowse.
+function pbBrowse_Callback(hObject, eventdata, handles)
+% hObject    handle to pbBrowse (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+options.Interpreter = 'tex';
+% Include the desired Default answer
+options.Default = 'Folder';
+% Use the TeX interpreter in the question
+qstring = 'Open file or folder?';
+choice = questdlg(qstring,'Select mat file(s)...',...
+    'File','Folder',options);
+if(~isempty(choice))
+    if (strcmp(choice, 'File'))
+        [file, folder] = uigetfile({'*.mat'});
+        if(file ~= 0)
+            fileFolderPath = fullfile(folder, file);
+            handles.dataStructure.folderName = folder;
+            handles.dataStructure.fileName = file;
+            [handles.dataStructure.fileData, handles.dataStructure.variableNames]...
+                = loadMatFile(fileFolderPath);
+            handles.dataStructure.fileNames = {handles.dataStructure.fileName};
+        end
+    else
+        folder = uigetdir;
+        if(folder ~= 0)
+            handles.dataStructure.folderName = folder;
+            [handles.dataStructure.fileData,...
+                handles.dataStructure.variableNames, handles.dataStructure.fileNames] = processDataFolder(handles.dataStructure.folderName);
+            handles.dataStructure.fileName = handles.dataStructure.fileNames{1};
+            
+        end
+    end
+end
+
+set(handles.editFileFolderPath, 'String', handles.dataStructure.folderName);
+
+guidata(hObject, handles);
+
+
+
+% --- Executes on button press in pbSelectDataVar.
+function pbSelectDataVar_Callback(hObject, eventdata, handles)
+% hObject    handle to pbSelectDataVar (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(~isfield(handles.dataStructure, 'variableNames'))
+    return;
+end
+[s,v] = listdlg('PromptString','Select a variable:',...
+    'SelectionMode','single',...
+    'ListString', handles.dataStructure.variableNames);
+if(v)
+    handles.dataStructure.dataVariable = handles.dataStructure.variableNames{s};
+    set(handles.editDataVariable, 'String', handles.dataStructure.dataVariable);
+end
+guidata(hObject, handles);
+
+% --- Executes on button press in pbSelectFs.
+function pbSelectFs_Callback(hObject, eventdata, handles)
+% hObject    handle to pbSelectFs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(~isfield(handles.dataStructure, 'variableNames'))
+    return;
+end
+[s,v] = listdlg('PromptString','Select a variable:',...
+    'SelectionMode','single',...
+    'ListString', handles.dataStructure.variableNames);
+if(v)
+    try
+        handles.dataStructure.fs = str2double(handles.dataStructure.variableNames{s});
+        set(handles.editSampleRate, 'String', num2str(handles.dataStructure.fs));
+    catch me
+        error(me);
+    end
+end
+guidata(hObject, handles);
+
+
+% --- Executes on button press in pbSelectEventVar.
+function pbSelectEventVar_Callback(hObject, eventdata, handles)
+% hObject    handle to pbSelectEventVar (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(~isfield(handles.dataStructure, 'variableNames'))
+    return;
+end
+[s,v] = listdlg('PromptString','Select a variable:',...
+    'SelectionMode','single',...
+    'ListString', handles.dataStructure.variableNames);
+if(v)
+    handles.dataStructure.eventVariable = handles.dataStructure.variableNames{s};
+    set(handles.editEventVariable, 'String', handles.dataStructure.eventVariable);
+end
+guidata(hObject, handles);
+
+function [fileData, variableNames] = loadMatFile(fullPath)
+
+fileData = load(fullPath);
+variableNames = fieldnames(fileData);
+
+function [fileData, variableNames, fileNames] = processDataFolder(folderPath)
+fileNames = dir(folderPath);
+fileNames = fileNames(~[fileNames(:).isdir]);
+fileExtensions = regexp({fileNames(:).name}, '.*\.(.*)', 'tokens', 'once');
+fileExtensions(cellfun(@isempty, fileExtensions)) = {{''}};
+fileExtensions = vertcat(fileExtensions{:});
+fileExtensionsValid = strcmp(fileExtensions, 'mat');
+fileNames = {fileNames(fileExtensionsValid).name};
+
+if(isempty(fileNames))
+    fileData = [];
+    variableNames = [];
+    fileNames = [];
+    return;
+else
+    [fileData, variableNames] = loadMatFile(fullfile(folderPath, fileNames{1}));
+end
