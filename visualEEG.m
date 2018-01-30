@@ -23,7 +23,7 @@ function varargout = visualEEG(varargin)
 % Edit the above text to modify the response to help visualEEG
 
 
-% Last Modified by GUIDE v2.5 06-Jul-2016 15:57:43
+% Last Modified by GUIDE v2.5 30-Jan-2018 17:38:17
 
 % Copyright (c) <2016> <Usman Rashid>
 % 
@@ -76,8 +76,9 @@ set(handles.menuView, 'Enable', 'Off');
 % Plot instructions
 text(0.37,0.5, 'Go to File->Import dataset');
 
-% Add a dataSets class to the GUI
-handles.dSets = dataSets;
+% Add a dataSet cell array
+handles.dSets           = {};
+handles.datasetNum      = [];
 
 % Set window size  according to optimal ratio
 heightRatio = 0.770;
@@ -134,54 +135,37 @@ guidata(hObject, handles);
 updateView(handles);
 
 
-% --- Executes on selection change in pumSubject.
-function pumSubject_Callback(hObject, ~, handles)
-% hObject    handle to pumSubject (see GCBO)
+% --- Executes on selection change in pumFile.
+function pumFile_Callback(hObject, ~, handles)
+% hObject    handle to pumFile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns pumSubject contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from pumSubject
+% Hints: contents = cellstr(get(hObject,'String')) returns pumFile contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pumFile
 index = get(hObject,'Value');
-lst = handles.dSets.getDataSet.listSubjects;
-subjectNum = lst(index);
-
-handles.dSets.getDataSet.selectSub(subjectNum);
-guidata(hObject, handles);
-updateView(handles);
-
-
-% --- Executes on selection change in pumSession.
-function pumSession_Callback(hObject, eventdata, handles)
-% hObject    handle to pumSession (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns pumSession contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from pumSession
-index = get(hObject,'Value');
-lst = handles.dSets.getDataSet.listSessions;
-sessionNum = lst(index);
-
-handles.dSets.getDataSet.selectSess(sessionNum);
-guidata(hObject, handles);
-updateView(handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function pumSession_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to pumSession (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+dataStructure.fileNum = index;
+dataStructure.fileName = dataStructure.fileNames{index};
+dataStructure.fileData = load(fullfile(dataStructure.folderName,...
+    dataStructure.fileName));
+if(~isempty(dataStructure.channelNamesVariable))
+    channelNames = dataStructure.fileData.(dataStructure.channelNamesVariable);
+    try
+        if(length(strcmpIND(channelNames, dataStructure.channelNames(dataStructure.selectedChannels))) ~= length(dataStructure.selectedChannels))
+            dataStructure.selectedChannels = 1:length(channelNames);
+        end
+    catch
+        dataStructure.selectedChannels = 1:length(channelNames);
+    end
+    dataStructure.channelNames = channelNames;
 end
+handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
+guidata(hObject, handles);
+updateView(handles);
 
 % --- Executes during object creation, after setting all properties.
-function pumSubject_CreateFcn(hObject, eventdata, handles)
+function pumFile_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to pum_channel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
@@ -299,13 +283,34 @@ function menuAbout_Callback(hObject, eventdata, handles)
 uiwait(msgbox(sprintf('Visual EEG\n\nVersion 1.1\n\nCredits:\nUsman Rashid\nurashid@aut.ac.nz\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
 
 % --------------------------------------------------------------------
-function menuImport_Callback(hObject, eventdata, handles)
+function menuImport_Callback(hObject, ~, handles)
 % hObject    handle to menuImport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 try
-handles.dSets.addDataSet;
+loadedData = importOptionsDlg;
+
+if(isempty(loadedData))
+    return;
+else
+    if(isempty(loadedData.dataStructure.fileData))
+        return;
+    end
+    
+    % Add some extra variables to dataStructure
+    loadedData.dataStructure.fileNum = 1;
+    loadedData.dataStructure.channelNames = {};
+    loadedData.dataStructure.channelNamesVariable = [];
+    if(loadedData.dataStructure.channelsAcrossRows)
+        loadedData.dataStructure.selectedChannels = 1:size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 1);
+    else
+        loadedData.dataStructure.selectedChannels = 1:size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 2);
+    end
+    
+    handles.datasetNum = size(handles.dSets, 2) + 1;
+    handles.dSets{handles.datasetNum} = loadedData;
+end
 
 % Turn legend off
 handles.showLegend = 0;
@@ -409,88 +414,119 @@ close(H);
 
 % ---Update View function
 function updateView(handles)
+dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+dat = dataStructure.fileData.(dataStructure.dataVariable);
 
-data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-
-% Update the operations list
-set(handles.lbOperations, 'String', handles.dSets.getOperationSuperSet.getOperationSet.operations);
-set(handles.lbOperations, 'Value', length(handles.dSets.getOperationSuperSet.getOperationSet.operations));
-
-% Update Operation Sets list
-set(handles.pumOpsSet, 'String', handles.dSets.getOperationSuperSet.names);
-set(handles.pumOpsSet, 'Value', handles.dSets.getOperationSuperSet.operationSetNum);
-
-%Update data selection
-set(handles.pumDataSet, 'String', handles.dSets.names);
-set(handles.pumDataSet, 'Value', handles.dSets.dataSetNum);
-
-set(handles.pumSession, 'String', num2str(handles.dSets.getDataSet.listSessions));
-set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
-
-set(handles.pumSubject, 'String', num2str(handles.dSets.getDataSet.listSubjects));
-set(handles.pumSubject, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
-
-set(handles.editChannels, 'String', strjoin(handles.dSets.getDataSet.listChannelNames'));
-
-set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
-set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
-
-set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
-
-set(handles.editGroupNum, 'Value', handles.dSets.getDataSet.groupNum);
-set(handles.editNumGroups, 'Value', handles.dSets.getDataSet.numGroups);
-
-
-%Update enable and checked property of apply
-if isempty(handles.dSets.getOperationSuperSet.getOperationSet.operations)
-    set(handles.cbApply, 'Enable', 'Off');
-    set(handles.pbRemoveOperation, 'Enable', 'Off');
-    set(handles.cbApply, 'Value', 0);
-else
-    set(handles.cbApply, 'Enable', 'On');
-    set(handles.pbRemoveOperation, 'Enable', 'On');
-    set(handles.cbApply, 'Value', handles.dSets.getOperationSuperSet.isApplied);
+% Make channels across columns
+if(dataStructure.channelsAcrossRows)
+    dat = transpose(dat);
+end
+absc = 1:size(dat, 1);
+if(size(dat, 2) > 128)
+    disp('Warning: Only plotting first 128 channels');
+    dat = dat(:, 1:128);
 end
 
+% Select channels
+dat = dat(:, dataStructure.selectedChannels);
 
-%Update plot
-verbose = 0;
-data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
+plot(absc, dat);
 
-%Update trial number to be displayed
-% totalEpochs = size(viewData, 3);
-% if(totalEpochs == 1)
-%     epochNum = 1;
+% Update dataset selection
+set(handles.pumDataSet, 'String', getDataSetNames(handles));
+set(handles.pumDataSet, 'Value', handles.datasetNum);
+
+% Update file selection
+set(handles.pumFile, 'String', dataStructure.fileNames);
+set(handles.pumFile, 'Value', dataStructure.fileNum);
+
+% Update channels list
+if(~isempty(dataStructure.channelNames))
+    set(handles.editChannels, 'String', strjoin(dataStructure.channelNames(dataStructure.selectedChannels)));
+end
+
+function dataSetNames = getDataSetNames(handles)
+    dataSetNames = cell(size(handles.dSets));
+    for i=1:size(handles.dSets, 2)
+        dataSetNames{i} = handles.dSets{i}.dataStructure.folderName;
+    end
+
+% data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+% 
+% % Update the operations list
+% set(handles.lbOperations, 'String', handles.dSets.getOperationSuperSet.getOperationSet.operations);
+% set(handles.lbOperations, 'Value', length(handles.dSets.getOperationSuperSet.getOperationSet.operations));
+% 
+% % Update Operation Sets list
+% set(handles.pumOpsSet, 'String', handles.dSets.getOperationSuperSet.names);
+% set(handles.pumOpsSet, 'Value', handles.dSets.getOperationSuperSet.operationSetNum);
+% 
+% 
+% set(handles.pumSession, 'String', num2str(handles.dSets.getDataSet.listSessions));
+% set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
+% 
+% set(handles.pumFile, 'String', num2str(handles.dSets.getDataSet.listSubjects));
+% set(handles.pumFile, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
+% 
+% set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
+% set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
+% 
+% set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
+% 
+% set(handles.editGroupNum, 'Value', handles.dSets.getDataSet.groupNum);
+% set(handles.editNumGroups, 'Value', handles.dSets.getDataSet.numGroups);
+% 
+% 
+% %Update enable and checked property of apply
+% if isempty(handles.dSets.getOperationSuperSet.getOperationSet.operations)
+%     set(handles.cbApply, 'Enable', 'Off');
+%     set(handles.pbRemoveOperation, 'Enable', 'Off');
+%     set(handles.cbApply, 'Value', 0);
 % else
-%     epochNum = handles.epochNum;
+%     set(handles.cbApply, 'Enable', 'On');
+%     set(handles.pbRemoveOperation, 'Enable', 'On');
+%     set(handles.cbApply, 'Value', handles.dSets.getOperationSuperSet.isApplied);
 % end
-
-
-
-%Show epoch info
-
-set(handles.bgEpochs, 'Title', sprintf('Epoch:%d (%d)/%d; Excluded:%d', data.getAbsoluteEpochNum(data.currentEpochNum),...
-    data.currentEpochNum, data.dataSize(3), data.numExcludedEpochs));
-
-% Set Visibility of next, previous buttons
-if data.isLastEpoch
-    set(handles.pbNext, 'Enable', 'Off');
-else
-    set(handles.pbNext, 'Enable', 'On');
-end
-if data.isFirstEpoch
-    set(handles.pbPrevious, 'Enable', 'Off');
-else
-    set(handles.pbPrevious, 'Enable', 'On');
-end
-
-%update visibility of discard checkbox
-if(data.currentEpochNum == 0 || data.warpedEpochs)
-    set(handles.cbDiscard, 'Enable', 'Off');
-else
-    set(handles.cbDiscard, 'Enable', 'On');
-    set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
-end
+% 
+% 
+% %Update plot
+% verbose = 0;
+% data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
+% 
+% %Update trial number to be displayed
+% % totalEpochs = size(viewData, 3);
+% % if(totalEpochs == 1)
+% %     epochNum = 1;
+% % else
+% %     epochNum = handles.epochNum;
+% % end
+% 
+% 
+% 
+% %Show epoch info
+% 
+% set(handles.bgEpochs, 'Title', sprintf('Epoch:%d (%d)/%d; Excluded:%d', data.getAbsoluteEpochNum(data.currentEpochNum),...
+%     data.currentEpochNum, data.dataSize(3), data.numExcludedEpochs));
+% 
+% % Set Visibility of next, previous buttons
+% if data.isLastEpoch
+%     set(handles.pbNext, 'Enable', 'Off');
+% else
+%     set(handles.pbNext, 'Enable', 'On');
+% end
+% if data.isFirstEpoch
+%     set(handles.pbPrevious, 'Enable', 'Off');
+% else
+%     set(handles.pbPrevious, 'Enable', 'On');
+% end
+% 
+% %update visibility of discard checkbox
+% if(data.currentEpochNum == 0 || data.warpedEpochs)
+%     set(handles.cbDiscard, 'Enable', 'Off');
+% else
+%     set(handles.cbDiscard, 'Enable', 'On');
+%     set(handles.cbDiscard, 'Value', ~handles.dSets.getDataSet.getEpochExStatus(data.currentEpochNum));
+% end
 
 
 function editChannels_Callback(hObject, eventdata, handles)
@@ -540,17 +576,35 @@ end
 
 
 % --- Executes on button press in pbSelectChannels.
-function pbSelectChannels_Callback(hObject, eventdata, handles)
+function pbSelectChannels_Callback(hObject, ~, handles)
 % hObject    handle to pbSelectChannels (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-chanNames = handles.dSets.getDataSet.listAllChannelNames;
+dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+chanNames = dataStructure.channelNames;
+if(isempty(chanNames))
+    [s,v] = listdlg('PromptString','Select channel names variable:',...
+        'SelectionMode','single',...
+        'ListString', dataStructure.variableNames);
+    if(v)
+        dataStructure.channelNamesVariable = dataStructure.variableNames{s};
+        dataStructure.channelNames = dataStructure.fileData.(dataStructure.channelNamesVariable);
+    else
+        return;
+    end
+end
+
+chanNames = dataStructure.channelNames;
 [channels,~] = listdlg('PromptString','Select channels:',...
                 'ListString', chanNames);
 if(~isempty(channels))
     channelNames = chanNames(channels,:);
-    handles.dSets.getDataSet.selectChannelsByName(channelNames);
+    
+    dataStructure.selectedChannels = strcmpIND(dataStructure.channelNames, channelNames);
+    
     set(handles.editChannels,'String', strjoin(channelNames));
+    
+    handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
     guidata(hObject, handles);
     updateView(handles);
 end
@@ -735,7 +789,7 @@ function pumDataSet_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns pumDataSet contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from pumDataSet
 index = get(hObject,'Value');
-handles.dSets.selectDataSet(index);
+handles.datasetNum = index;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -851,3 +905,10 @@ else
 end
 guidata(hObject, handles);
 updateView(handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function pbSelectChannels_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pbSelectChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called

@@ -64,7 +64,7 @@ function importOptionsDlg_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % Constants
-handles.OPEN_TYPE_FILE = 1;
+handles.MAX_CHANNELS = 128;
 
 %Defaults
 handles.dataOut = [];
@@ -77,7 +77,7 @@ guidata(hObject, handles);
 
 % View setup
 heightRatio = 0.5;
-widthRatio = 0.35;
+widthRatio = 0.5;
 set(0,'units','characters');
 
 displayResolution = get(0,'screensize');
@@ -287,8 +287,11 @@ if(~isempty(choice))
             handles.dataStructure.folderName = folder;
             [handles.dataStructure.fileData,...
                 handles.dataStructure.variableNames, handles.dataStructure.fileNames] = processDataFolder(handles.dataStructure.folderName);
+            if(isempty(handles.dataStructure.fileData))
+                msgbox('Folder does not contain any mat file(s).', 'Invalid folder');
+                return;
+            end
             handles.dataStructure.fileName = handles.dataStructure.fileNames{1};
-            
         end
     end
 end
@@ -313,6 +316,11 @@ end
 if(v)
     handles.dataStructure.dataVariable = handles.dataStructure.variableNames{s};
     set(handles.editDataVariable, 'String', handles.dataStructure.dataVariable);
+    if(size(handles.dataStructure.fileData.(handles.dataStructure.dataVariable), 2) > handles.MAX_CHANNELS)
+        set(handles.cbChannAcrossRow, 'Value', 1);
+    else
+        set(handles.cbChannAcrossRow, 'Value', 0);
+    end
 end
 guidata(hObject, handles);
 
@@ -329,10 +337,10 @@ end
     'ListString', handles.dataStructure.variableNames);
 if(v)
     try
-        handles.dataStructure.fs = str2double(handles.dataStructure.variableNames{s});
+        handles.dataStructure.fs = handles.dataStructure.fileData.(handles.dataStructure.variableNames{s});
         set(handles.editSampleRate, 'String', num2str(handles.dataStructure.fs));
     catch me
-        error(me);
+        errordlg(me.message, 'Sample Rate', 'modal');
     end
 end
 guidata(hObject, handles);
