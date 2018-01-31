@@ -1,98 +1,109 @@
-function [processedData, resultFs, channelNames] = applyOperation(operationName, args,  processingData, fs)
+function [opDataOut] = applyOperation(operationName, args,  opData)
 % applyOperation
-% processing data has samples across rows, channels across columns and
-% epochs across depth
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Create Epochs',...
     'Channel Mean', 'Epoch Mean'};
 
-resultFs = fs;
-channelNames = [];
+opDataOut = opData;
 
 switch operationName
     
     case ALL_OPERATIONS{1} % Detrend
         % args{1} should be 'linear' or 'constant'
-        numEpochs = size(processingData, 3);
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = detrend(processingData(:, :, i) , args{1});
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = detrend(opData.channelStream(:, :, i) , args{1});
             end
         else
-            processedData = detrend(processingData, args{1});
+            processedData = detrend(opData.channelStream, args{1});
         end
+        opDataOut.channelStream = processedData;
           
     case ALL_OPERATIONS{2} % Normalize
         % No argument required.
-        numEpochs = size(processingData, 3);
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = normalizeColumns(processingData(:, :, i) );
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = normalizeColumns(opData.channelStream(:, :, i) );
             end
         else
-            processedData = normalizeColumns(processingData);
+            processedData = normalizeColumns(opData.channelStream);
         end
+        opDataOut.channelStream = processedData;
         
     case ALL_OPERATIONS{3} % Abs
         % No argument required.
-        numEpochs = size(processingData, 3);
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = abs(processingData(:, :, i));
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = abs(opData.channelStream(:, :, i));
             end
         else
-            processedData = abs(processingData);
+            processedData = abs(opData.channelStream);
         end
+        opDataOut.channelStream = processedData;
         
     case ALL_OPERATIONS{4} % Remove Common Mode
         % No argument required.
-        numEpochs = size(processingData, 3);
-        numChannels = size(processingData, 2);
-        M=eye(numChannels)-1/numChannels*ones(numChannels);
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = processingData(:, :, i) * M;
+        M=eye(opData.numChannels)-1/opData.numChannels*ones(opData.numChannels);
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = opData.channelStream(:, :, i) * M;
             end
         else
-            processedData = processingData * M;
+            processedData = opData.channelStream * M;
         end
+        opDataOut.channelStream = processedData;
         
     case ALL_OPERATIONS{5} % Resample
         % args{1} should be p and args{2} should be q. p/q is
         % the sampling ratio.
         p = args{1};
         q = args{2};
-        
-        numEpochs = size(processingData, 3);
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = resample(processingData(:, :, i), p, q);
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = resample(opData.channelStream(:, :, i), p, q);
             end
         else
-            processedData   = resample(processingData, p, q);
-            resultFs        = fs * p / q;
+            processedData   = resample(opData.channelStream, p, q);
         end
+        opDataOut.channelStream = processedData;
+        opDataOut.fs            = opData.fs * p / q;
+        opDataOut.abscissa = 1:size(opDataOut.channelStream, 1);
+        opDataOut.abscissa = opDataOut.abscissa ./ opDataOut.fs;
         
-        case ALL_OPERATIONS{8} % Spatial Filter
+    case ALL_OPERATIONS{7} % FFT
+        % No argument required.
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                [processedData(:, :, i), f] = computeFFT(opData.channelStream(:, :, i), opData.fs);
+            end
+        else
+            [processedData, f] = computeFFT(opData.channelStream, opData.fs);
+        end
+        opDataOut.channelStream = processedData;
+        opDataOut.abscissa = f;
+        
+    case ALL_OPERATIONS{8} % Spatial Filter
         % args{1} should be channel weights
-        numEpochs = size(processingData, 3);
         M = args{1};
         M =M';
-        if(numEpochs > 1)
-            processedData = zeros(size(processingData));
-            for i=1:numEpochs
-                processedData(:, :, i) = processingData(:, :, i) * M;
+        if(opData.numEpochs > 1)
+            processedData = zeros(size(opData.channelStream));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = opData.channelStream(:, :, i) * M;
             end
         else
-            processedData = processingData * M;
+            processedData = opData.channelStream * M;
         end
-        channelNames = {'SF Channel'};
+        opDataOut.channelStream = processedData;
+        opDataOut.channelNames = {'SF Channel'};
+        opDataOut.numChannels = size(opDataOut.channelStream, 2);
 %         
 %     case ALL_OPERATIONS{1} % Mean
 %         % No argument required.
@@ -129,16 +140,6 @@ switch operationName
 %         
 %         
 %         
-%         
-%     case ALL_OPERATIONS{6} % FFT
-%         % args{1} should be the data rate.
-%         P = processingData.selectedData;
-%         [m, n, o] = size(P);
-%         proc = zeros(floor(m/2) + 1, n, o);
-%         for i=1:o
-%             [proc(:,:,i), f] = computeFFT(P(:,:,i), processingData.dataRate);
-%         end
-%         obj.procData.setFrequencyData(proc, f);
 %         
 %         
 %         

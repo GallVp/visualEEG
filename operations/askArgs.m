@@ -1,4 +1,4 @@
-function [returnArgs] = askArgs(operationName)
+function [returnArgs] = askArgs(operationName, opData)
 
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
@@ -51,12 +51,18 @@ switch operationName
                 returnArgs = {p, q};
             end
         end
+        
+    case ALL_OPERATIONS{7} % FFT
+        % No argument required.
+        returnArgs = {'N.R.'};
+        
+        
     case ALL_OPERATIONS{8} % Spatial Filter
         % args{1} should be channel weights
-        prompt = {'Channel weights:'};
+        prompt = {'Channel weights (No. of weights should be equal to number of channels):'};
         dlg_title = 'Spatial filter';
         num_lines = 1;
-        defaultans = {'[]'};
+        defaultans = {num2str(ones(1, opData.numChannels))};
         answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
         if(isempty(answer))
             returnArgs = {};
@@ -66,6 +72,9 @@ switch operationName
         if(isempty(cWeights))
             returnArgs = {};
         else
+            if(length(cWeights) ~= opData.numChannels)
+                returnArgs = {};
+            end
             returnArgs = {cWeights};
         end
         
@@ -110,9 +119,6 @@ switch operationName
         %
         %
         %
-        %     case eegOperations.ALL_OPERATIONS{6} % FFT
-        %         returnArgs = {'N.R.'};
-        %         % No argument required.
         %
         %
         %

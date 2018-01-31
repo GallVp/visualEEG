@@ -153,41 +153,20 @@ function pumFile_Callback(hObject, ~, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns pumFile contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from pumFile
 index = get(hObject,'Value');
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-dataStructure.fileNum = index;
-dataStructure.fileName = dataStructure.fileNames{index};
-dataStructure.fileData = load(fullfile(dataStructure.folderName,...
-    dataStructure.fileName));
 
-if(dataStructure.channelsAcrossRows)
-    dataStructure.numChannels = size(dataStructure.fileData.(dataStructure.dataVariable), 1);
+if(~isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
+    handles.fileNum = index;
 else
-    dataStructure.numChannels = size(dataStructure.fileData.(dataStructure.dataVariable), 2);
+    handles.fileNum = index;
+    handles.dSets(handles.datasetNum).ffData.fileNum = index;
+    handles.dSets(handles.datasetNum).ffData.fileData = load(fullfile(handles.dSets(handles.datasetNum).ffData.folderName,...
+        handles.dSets(handles.datasetNum).ffData.fileNames{index}));
+    handles.dSets(handles.datasetNum).ffData.fileName = handles.dSets(handles.datasetNum).ffData.fileNames{index};
+    handles.dSets(handles.datasetNum).ffData.fs = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.fsVariable);
+    
+    handles.dSets(handles.datasetNum).opDataCache{index} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
 
-lia = ismember(dataStructure.selectedChannels, 1:dataStructure.numChannels);
-if(sum(lia) ~= length(lia))
-    dataStructure.selectedChannels = 1:dataStructure.numChannels;
-end
-
-% Load every time in case channel names are different. Furthermore contains
-% operation can take a long time, so no need to perform it
-if(~isempty(dataStructure.channelNamesVariable))
-    dataStructure.channelNames = dataStructure.fileData.(dataStructure.channelNamesVariable);
-end
-
-% Load sampling frequency
-if(~isempty(dataStructure.fsVariable))
-    dataStructure.fs = dataStructure.fileData.(dataStructure.fsVariable);
-end
-
-% Load num of epochs
-dataStructure.numEpochs = size(dataStructure.fileData.(dataStructure.dataVariable), 3);
-if(dataStructure.epochNum > dataStructure.numEpochs)
-    dataStructure.epochNum = 1;
-end
-
-handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -253,36 +232,15 @@ loadedData = importOptionsDlg;
 if(isempty(loadedData))
     return;
 else
-    if(isempty(loadedData.dataStructure.fileData))
+    if(isempty(loadedData.ffData.fileData))
         return;
     end
     
-    % Add some extra variables to dataStructure
-    loadedData.dataStructure.fileNum = 1;
-    loadedData.dataStructure.channelNames = {};
-    loadedData.dataStructure.channelNamesVariable = [];
-    loadedData.dataStructure.numFiles = length(loadedData.dataStructure.fileNames);
-    if(loadedData.dataStructure.channelsAcrossRows)
-        loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 1);
-        loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
-    else
-        loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 2);
-        loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
-    end
-    
-    loadedData.dataStructure.numEpochs = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 3);
-    loadedData.dataStructure.epochNum = 1;
-    
-    % Create a cache of processed Data
-    loadedData.dataStructure.processedData      = cell(loadedData.dataStructure.numFiles, 1);
-    loadedData.dataStructure.applyOperations    = zeros(loadedData.dataStructure.numFiles, 1);
-    loadedData.dataStructure.operations         = cell(loadedData.dataStructure.numFiles, 1);
-    loadedData.dataStructure.operationArgs      = cell(loadedData.dataStructure.numFiles, 1);
-    loadedData.dataStructure.operatedChannels   = cell(loadedData.dataStructure.numFiles, 1);
-    
     handles.datasetNum = size(handles.dSets, 2) + 1;
-    handles.dSets{handles.datasetNum} = loadedData;
-    
+    handles.dSets(handles.datasetNum).ffData = loadedData.ffData;    % ff stands for file folder data
+    handles.fileNum = 1; % Selected file number of current data set
+    handles.dSets(handles.datasetNum).opDataCache = cell(handles.dSets(handles.datasetNum).ffData.numFiles, 1);
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
 
 % Turn legend off
@@ -306,6 +264,27 @@ uicontrol(handles.pbNext);
 
 guidata(hObject, handles);
 updateView(handles);
+
+function opData = getOpData(ffData) % opData stands for operatable data
+opData.channelStream = ffData.fileData.(ffData.dataVariable);
+opData.fs = ffData.fs;
+opData.abscissa = 1:size(opData.channelStream, 1);
+opData.abscissa = opData.abscissa ./ opData.fs;
+
+if(ffData.channelsAcrossRows)
+    opData.channelStream = permute(opData.channelStream, [2 1 3]);
+end
+opData.numChannels = size(opData.channelStream , 2);
+opData.numEpochs = size(opData.channelStream , 3);
+
+opData.selectedChannels = 1:opData.numChannels;
+opData.epochNum = 1;
+
+% Info on operations
+opData.operations = {};
+opData.operationArgs = {};
+
+
 
 % --------------------------------------------------------------------
 function menuExport_Callback(hObject, eventdata, handles)
@@ -353,32 +332,17 @@ function saveFigure_ClickedCallback(~, ~, handles)
 
 % ---Update View function
 function updateView(handles)
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+ffData = handles.dSets(handles.datasetNum).ffData;
 
-if(dataStructure.applyOperations(dataStructure.fileNum) == 0)
-    dat = dataStructure.fileData.(dataStructure.dataVariable);
-    % Make channels across columns
-    if(dataStructure.channelsAcrossRows)
-        dat = transpose(dat);
-    end
-    if(size(dat, 2) > 128)
-        disp('Warning: Only plotting first 128 channels');
-        dat = dat(:, 1:128);
-    end
-else
-    dat = dataStructure.processedData{dataStructure.fileNum};
+dat = opData.channelStream;
+
+if(size(dat, 2) > 128)
+    disp('Warning: Only plotting first 128 channels');
+    dat = dat(:, 1:128);
 end
+absc = opData.abscissa;
 
-% Select channels
-dat = dat(:, dataStructure.selectedChannels);
-
-% Calculate absc
-if(~isempty(dataStructure.fs))
-    absc = 1:size(dat, 1);
-    absc = absc ./ dataStructure.fs;
-else
-    absc = 1:size(dat, 1);
-end
 
 plot(absc, dat);
 
@@ -387,58 +351,43 @@ set(handles.pumDataSet, 'String', getDataSetNames(handles));
 set(handles.pumDataSet, 'Value', handles.datasetNum);
 
 % Update file selection
-set(handles.pumFile, 'String', dataStructure.fileNames);
-set(handles.pumFile, 'Value', dataStructure.fileNum);
-
-% Update channels list
-if(~isempty(dataStructure.channelNames))
-    set(handles.editChannels, 'String', strjoin(dataStructure.channelNames(dataStructure.selectedChannels)));
-    
-else
-    set(handles.editChannels, 'String', num2str(dataStructure.selectedChannels));
-end
+set(handles.pumFile, 'String', ffData.fileNames);
+set(handles.pumFile, 'Value', handles.fileNum);
 
 % Set Visibility of next, previous buttons
-if dataStructure.epochNum == dataStructure.numEpochs
+if opData.epochNum == opData.numEpochs
     set(handles.pbNext, 'Enable', 'Off');
 else
     set(handles.pbNext, 'Enable', 'On');
 end
-if dataStructure.epochNum == 1
+if opData.epochNum == 1
     set(handles.pbPrevious, 'Enable', 'Off');
 else
     set(handles.pbPrevious, 'Enable', 'On');
 end
 
 % Update value of epoch info control
-set(handles.bgEpochs, 'Title', sprintf('Epoch:%d/%d', dataStructure.epochNum, dataStructure.numEpochs));
+set(handles.bgEpochs, 'Title', sprintf('Epoch:%d/%d', opData.epochNum, opData.numEpochs));
 
 %update visibility of discard checkbox
-if(dataStructure.numEpochs == 1)
+if(opData.numEpochs == 1)
     set(handles.cbDiscard, 'Enable', 'Off');
 else
     set(handles.cbDiscard, 'Enable', 'On');
 end
 
 % Update the operations list
-if(~isempty(dataStructure.operations{dataStructure.fileNum}))
-    set(handles.lbOperations, 'String', dataStructure.operations{dataStructure.fileNum});
-    set(handles.lbOperations, 'Value', length(dataStructure.operations{dataStructure.fileNum}));
-    % Disable apply checkbox
-    set(handles.cbApply, 'Enable', 'On');
+if(~isempty(opData.operations))
+    set(handles.lbOperations, 'String', opData.operations);
+    set(handles.lbOperations, 'Value', length(opData.operations));
 else
     set(handles.lbOperations, 'String', '');
-    % Disable apply checkbox
-    set(handles.cbApply, 'Enable', 'Off');
 end
-
-%Update enable and checked property of apply
-set(handles.cbApply, 'Value', dataStructure.applyOperations(dataStructure.fileNum));
 
 function dataSetNames = getDataSetNames(handles)
 dataSetNames = cell(size(handles.dSets));
 for i=1:size(handles.dSets, 2)
-    dataSetNames{i} = handles.dSets{i}.dataStructure.folderName;
+    dataSetNames{i} = handles.dSets(i).ffData.folderName;
 end
 
 % data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
@@ -629,22 +578,21 @@ function pbRemoveOperation_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 index = get(handles.lbOperations, 'Value');
-operations = handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum};
-operations{index} = [];
 
-operationArgs = handles.dSets{handles.datasetNum}.dataStructure.operationArgs{handles.dSets{handles.datasetNum}.dataStructure.fileNum};
-operationArgs{index} = [];
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+opData.operations{index} = [];
 
-handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum} =...
-    operations(~cellfun('isempty',operations));
-handles.dSets{handles.datasetNum}.dataStructure.operationArgs{handles.dSets{handles.datasetNum}.dataStructure.fileNum} =...
-    operationArgs(~cellfun('isempty',operationArgs));
+opData.operationArgs{index} = [];
 
-if(~isempty(handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum}))
+opData.operations = opData.operations(~cellfun('isempty',opData.operations));
+opData.operationArgs = opData.operationArgs(~cellfun('isempty',opData.operationArgs));
+
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+
+if(~isempty(opData.operations))
     handles = applyAllOps(handles);
 else
-    handles.dSets{handles.datasetNum}.dataStructure.applyOperations = 0;
-    handles.dSets{handles.datasetNum}.dataStructure.processedData{handles.dSets{handles.datasetNum}.dataStructure.fileNum} = [];
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
 guidata(hObject, handles);
 updateView(handles);
@@ -667,54 +615,37 @@ guidata(hObject, handles);
 updateView(handles);
 
 function handlesOut = applyOp(handles, operationName)
-args = askArgs(operationName);
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+args = askArgs(operationName, opData);
 if(isempty(args))% Empty means valid arguments could were not provided
     handlesOut = handles;
     return;
 end
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-if(isempty(dataStructure.processedData{dataStructure.fileNum}))
-    dat = dataStructure.fileData.(dataStructure.dataVariable);
-    if(dataStructure.channelsAcrossRows)
-        dat = transpose(dat);
-    end
-else
-    dat = dataStructure.processedData{dataStructure.fileNum};
-end
-[processedData, resultFs, operatedChannels] = applyOperation(operationName, args, dat, dataStructure.fs);
-dataStructure.processedData{dataStructure.fileNum} = processedData;
-dataStructure.fs = resultFs;
-dataStructure.operations{dataStructure.fileNum}{length(dataStructure.operations{dataStructure.fileNum}) + 1} = operationName;
-dataStructure.applyOperations(dataStructure.fileNum) = 1;
-dataStructure.operationArgs{dataStructure.fileNum}{length(dataStructure.operations{dataStructure.fileNum})} = args;
 
-if(~isempty(operatedChannels))
-    dataStructure.operatedChannels{dataStructure.fileNum} = operatedChannels;
-else
-    dataStructure.operatedChannels{dataStructure.fileNum} = operatedChannels;
-end
 
-handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
+
+
+[opDataOut] = applyOperation(operationName, args, opData);
+
+opDataOut.operations{length(opDataOut.operations) + 1} = operationName;
+
+opDataOut.operationArgs{length(opDataOut.operations)} = args;
+
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opDataOut;
 handlesOut = handles;
 
 function handlesOut = applyAllOps(handles)
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-dat = dataStructure.fileData.(dataStructure.dataVariable);
-if(dataStructure.channelsAcrossRows)
-    dat = transpose(dat);
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+freshOpData = getOpData(handles.dSets(handles.datasetNum).ffData);
+
+for i=1:length(opData.operations)
+    freshOpData = applyOperation(opData.operations{i},...
+        opData.operationArgs{i}, freshOpData);
+    freshOpData.operations{i} = opData.operations{i};
+    freshOpData.operationArgs{i} = opData.operationArgs{i};
 end
 
-for i=1:length(dataStructure.operations{dataStructure.fileNum})
-    [processedData, resultFs] = applyOperation(dataStructure.operations{dataStructure.fileNum}{i},...
-        dataStructure.operationArgs{dataStructure.fileNum}{i}, dat, dataStructure.fs);
-    dat = processedData;
-    dataStructure.fs = resultFs;
-end
-dataStructure.processedData{dataStructure.fileNum} = processedData;
-dataStructure.fs = resultFs;
-dataStructure.applyOperations(dataStructure.fileNum) = 1;
-
-handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = freshOpData;
 handlesOut = handles;
 
 
@@ -745,6 +676,7 @@ function pumDataSet_Callback(hObject, ~, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumDataSet
 index = get(hObject,'Value');
 handles.datasetNum = index;
+handles.fileNum = handles.dSets(handles.datasetNum).ffData.fileNum;
 guidata(hObject, handles);
 updateView(handles);
 
