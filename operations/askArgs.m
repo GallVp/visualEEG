@@ -2,7 +2,7 @@ function [returnArgs] = askArgs(operationName, opData)
 
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
-    'Select Channels', 'Create Epochs',...
+    'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean'};
 
 switch operationName
@@ -145,11 +145,15 @@ switch operationName
             end
         end
         
-    case ALL_OPERATIONS{11} % Channel Mean
+    case ALL_OPERATIONS{11} % Exclude Epochs
+        % No argument required.
+        returnArgs = {'N.R.'};    
+        
+    case ALL_OPERATIONS{12} % Channel Mean
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{12} % Epoch Mean
+    case ALL_OPERATIONS{13} % Epoch Mean
         % No argument required.
         returnArgs = {'N.R.'};
         

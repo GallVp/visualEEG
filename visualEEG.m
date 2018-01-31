@@ -102,7 +102,7 @@ addpath('operations');
 % Availabe operations
 handles.OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
-    'Select Channels', 'Create Epochs',...
+    'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean'};
 
 
@@ -193,11 +193,11 @@ function cbDiscard_Callback(hObject, ~, handles)
 % Hint: get(hObject,'Value') returns toggle state of cbDiscard
 
 val = get(hObject,'Value');
-absoluteEpochNum = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(...
-    handles.dSets.getOperationSuperSet.isApplied).getAbsoluteEpochNum;
-handles.dSets.getDataSet.updateEpochExStatus(absoluteEpochNum, ~val);
-guidata(hObject, handles);
-updateView(handles);
+if(~isempty(handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochExcludeStatus))
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochExcludeStatus(handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum) = val;
+    guidata(hObject, handles);
+    updateView(handles);
+end
 
 
 % --------------------------------------------------------------------
@@ -287,6 +287,7 @@ else
 end
 
 opData.epochNum = 1;
+opData.epochExcludeStatus = [];
 
 % Info on operations
 opData.operations = {};
@@ -352,6 +353,11 @@ end
 absc = opData.abscissa;
 
 plot(absc, dat(:,:, opData.epochNum));
+
+% Update epoch discard cb enable/disable
+if(~isempty(opData.epochExcludeStatus))
+    set(handles.cbDiscard, 'Value', opData.epochExcludeStatus(opData.epochNum));
+end
 
 % Update dataset selection
 set(handles.pumDataSet, 'String', getDataSetNames(handles));

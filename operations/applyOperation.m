@@ -2,7 +2,7 @@ function [opDataOut] = applyOperation(operationName, args,  opData)
 % applyOperation
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
-    'Select Channels', 'Create Epochs',...
+    'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean'};
 
 opDataOut = opData;
@@ -150,8 +150,15 @@ switch operationName
         opDataOut.abscissa = 1:size(opDataOut.channelStream, 1);
         opDataOut.abscissa = opDataOut.abscissa ./ opDataOut.fs;
         opDataOut.abscissa = opDataOut.abscissa - wn(1) ./ opData.fs;
+        opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
         
-    case ALL_OPERATIONS{11} % Channel Mean
+    case ALL_OPERATIONS{11} % Exclude Epochs
+        % No argument required.
+        opDataOut.channelStream = opData.channelStream(:,:, ~opData.epochExcludeStatus);
+        opDataOut.numEpochs = size(opDataOut.channelStream, 3);
+        opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
+        
+    case ALL_OPERATIONS{12} % Channel Mean
         % No argument required.
         if(opData.numEpochs > 1)
             sz = size(opData.channelStream);
@@ -166,11 +173,12 @@ switch operationName
         opDataOut.channelNames = {'Mean Channel'};
         opDataOut.numChannels = size(opDataOut.channelStream, 2);
         
-    case ALL_OPERATIONS{12} % Epoch Mean
+    case ALL_OPERATIONS{13} % Epoch Mean
         % No argument required.
         opDataOut.channelStream = mean(opData.channelStream, 3);
         opDataOut.numEpochs = size(opDataOut.channelStream, 3);
         opDataOut.epochNum = 1;
+        opDataOut.epochExcludeStatus = [];
         
         
 %     case ALL_OPERATIONS{8} % PCA
