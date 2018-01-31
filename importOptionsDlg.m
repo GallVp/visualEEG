@@ -149,8 +149,19 @@ handles.dataStructureDefault.fsVariable         = [];
 
 handles.dataOut.dataStructure = assignOptions(handles.dataStructure, handles.dataStructureDefault);
 
-if(isnan(handles.dataOut.dataStructure.fs))
-    handles.dataOut.dataStructure.fs = [];
+if(isempty(handles.dataOut.dataStructure.folderName))
+    errordlg('Inappropriate data folder.', 'Data Folder', 'modal');
+    return;
+end
+
+if(isempty(handles.dataOut.dataStructure.dataVariable))
+    errordlg('Inappropriate data variable.', 'Data Variable', 'modal');
+    return;
+end
+
+if(isnan(handles.dataOut.dataStructure.fs) || isempty(handles.dataOut.dataStructure.fs))
+    errordlg('Inappropriate value for sample rate.', 'Sample Rate', 'modal');
+    return;
 end
 
 guidata(hObject, handles);
@@ -284,6 +295,7 @@ if(~isempty(choice))
             [handles.dataStructure.fileData, handles.dataStructure.variableNames]...
                 = loadMatFile(fileFolderPath);
             handles.dataStructure.fileNames = {handles.dataStructure.fileName};
+            set(handles.editFileFolderPath, 'String', handles.dataStructure.folderName);
         end
     else
         folder = uigetdir;
@@ -296,11 +308,10 @@ if(~isempty(choice))
                 return;
             end
             handles.dataStructure.fileName = handles.dataStructure.fileNames{1};
+            set(handles.editFileFolderPath, 'String', handles.dataStructure.folderName);
         end
     end
 end
-
-set(handles.editFileFolderPath, 'String', handles.dataStructure.folderName);
 
 guidata(hObject, handles);
 

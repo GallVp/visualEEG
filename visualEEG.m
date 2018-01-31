@@ -97,12 +97,13 @@ set(hObject, 'pos', windowPosition);
 
 % Add folders to path
 addpath('helpers');
+addpath('operations');
 
 % Availabe operations
-handles.OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample', 'Delay',...
+handles.OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
-            'Channel Mean', 'Epoch Mean',...
-            'Threshold by Std.' 'PCA', 'FAST ICA'};
+    'Create Epochs',...
+    'Channel Mean', 'Epoch Mean'};
 
 
 % Update handles structure
@@ -238,7 +239,7 @@ function menuAbout_Callback(~, ~, ~)
 % hObject    handle to menuAbout (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-uiwait(msgbox(sprintf('Visual EEG\n\nVersion 2.0\n\nUsman Rashid\nurashid@aut.ac.nz\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
+uiwait(msgbox(sprintf('visualEEG\n\nVersion 2.0\n\nUsman Rashid\nThomas Momme\nUsman Ayub\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
 
 % --------------------------------------------------------------------
 function menuImport_Callback(hObject, ~, handles)
@@ -246,91 +247,96 @@ function menuImport_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-try
-    loadedData = importOptionsDlg;
-    
-    if(isempty(loadedData))
+
+loadedData = importOptionsDlg;
+
+if(isempty(loadedData))
+    return;
+else
+    if(isempty(loadedData.dataStructure.fileData))
         return;
-    else
-        if(isempty(loadedData.dataStructure.fileData))
-            return;
-        end
-        
-        % Add some extra variables to dataStructure
-        loadedData.dataStructure.fileNum = 1;
-        loadedData.dataStructure.channelNames = {};
-        loadedData.dataStructure.channelNamesVariable = [];
-        if(loadedData.dataStructure.channelsAcrossRows)
-            loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 1);
-            loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
-        else
-            loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 2);
-            loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
-        end
-        
-        loadedData.dataStructure.numEpochs = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 3);
-        loadedData.dataStructure.epochNum = 1;
-        
-        handles.datasetNum = size(handles.dSets, 2) + 1;
-        handles.dSets{handles.datasetNum} = loadedData;
     end
     
-    % Turn legend off
-    handles.showLegend = 0;
-    legend off;
-    set(handles.toolShowLegend, 'State', 'Off');
+    % Add some extra variables to dataStructure
+    loadedData.dataStructure.fileNum = 1;
+    loadedData.dataStructure.channelNames = {};
+    loadedData.dataStructure.channelNamesVariable = [];
+    loadedData.dataStructure.numFiles = length(loadedData.dataStructure.fileNames);
+    if(loadedData.dataStructure.channelsAcrossRows)
+        loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 1);
+        loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
+    else
+        loadedData.dataStructure.numChannels = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 2);
+        loadedData.dataStructure.selectedChannels = 1:loadedData.dataStructure.numChannels;
+    end
     
-    % turn off cues
-    handles.showCues = 0;
+    loadedData.dataStructure.numEpochs = size(loadedData.dataStructure.fileData.(loadedData.dataStructure.dataVariable), 3);
+    loadedData.dataStructure.epochNum = 1;
     
-    %enable most controls
-    set(handles.bgEpochs, 'Visible', 'On');
-    set(handles.upData, 'Visible', 'On');
-    set(handles.upOperations, 'Visible', 'On');
-    set(handles.menuExport, 'Enable', 'On');
-    set(handles.saveFigure, 'Enable', 'On');
-    set(handles.toolShowLegend, 'Enable', 'On');
+    % Create a cache of processed Data
+    loadedData.dataStructure.processedData      = cell(loadedData.dataStructure.numFiles, 1);
+    loadedData.dataStructure.applyOperations    = zeros(loadedData.dataStructure.numFiles, 1);
+    loadedData.dataStructure.operations         = cell(loadedData.dataStructure.numFiles, 1);
+    loadedData.dataStructure.operationArgs      = cell(loadedData.dataStructure.numFiles, 1);
+    loadedData.dataStructure.operatedChannels   = cell(loadedData.dataStructure.numFiles, 1);
     
-    % Set focus to next
-    uicontrol(handles.pbNext);
+    handles.datasetNum = size(handles.dSets, 2) + 1;
+    handles.dSets{handles.datasetNum} = loadedData;
     
-    guidata(hObject, handles);
-    updateView(handles);
-catch ME
-    errordlg(ME.message,'Data import', 'modal');
-    disp(ME);
 end
+
+% Turn legend off
+handles.showLegend = 0;
+legend off;
+set(handles.toolShowLegend, 'State', 'Off');
+
+% turn off cues
+handles.showCues = 0;
+
+%enable most controls
+set(handles.bgEpochs, 'Visible', 'On');
+set(handles.upData, 'Visible', 'On');
+set(handles.upOperations, 'Visible', 'On');
+set(handles.menuExport, 'Enable', 'On');
+set(handles.saveFigure, 'Enable', 'On');
+set(handles.toolShowLegend, 'Enable', 'On');
+
+% Set focus to next
+uicontrol(handles.pbNext);
+
+guidata(hObject, handles);
+updateView(handles);
 
 % --------------------------------------------------------------------
 function menuExport_Callback(hObject, eventdata, handles)
 % hObject    handle to menuExport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-saveOptions = exportOptionsDlg;
-if(isempty(saveOptions))
-else
-    switch saveOptions.('selectedOption')
-        case 1%Selected epoch
-            data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-            data.saveCurrentEpoch(handles.dSets.getDataSet.folderName);
-        case 2%Selected session
-            data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-            data.saveToFile(handles.dSets.getDataSet.folderName);
-        case 3%Selected subject
-            disp('Export option not implemented');
-        case 4%All subjects
-            disp('Export option not implemented');
-        case 5%Selected Session (NeuCube)
-            try
-                data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-                data.saveNeuCubeData(handles.dSets.getDataSet.folderName);
-            catch ME
-                uiwait(errordlg(ME.message,'Export NeuCube Data', 'modal'));
-            end
-        otherwise
-            disp('Export option not implemented');
-    end
-end
+% saveOptions = exportOptionsDlg;
+% if(isempty(saveOptions))
+% else
+%     switch saveOptions.('selectedOption')
+%         case 1%Selected epoch
+%             data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+%             data.saveCurrentEpoch(handles.dSets.getDataSet.folderName);
+%         case 2%Selected session
+%             data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+%             data.saveToFile(handles.dSets.getDataSet.folderName);
+%         case 3%Selected subject
+%             disp('Export option not implemented');
+%         case 4%All subjects
+%             disp('Export option not implemented');
+%         case 5%Selected Session (NeuCube)
+%             try
+%                 data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
+%                 data.saveNeuCubeData(handles.dSets.getDataSet.folderName);
+%             catch ME
+%                 uiwait(errordlg(ME.message,'Export NeuCube Data', 'modal'));
+%             end
+%         otherwise
+%             disp('Export option not implemented');
+%     end
+% end
 % --------------------------------------------------------------------
 function menuExit_Callback(hObject, eventdata, handles)
 % hObject    handle to menuExit (see GCBO)
@@ -344,41 +350,23 @@ function saveFigure_ClickedCallback(~, ~, handles)
 % hObject    handle to saveFigure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-% h = findobj(gca,'Type','line');
-% figXData = get(h, 'XData');
-% figYData = get(h, 'YData');
-
-H = figure;
-verbose = 1;
-data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
-
-[~,~,~] = mkdir(handles.dSets.getDataSet.folderName, 'Output Figures');
-imgName = fullfile(strcat(handles.dSets.getDataSet.folderName, '/Output Figures'),...
-    sprintf('sub%02d_sess%02d_%s.pdf',handles.dSets.getDataSet.subjectNum, handles.dSets.getDataSet.sessionNum,...
-    datestr(now)));
-try
-    export_fig(imgName, '-transparent', H);
-    uiwait(msgbox(imgName,'Saved image...','modal'));
-catch ME
-    uiwait(errordlg('Failed to export using export_fig. Now using matlab print function.','Figure export', 'modal'));
-    print(imgName, '-dpdf', H);
-    uiwait(msgbox(imgName,'Saved image...','modal'));
-end
-close(H);
 
 % ---Update View function
 function updateView(handles)
 dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-dat = dataStructure.fileData.(dataStructure.dataVariable);
 
-% Make channels across columns
-if(dataStructure.channelsAcrossRows)
-    dat = transpose(dat);
-end
-if(size(dat, 2) > 128)
-    disp('Warning: Only plotting first 128 channels');
-    dat = dat(:, 1:128);
+if(dataStructure.applyOperations(dataStructure.fileNum) == 0)
+    dat = dataStructure.fileData.(dataStructure.dataVariable);
+    % Make channels across columns
+    if(dataStructure.channelsAcrossRows)
+        dat = transpose(dat);
+    end
+    if(size(dat, 2) > 128)
+        disp('Warning: Only plotting first 128 channels');
+        dat = dat(:, 1:128);
+    end
+else
+    dat = dataStructure.processedData{dataStructure.fileNum};
 end
 
 % Select channels
@@ -432,6 +420,21 @@ else
     set(handles.cbDiscard, 'Enable', 'On');
 end
 
+% Update the operations list
+if(~isempty(dataStructure.operations{dataStructure.fileNum}))
+    set(handles.lbOperations, 'String', dataStructure.operations{dataStructure.fileNum});
+    set(handles.lbOperations, 'Value', length(dataStructure.operations{dataStructure.fileNum}));
+    % Disable apply checkbox
+    set(handles.cbApply, 'Enable', 'On');
+else
+    set(handles.lbOperations, 'String', '');
+    % Disable apply checkbox
+    set(handles.cbApply, 'Enable', 'Off');
+end
+
+%Update enable and checked property of apply
+set(handles.cbApply, 'Value', dataStructure.applyOperations(dataStructure.fileNum));
+
 function dataSetNames = getDataSetNames(handles)
 dataSetNames = cell(size(handles.dSets));
 for i=1:size(handles.dSets, 2)
@@ -440,9 +443,6 @@ end
 
 % data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
 %
-% % Update the operations list
-% set(handles.lbOperations, 'String', handles.dSets.getOperationSuperSet.getOperationSet.operations);
-% set(handles.lbOperations, 'Value', length(handles.dSets.getOperationSuperSet.getOperationSet.operations));
 %
 % % Update Operation Sets list
 % set(handles.pumOpsSet, 'String', handles.dSets.getOperationSuperSet.names);
@@ -454,9 +454,6 @@ end
 %
 % set(handles.pumFile, 'String', num2str(handles.dSets.getDataSet.listSubjects));
 % set(handles.pumFile, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
-%
-% set(handles.editIntvl1, 'String', num2str(handles.dSets.getDataSet.interval(1)));
-% set(handles.editIntvl2, 'String', num2str(handles.dSets.getDataSet.interval(2)));
 %
 % set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
 %
@@ -622,7 +619,7 @@ function cbApply_Callback(hObject, ~, handles)
 % Hint: get(hObject,'Value') returns toggle state of cbApply
 
 val = get(hObject, 'Value');
-handles.dSets.getOperationSuperSet.setApplied(val);
+handles.dSets{handles.datasetNum}.dataStructure.applyOperations(handles.dSets{handles.datasetNum}.dataStructure.fileNum) = val;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -632,10 +629,27 @@ function pbRemoveOperation_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 index = get(handles.lbOperations, 'Value');
+operations = handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum};
+operations{index} = [];
 
-handles.dSets.getOperationSuperSet.getOperationSet.rmOperation(index);
+operationArgs = handles.dSets{handles.datasetNum}.dataStructure.operationArgs{handles.dSets{handles.datasetNum}.dataStructure.fileNum};
+operationArgs{index} = [];
+
+handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum} =...
+    operations(~cellfun('isempty',operations));
+handles.dSets{handles.datasetNum}.dataStructure.operationArgs{handles.dSets{handles.datasetNum}.dataStructure.fileNum} =...
+    operationArgs(~cellfun('isempty',operationArgs));
+
+if(~isempty(handles.dSets{handles.datasetNum}.dataStructure.operations{handles.dSets{handles.datasetNum}.dataStructure.fileNum}))
+    handles = applyAllOps(handles);
+else
+    handles.dSets{handles.datasetNum}.dataStructure.applyOperations = 0;
+    handles.dSets{handles.datasetNum}.dataStructure.processedData{handles.dSets{handles.datasetNum}.dataStructure.fileNum} = [];
+end
 guidata(hObject, handles);
 updateView(handles);
+
+
 
 
 % --- Executes on button press in pbAddOperation.
@@ -643,24 +657,65 @@ function pbAddOperation_Callback(hObject, ~, handles)
 % hObject    handle to pbAddOperation (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.dSets.getOperationSuperSet.getOperationSet.addOperation;
-handles.dSets.getOperationSuperSet.setApplied(1);
+[s, v] = listdlg('PromptString','Select an operation:',...
+    'SelectionMode','single',...
+    'ListString', handles.OPERATIONS);
+if(v)
+    handles = applyOp(handles, handles.OPERATIONS{s});
+end
 guidata(hObject, handles);
 updateView(handles);
 
+function handlesOut = applyOp(handles, operationName)
+args = askArgs(operationName);
+if(isempty(args))% Empty means valid arguments could were not provided
+    handlesOut = handles;
+    return;
+end
+dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+if(isempty(dataStructure.processedData{dataStructure.fileNum}))
+    dat = dataStructure.fileData.(dataStructure.dataVariable);
+    if(dataStructure.channelsAcrossRows)
+        dat = transpose(dat);
+    end
+else
+    dat = dataStructure.processedData{dataStructure.fileNum};
+end
+[processedData, resultFs, operatedChannels] = applyOperation(operationName, args, dat, dataStructure.fs);
+dataStructure.processedData{dataStructure.fileNum} = processedData;
+dataStructure.fs = resultFs;
+dataStructure.operations{dataStructure.fileNum}{length(dataStructure.operations{dataStructure.fileNum}) + 1} = operationName;
+dataStructure.applyOperations(dataStructure.fileNum) = 1;
+dataStructure.operationArgs{dataStructure.fileNum}{length(dataStructure.operations{dataStructure.fileNum})} = args;
 
-% --- Executes on button press in cbExcludeEpochs.
-function cbExcludeEpochs_Callback(hObject, ~, handles)
-% hObject    handle to cbExcludeEpochs (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+if(~isempty(operatedChannels))
+    dataStructure.operatedChannels{dataStructure.fileNum} = operatedChannels;
+else
+    dataStructure.operatedChannels{dataStructure.fileNum} = operatedChannels;
+end
 
-% Hint: get(hObject,'Value') returns toggle state of cbExcludeEpochs
+handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
+handlesOut = handles;
 
-val = get(hObject, 'Value');
-handles.dSets.getDataSet.excludeEpochs(val);
-guidata(hObject, handles);
-updateView(handles);
+function handlesOut = applyAllOps(handles)
+dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
+dat = dataStructure.fileData.(dataStructure.dataVariable);
+if(dataStructure.channelsAcrossRows)
+    dat = transpose(dat);
+end
+
+for i=1:length(dataStructure.operations{dataStructure.fileNum})
+    [processedData, resultFs] = applyOperation(dataStructure.operations{dataStructure.fileNum}{i},...
+        dataStructure.operationArgs{dataStructure.fileNum}{i}, dat, dataStructure.fs);
+    dat = processedData;
+    dataStructure.fs = resultFs;
+end
+dataStructure.processedData{dataStructure.fileNum} = processedData;
+dataStructure.fs = resultFs;
+dataStructure.applyOperations(dataStructure.fileNum) = 1;
+
+handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
+handlesOut = handles;
 
 
 % --------------------------------------------------------------------
