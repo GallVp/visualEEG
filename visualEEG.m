@@ -299,31 +299,15 @@ function menuExport_Callback(hObject, eventdata, handles)
 % hObject    handle to menuExport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% saveOptions = exportOptionsDlg;
-% if(isempty(saveOptions))
-% else
-%     switch saveOptions.('selectedOption')
-%         case 1%Selected epoch
-%             data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-%             data.saveCurrentEpoch(handles.dSets.getDataSet.folderName);
-%         case 2%Selected session
-%             data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-%             data.saveToFile(handles.dSets.getDataSet.folderName);
-%         case 3%Selected subject
-%             disp('Export option not implemented');
-%         case 4%All subjects
-%             disp('Export option not implemented');
-%         case 5%Selected Session (NeuCube)
-%             try
-%                 data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-%                 data.saveNeuCubeData(handles.dSets.getDataSet.folderName);
-%             catch ME
-%                 uiwait(errordlg(ME.message,'Export NeuCube Data', 'modal'));
-%             end
-%         otherwise
-%             disp('Export option not implemented');
-%     end
-% end
+
+[file, path] = uiputfile('*.mat','Save processed data as');
+
+if path ~= 0
+    filePath = fullfile(path, file);
+    opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+    save(filePath, '-struct', 'opData');
+end
+
 % --------------------------------------------------------------------
 function menuExit_Callback(hObject, eventdata, handles)
 % hObject    handle to menuExit (see GCBO)
@@ -337,6 +321,15 @@ function saveFigure_ClickedCallback(~, ~, handles)
 % hObject    handle to saveFigure (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+set(0,'showhiddenhandles','on'); % Make the GUI figure handle visible
+h = findobj(gcf,'type','axes'); % Find the axes object in the GUI
+f1 = figure; % Open a new figure with handle f1
+s = copyobj(h,f1); % Copy axes object h into figure f1
+set(gca,'ActivePositionProperty','outerposition');
+set(gca,'Units','normalized');
+set(gca,'OuterPosition',[0 0 1 1]);
+set(gca,'position',[0.1300 0.1100 0.7750 0.8150]);
 
 % ---Update View function
 function updateView(handles)
