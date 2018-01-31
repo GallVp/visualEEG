@@ -102,7 +102,7 @@ addpath('operations');
 % Availabe operations
 handles.OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
-    'Create Epochs',...
+    'Select Channels', 'Create Epochs',...
     'Channel Mean', 'Epoch Mean'};
 
 
@@ -128,7 +128,7 @@ function pbPrevious_Callback(hObject, ~, handles)
 % hObject    handle to pbPrevious (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied).previousEpoch;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum - 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -139,7 +139,7 @@ function pbNext_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied).nextEpoch;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum + 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -248,9 +248,6 @@ handles.showLegend = 0;
 legend off;
 set(handles.toolShowLegend, 'State', 'Off');
 
-% turn off cues
-handles.showCues = 0;
-
 %enable most controls
 set(handles.bgEpochs, 'Visible', 'On');
 set(handles.upData, 'Visible', 'On');
@@ -277,7 +274,18 @@ end
 opData.numChannels = size(opData.channelStream , 2);
 opData.numEpochs = size(opData.channelStream , 3);
 
-opData.selectedChannels = 1:opData.numChannels;
+if(~isempty(ffData.channelNamesVariable))
+    opData.channelNames = ffData.fileData.(ffData.channelNamesVariable);
+else
+    opData.channelNames = {};
+end
+
+if(~isempty(ffData.eventVariable))
+    opData.events = ffData.fileData.(ffData.eventVariable);
+else
+    opData.events = [];
+end
+
 opData.epochNum = 1;
 
 % Info on operations
@@ -343,8 +351,7 @@ if(size(dat, 2) > 128)
 end
 absc = opData.abscissa;
 
-
-plot(absc, dat);
+plot(absc, dat(:,:, opData.epochNum));
 
 % Update dataset selection
 set(handles.pumDataSet, 'String', getDataSetNames(handles));
@@ -384,155 +391,15 @@ else
     set(handles.lbOperations, 'String', '');
 end
 
+% Show legend
+if(handles.showLegend)
+    legend(opData.channelNames);
+end
+
 function dataSetNames = getDataSetNames(handles)
 dataSetNames = cell(size(handles.dSets));
 for i=1:size(handles.dSets, 2)
     dataSetNames{i} = handles.dSets(i).ffData.folderName;
-end
-
-% data = handles.dSets.getOperationSuperSet.getOperationSet.getProcData(handles.dSets.getOperationSuperSet.isApplied);
-%
-%
-% % Update Operation Sets list
-% set(handles.pumOpsSet, 'String', handles.dSets.getOperationSuperSet.names);
-% set(handles.pumOpsSet, 'Value', handles.dSets.getOperationSuperSet.operationSetNum);
-%
-%
-% set(handles.pumSession, 'String', num2str(handles.dSets.getDataSet.listSessions));
-% set(handles.pumSession, 'Value', handles.dSets.getDataSet.getSessionSrNo);
-%
-% set(handles.pumFile, 'String', num2str(handles.dSets.getDataSet.listSubjects));
-% set(handles.pumFile, 'Value', handles.dSets.getDataSet.getSubjectSrNo);
-%
-% set(handles.cbExcludeEpochs, 'Value', handles.dSets.getDataSet.exEpochsOnOff);
-%
-% set(handles.editGroupNum, 'Value', handles.dSets.getDataSet.groupNum);
-% set(handles.editNumGroups, 'Value', handles.dSets.getDataSet.numGroups);
-%
-%
-% %Update enable and checked property of apply
-% if isempty(handles.dSets.getOperationSuperSet.getOperationSet.operations)
-%     set(handles.cbApply, 'Enable', 'Off');
-%     set(handles.pbRemoveOperation, 'Enable', 'Off');
-%     set(handles.cbApply, 'Value', 0);
-% else
-%     set(handles.cbApply, 'Enable', 'On');
-%     set(handles.pbRemoveOperation, 'Enable', 'On');
-%     set(handles.cbApply, 'Value', handles.dSets.getOperationSuperSet.isApplied);
-% end
-%
-%
-% %Update plot
-% verbose = 0;
-% data.plotCurrentEpoch(handles.showCues, handles.showLegend, verbose);
-%
-% %Update trial number to be displayed
-% % totalEpochs = size(viewData, 3);
-% % if(totalEpochs == 1)
-% %     epochNum = 1;
-% % else
-% %     epochNum = handles.epochNum;
-% % end
-%
-%
-%
-% %Show epoch info
-%
-%
-
-
-function editChannels_Callback(hObject, ~, handles)
-% hObject    handle to editChannels (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of editChannels as text
-%        str2double(get(hObject,'String')) returns contents of editChannels as a double
-
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-
-channels = get(hObject,'String');
-channelNames = strsplit(strtrim(channels));
-channelNums = str2num(channels);
-if(~isnan(channelNums))
-    lia = ismember(channelNums, 1:dataStructure.numChannels);
-    if(sum(lia) == length(lia))
-        dataStructure.selectedChannels = channelNums;
-        handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
-        guidata(hObject, handles);
-        updateView(handles);
-    else
-        h = errordlg(sprintf('Wrong channel(s) selected.\nAvailable Channels: %s', num2str(1:dataStructure.numChannels)),...
-            'Channel selection', 'modal');
-        uiwait(h);
-        updateView(handles);
-    end
-elseif(~isempty(dataStructure.channelNames))
-    lia = ismember(channelNames, dataStructure.channelNames);
-    if(sum(lia) == length(lia))
-        dataStructure.selectedChannels = strcmpIND(dataStructure.channelNames, channelNames);
-        handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
-        guidata(hObject, handles);
-        updateView(handles);
-    else
-        h = errordlg(sprintf('Wrong channel(s) selected.\nAvailable Channels: %s', strjoin(dataStructure.channelNames, ' ')),...
-            'Channel selection', 'modal');
-        uiwait(h);
-        updateView(handles);
-    end
-else
-    h = errordlg(sprintf('Wrong channel(s) selected.\nAvailable Channels: %s', num2str(1:dataStructure.numChannels)),...
-        'Channel selection', 'modal');
-    uiwait(h);
-    updateView(handles);
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function editChannels_CreateFcn(hObject, ~, handles)
-% hObject    handle to editChannels (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in pbSelectChannels.
-function pbSelectChannels_Callback(hObject, ~, handles)
-% hObject    handle to pbSelectChannels (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-dataStructure = handles.dSets{handles.datasetNum}.dataStructure;
-chanNames = dataStructure.channelNames;
-if(isempty(chanNames))
-    [s,v] = listdlg('PromptString','Select channel names variable:',...
-        'SelectionMode','single',...
-        'ListString', dataStructure.variableNames);
-    if(v)
-        dataStructure.channelNamesVariable = dataStructure.variableNames{s};
-        dataStructure.channelNames = dataStructure.fileData.(dataStructure.channelNamesVariable);
-    else
-        return;
-    end
-end
-
-chanNames = dataStructure.channelNames;
-[channels,~] = listdlg('PromptString','Select channels:',...
-    'ListString', chanNames);
-if(~isempty(channels))
-    channelNames = chanNames(channels,:);
-    
-    dataStructure.selectedChannels = strcmpIND(dataStructure.channelNames, channelNames);
-    
-    set(handles.editChannels,'String', strjoin(channelNames));
-    
-    handles.dSets{handles.datasetNum}.dataStructure = dataStructure;
-    guidata(hObject, handles);
-    updateView(handles);
 end
 
 
@@ -616,14 +483,27 @@ updateView(handles);
 
 function handlesOut = applyOp(handles, operationName)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+
+% If operation is create epochs, ask for events variable
+if(strcmp(operationName, 'Create Epochs') && isempty(handles.dSets(handles.datasetNum).ffData.eventVariable))
+    [s,v] = listdlg('PromptString','Select events variable:',...
+        'SelectionMode','single',...
+        'ListString', handles.dSets(handles.datasetNum).ffData.variableNames);
+    if(v)
+        handles.dSets(handles.datasetNum).ffData.eventVariable = handles.dSets(handles.datasetNum).ffData.variableNames{s};
+        opData.events = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.eventVariable);
+        handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+    else
+        handlesOut = handles;
+        return;
+    end
+end
+
 args = askArgs(operationName, opData);
-if(isempty(args))% Empty means valid arguments could were not provided
+if(isempty(args))% Empty means valid arguments were not provided
     handlesOut = handles;
     return;
 end
-
-
-
 
 [opDataOut] = applyOperation(operationName, args, opData);
 
@@ -661,6 +541,20 @@ function toolShowLegend_ClickedCallback(hObject, ~, handles)
 % hObject    handle to toolShowLegend (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+if(isempty(opData.channelNames))
+    [s,v] = listdlg('PromptString','Select channel names variable:',...
+        'SelectionMode','single',...
+        'ListString', handles.dSets(handles.datasetNum).ffData.variableNames);
+    if(v)
+        handles.dSets(handles.datasetNum).ffData.channelNamesVariable = handles.dSets(handles.datasetNum).ffData.variableNames{s};
+        opData.channelNames = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.channelNamesVariable);
+        handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+    else
+        return;
+    end
+end
+
 handles.showLegend = ~handles.showLegend;
 guidata(hObject, handles);
 updateView(handles);
@@ -692,10 +586,3 @@ function pumDataSet_CreateFcn(hObject, ~, ~)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% --- Executes during object creation, after setting all properties.
-function pbSelectChannels_CreateFcn(~, ~, ~)
-% hObject    handle to pbSelectChannels (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
