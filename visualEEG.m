@@ -19,18 +19,17 @@ function varargout = visualEEG(varargin)
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
-
+%
 % Edit the above text to modify the response to help visualEEG
-
-
+%
 % Last Modified by GUIDE v2.5 30-Jan-2018 17:38:17
-
+%
 % Copyright (c) <2016> <Usman Rashid>
 %
 % This program is free software; you can redistribute it and/or
 % modify it under the terms of the GNU General Public License as
-% published by the Free Software Foundation; either version 2 of the
-% License, or (at your option) any later version.  See the file
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
 % LICENSE included with this distribution for more information.
 
 % Begin initialization code - DO NOT EDIT
@@ -218,7 +217,7 @@ function menuAbout_Callback(~, ~, ~)
 % hObject    handle to menuAbout (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-uiwait(msgbox(sprintf('visualEEG\n\nVersion 2.0\n\nUsman Rashid\nThomas Momme\nUsman Ayub\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
+uiwait(msgbox(sprintf('visualEEG\n\nVersion 2.0\nLicense GPL v3\n\nUsman Rashid\nThomas Momme\nUsman Ayub\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
 
 % --------------------------------------------------------------------
 function menuImport_Callback(hObject, ~, handles)
@@ -430,20 +429,6 @@ function lbOperations_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% --- Executes on button press in cbApply.
-function cbApply_Callback(hObject, ~, handles)
-% hObject    handle to cbApply (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of cbApply
-
-val = get(hObject, 'Value');
-handles.dSets{handles.datasetNum}.dataStructure.applyOperations(handles.dSets{handles.datasetNum}.dataStructure.fileNum) = val;
-guidata(hObject, handles);
-updateView(handles);
 
 % --- Executes on button press in pbRemoveOperation.
 function pbRemoveOperation_Callback(hObject, ~, handles)

@@ -1,13 +1,13 @@
 function [ X, f ] = computeFFT( x, fs )
-%computeFFT takes the fft of given data and returns one sided amplitude 
+%computeFFT takes the fft of given data and returns one sided amplitude
 % spectrum alongwith frequency vector.
-
+%
 % Copyright (c) <2016> <Usman Rashid>
-% 
+%
 % This program is free software; you can redistribute it and/or
 % modify it under the terms of the GNU General Public License as
-% published by the Free Software Foundation; either version 2 of the
-% License, or (at your option) any later version.  See the file
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
 % LICENSE included with this distribution for more information.
 
 Fs = fs;              % Sampling frequency

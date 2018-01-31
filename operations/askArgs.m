@@ -1,4 +1,13 @@
 function [returnArgs] = askArgs(operationName, opData)
+%askArgs
+%
+% Copyright (c) <2016> <Usman Rashid>
+%
+% This program is free software; you can redistribute it and/or
+% modify it under the terms of the GNU General Public License as
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
+% LICENSE included with this distribution for more information.
 
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
@@ -147,7 +156,7 @@ switch operationName
         
     case ALL_OPERATIONS{11} % Exclude Epochs
         % No argument required.
-        returnArgs = {'N.R.'};    
+        returnArgs = {'N.R.'};
         
     case ALL_OPERATIONS{12} % Channel Mean
         % No argument required.
@@ -156,24 +165,6 @@ switch operationName
     case ALL_OPERATIONS{13} % Epoch Mean
         % No argument required.
         returnArgs = {'N.R.'};
-        
-        %
-        %     case eegOperations.ALL_OPERATIONS{8} % PCA
-        %         returnArgs = {'N.R.'};
-        %         obj.storedArgs.('eignVect') = [];
-        %         % storedArgs is cleared here to ensure that when
-        %         % this operation is added after removal, it asks for
-        %         % argument during operation execution.
-        %         % No argument required. Which in fact is delayed to
-        %         % applyOpertion.
-        %
-        %
-        %
-        %     case eegOperations.ALL_OPERATIONS{9} % FAST ICA
-        %         returnArgs = {'N.R.'};
-        %         % No argument required.
-        %
-        
         
     otherwise
         returnArgs = {};

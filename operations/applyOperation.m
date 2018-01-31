@@ -1,5 +1,14 @@
 function [opDataOut] = applyOperation(operationName, args,  opData)
-% applyOperation
+%applyOperation
+%
+% Copyright (c) <2016> <Usman Rashid>
+%
+% This program is free software; you can redistribute it and/or
+% modify it under the terms of the GNU General Public License as
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
+% LICENSE included with this distribution for more information.
+
 ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
@@ -20,7 +29,7 @@ switch operationName
             processedData = detrend(opData.channelStream, args{1});
         end
         opDataOut.channelStream = processedData;
-          
+        
     case ALL_OPERATIONS{2} % Normalize
         % No argument required.
         if(opData.numEpochs > 1)
@@ -179,45 +188,6 @@ switch operationName
         opDataOut.numEpochs = size(opDataOut.channelStream, 3);
         opDataOut.epochNum = 1;
         opDataOut.epochExcludeStatus = [];
-        
-        
-%     case ALL_OPERATIONS{8} % PCA
-%         % No argument required.
-%         [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
-%         if(strcmp(obj.dataChangeName, eegData.EVENT_NAME_CHANNELS_CHANGED) || isempty(obj.storedArgs.('eignVect')))
-%             try
-%                 [eignVectors, ~] = pcamat(P',1,2,'gui');
-%                 
-%             catch me
-%                 disp(me.identifier);
-%                 eignVectors = eye(size(P));
-%             end
-%             obj.storedArgs.('eignVect') = eignVectors;
-%             obj.dataChangeName = [];
-%         else
-%             eignVectors = obj.storedArgs.('eignVect');
-%         end
-%         proc = P * eignVectors;
-%         channelNums = 1:size(proc, 2);
-%         channelNames = cell(size(proc, 2), 1);
-%         for i=1:size(proc, 2)
-%             channelNames = sprintf('c%s',i);
-%         end
-%         obj.procData.setChannelData(eegOperations.shapeSst(proc, nT), channelNums, channelNames);
-%         
-%         
-%         
-%     case eegOperations.ALL_OPERATIONS{9} % FAST ICA
-%         % No argument required.
-%         [P, nT] = eegOperations.shapeProcessing(processingData.selectedData);
-%         proc = fastica(P');
-%         proc = proc';
-%         channelNums = 1:size(proc, 2);
-%         channelNames = cell(size(proc, 2), 1);
-%         for i=1:size(proc, 2)
-%             channelNames = sprintf('c%s',i);
-%         end
-%         obj.procData.setChannelData(eegOperations.shapeSst(proc, nT), channelNums, channelNames); 
     otherwise
         disp('Operation not implemented');
 end

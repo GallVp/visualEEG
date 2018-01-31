@@ -19,17 +19,18 @@ function varargout = importOptionsDlg(varargin)
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
-
+%
 % Edit the above text to modify the response to help importOptionsDlg
-
+%
 % Last Modified by GUIDE v2.5 30-Jan-2018 13:58:10
-
+%
+%
 % Copyright (c) <2016> <Usman Rashid>
 %
 % This program is free software; you can redistribute it and/or
 % modify it under the terms of the GNU General Public License as
-% published by the Free Software Foundation; either version 2 of the
-% License, or (at your option) any later version.  See the file
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
 % LICENSE included with this distribution for more information.
 
 % Begin initialization code - DO NOT EDIT

@@ -7,6 +7,14 @@ function [filteredData] = filterStream(data, fs, order, fcLow, fcHigh, zeroPhase
 % fcHigh = 0.05
 % fcLow = 1
 % order = 2
+%
+% Copyright (c) <2016> <Usman Rashid>
+%
+% This program is free software; you can redistribute it and/or
+% modify it under the terms of the GNU General Public License as
+% published by the Free Software Foundation; either version 3 of
+% the License, or ( at your option ) any later version.  See the
+% LICENSE included with this distribution for more information.
 
 if (nargin < 3)
     zeroPhase = 1;
