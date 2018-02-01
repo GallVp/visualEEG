@@ -292,6 +292,9 @@ opData.epochExcludeStatus = [];
 opData.operations = {};
 opData.operationArgs = {};
 
+% Custom updateView function
+opData.updateView = [];
+
 
 
 % --------------------------------------------------------------------
@@ -336,15 +339,25 @@ function updateView(handles)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 ffData = handles.dSets(handles.datasetNum).ffData;
 
-dat = opData.channelStream;
-
-if(size(dat, 2) > 128)
-    disp('Warning: Only plotting first 128 channels');
-    dat = dat(:, 1:128);
+% Call custom updateView if it exists
+if(~isempty(opData.updateView))
+    axH = gca;
+    opData.updateView(axH, opData);
+else
+    % Plot data
+    dat = opData.channelStream;
+    
+    if(size(dat, 2) > 128)
+        disp('Warning: Only plotting first 128 channels');
+        dat = dat(:, 1:128);
+    end
+    absc = opData.abscissa;
+    
+    plot(absc, dat(:,:, opData.epochNum));
+    % Set axis labels
+    xlabel('Time (s)');
+    ylabel('Amplitude');
 end
-absc = opData.abscissa;
-
-plot(absc, dat(:,:, opData.epochNum));
 
 % Update epoch discard cb enable/disable
 if(~isempty(opData.epochExcludeStatus))

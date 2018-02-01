@@ -117,13 +117,18 @@ switch operationName
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
             for i=1:opData.numEpochs
-                [processedData(:, :, i), f] = computeFFT(opData.channelStream(:, :, i), opData.fs);
+                [x, f] = computeFFT(opData.channelStream(:, :, i), opData.fs);
+                processedData(1:length(f), :, i) = x;
             end
+            processedData = processedData(1:length(f), :, :);
         else
             [processedData, f] = computeFFT(opData.channelStream, opData.fs);
         end
         opDataOut.channelStream = processedData;
         opDataOut.abscissa = f;
+        
+        % Add custom updateView function
+        opDataOut.updateView = @(axH, opD)fftUpdateView(axH, opD);
         
     case ALL_OPERATIONS{8} % Spatial Filter
         % args{1} should be channel weights
@@ -191,4 +196,12 @@ switch operationName
     otherwise
         disp('Operation not implemented');
 end
+
+% Define custom updateView functions which take axis handle and opData as
+% input
+    function fftUpdateView(axH, opData)
+        plot(axH, opData.abscissa, opData.channelStream(:,:, opData.epochNum));
+        xlabel(axH, 'Frequency (Hz)');
+        ylabel(axH, 'Amplitude');
+    end
 end
