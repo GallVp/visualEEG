@@ -9,16 +9,17 @@ function [opDataOut] = applyOperation(operationName, args,  opData)
 % the License, or ( at your option ) any later version.  See the
 % LICENSE included with this distribution for more information.
 
-ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
+OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
-    'Channel Mean', 'Epoch Mean'};
+    'Channel Mean', 'Epoch Mean',...
+    'Band Power', 'EEG Bands'};
 
 opDataOut = opData;
 
 switch operationName
     
-    case ALL_OPERATIONS{1} % Detrend
+    case OPERATIONS{1} % Detrend
         % args{1} should be 'linear' or 'constant'
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
@@ -30,7 +31,10 @@ switch operationName
         end
         opDataOut.channelStream = processedData;
         
-    case ALL_OPERATIONS{2} % Normalize
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{2} % Normalize
         % No argument required.
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
@@ -42,7 +46,10 @@ switch operationName
         end
         opDataOut.channelStream = processedData;
         
-    case ALL_OPERATIONS{3} % Abs
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{3} % Abs
         % No argument required.
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
@@ -54,7 +61,10 @@ switch operationName
         end
         opDataOut.channelStream = processedData;
         
-    case ALL_OPERATIONS{4} % Remove Common Mode
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{4} % Remove Common Mode
         % No argument required.
         M=eye(opData.numChannels)-1/opData.numChannels*ones(opData.numChannels);
         if(opData.numEpochs > 1)
@@ -67,7 +77,10 @@ switch operationName
         end
         opDataOut.channelStream = processedData;
         
-    case ALL_OPERATIONS{5} % Resample
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{5} % Resample
         % args{1} should be p and args{2} should be q. p/q is
         % the sampling ratio.
         p = args{1};
@@ -86,7 +99,10 @@ switch operationName
         opDataOut.abscissa = 1:size(opDataOut.channelStream, 1);
         opDataOut.abscissa = opDataOut.abscissa ./ opDataOut.fs;
         
-    case ALL_OPERATIONS{6} % Filter
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{6} % Filter
         % args{1} should be isBandStop and args{2} should be frequencyBand
         FILTER_ORDER    = 2;
         ZERO_PHASE      = 1;
@@ -112,7 +128,10 @@ switch operationName
         end
         opDataOut.channelStream = processedData;
         
-    case ALL_OPERATIONS{7} % FFT
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{7} % FFT
         % No argument required.
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
@@ -124,13 +143,13 @@ switch operationName
         else
             [processedData, f] = computeFFT(opData.channelStream, opData.fs);
         end
-        opDataOut.channelStream = processedData;
-        opDataOut.abscissa = f;
+        opDataOut.frequencyStream = processedData;
+        opDataOut.fftFreq = f;
         
         % Add custom updateView function
         opDataOut.updateView = @(axH, opD)fftUpdateView(axH, opD);
         
-    case ALL_OPERATIONS{8} % Spatial Filter
+    case OPERATIONS{8} % Spatial Filter
         % args{1} should be channel weights
         M = args{1};
         M =M';
@@ -147,7 +166,10 @@ switch operationName
         opDataOut.channelNames = {'SF Channel'};
         opDataOut.numChannels = size(opDataOut.channelStream, 2);
         
-    case ALL_OPERATIONS{9} % Select Channels
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{9} % Select Channels
         % args{1} should be a vector with channel indices
         channelNums = args{1};
         opDataOut.channelStream = opData.channelStream(:, channelNums, :);
@@ -156,7 +178,10 @@ switch operationName
             opDataOut.channelNames = opData.channelNames(channelNums);
         end
         
-    case ALL_OPERATIONS{10} % Create Epochs
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{10} % Create Epochs
         % args{1} should be [timeBefore timeAfter]
         wn = round(args{1} .* opData.fs);
         opDataOut.channelStream = epochData(opData.channelStream, opData.events, wn(1), wn(2));
@@ -166,13 +191,19 @@ switch operationName
         opDataOut.abscissa = opDataOut.abscissa - wn(1) ./ opData.fs;
         opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
         
-    case ALL_OPERATIONS{11} % Exclude Epochs
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{11} % Exclude Epochs
         % No argument required.
         opDataOut.channelStream = opData.channelStream(:,:, ~opData.epochExcludeStatus);
         opDataOut.numEpochs = size(opDataOut.channelStream, 3);
         opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
         
-    case ALL_OPERATIONS{12} % Channel Mean
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{12} % Channel Mean
         % No argument required.
         if(opData.numEpochs > 1)
             sz = size(opData.channelStream);
@@ -187,21 +218,108 @@ switch operationName
         opDataOut.channelNames = {'Mean Channel'};
         opDataOut.numChannels = size(opDataOut.channelStream, 2);
         
-    case ALL_OPERATIONS{13} % Epoch Mean
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{13} % Epoch Mean
         % No argument required.
         opDataOut.channelStream = mean(opData.channelStream, 3);
         opDataOut.numEpochs = size(opDataOut.channelStream, 3);
         opDataOut.epochNum = 1;
         opDataOut.epochExcludeStatus = [];
+        
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
+    case OPERATIONS{14} % Band Power
+        % args{1} should be frequencyBand
+        frequencyBand = args{1};
+        if(opData.numEpochs > 1)
+            sz = size(opData.channelStream);
+            processedData = zeros(1, sz(2), sz(3));
+            for i=1:opData.numEpochs
+                processedData(:, :, i) = 10 .* log10(bandpower(opData.channelStream(:, :, i), opData.fs, frequencyBand));
+            end
+        else
+            processedData = 10 .* log10(bandpower(opData.channelStream, opData.fs, frequencyBand));
+        end
+        opDataOut.bandPower = processedData;
+        opDataOut.frequencyBand = frequencyBand;
+        % Add custom updateView function
+        opDataOut.updateView = @(axH, opD)bpUpdateView(axH, opD);
+        
+    case OPERATIONS{15} % EEG Bands
+        % No argument required.
+        EEG_DELTA_RANGE                 = [0.05 3];
+        EEG_THETA_RANGE                 = [3 8];
+        EEG_ALPHA_RANGE                 = [8 12];
+        EEG_BETA_RANGE                  = [12 38];
+        
+        if(opData.numEpochs > 1)
+            sz = size(opData.channelStream);
+            deltaPower = zeros(1, sz(2), sz(3));
+            thetaPower = zeros(1, sz(2), sz(3));
+            alphaPower = zeros(1, sz(2), sz(3));
+            betaPower = zeros(1, sz(2), sz(3));
+            for i=1:opData.numEpochs
+                deltaPower(:, :, i) = 10 .* log10(bandpower(opData.channelStream(:, :, i), opData.fs, EEG_DELTA_RANGE));
+                thetaPower(:, :, i) = 10 .* log10(bandpower(opData.channelStream(:, :, i), opData.fs, EEG_THETA_RANGE));
+                alphaPower(:, :, i) = 10 .* log10(bandpower(opData.channelStream(:, :, i), opData.fs, EEG_ALPHA_RANGE));
+                betaPower(:, :, i) = 10 .* log10(bandpower(opData.channelStream(:, :, i), opData.fs, EEG_BETA_RANGE));
+            end
+        else
+            deltaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_DELTA_RANGE));
+            thetaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_THETA_RANGE));
+            alphaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_ALPHA_RANGE));
+            betaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_BETA_RANGE));
+        end
+        opDataOut.deltaPower    = deltaPower;
+        opDataOut.thetaPower    = thetaPower;
+        opDataOut.alphaPower    = alphaPower;
+        opDataOut.betaPower     = betaPower;
+        
+        opDataOut.deltaBand = EEG_DELTA_RANGE;
+        opDataOut.thetaBand = EEG_THETA_RANGE;
+        opDataOut.alphaBand = EEG_ALPHA_RANGE;
+        opDataOut.betaBand = EEG_BETA_RANGE;
+        % Add custom updateView function
+        opDataOut.updateView = @(axH, opD)ebUpdateView(axH, opD);
+        
     otherwise
         disp('Operation not implemented');
 end
 
 % Define custom updateView functions which take axis handle and opData as
 % input
-    function fftUpdateView(axH, opData)
-        plot(axH, opData.abscissa, opData.channelStream(:,:, opData.epochNum));
+    function fftUpdateView(axH, opData) % FFT
+        plot(axH, opData.fftFreq, opData.frequencyStream(:,:, opData.epochNum));
         xlabel(axH, 'Frequency (Hz)');
         ylabel(axH, 'Amplitude');
+    end
+    function bpUpdateView(axH, opData) % Band Power
+        plot(axH, 1, opData.bandPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
+        xlabel(axH, 'Frequency (Hz)');
+        xticks(axH, 1);
+        xticklabels(axH, sprintf('[%g %g]', opData.frequencyBand(1), opData.frequencyBand(2)));
+        ylabel(axH, 'Power (dB)');
+    end
+    function ebUpdateView(axH, opData) % Band Power
+        plot(axH, 1, opData.deltaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
+        hold on;
+        plot(axH, 2, opData.thetaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
+        plot(axH, 3, opData.alphaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
+        plot(axH, 4, opData.betaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
+        hold off;
+        xlabel(axH, 'Frequency (Hz)');
+        ylabel(axH, 'Power (dB)');
+        xticks(axH, [1 2 3 4]);
+        xticklabels(axH, {sprintf('[%g %g]', opData.deltaBand(1), opData.deltaBand(2)),...
+            sprintf('[%g %g]', opData.thetaBand(1), opData.thetaBand(2)),...
+            sprintf('[%g %g]', opData.alphaBand(1), opData.alphaBand(2)),...
+            sprintf('[%g %g]', opData.betaBand(1), opData.betaBand(2))});
+        ax = axis;
+        ax(1) = ax(1) - 0.5;
+        ax(2) = ax(2) + 0.5;
+        axis(ax);
     end
 end

@@ -9,33 +9,34 @@ function [returnArgs] = askArgs(operationName, opData)
 % the License, or ( at your option ) any later version.  See the
 % LICENSE included with this distribution for more information.
 
-ALL_OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
+OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
-    'Channel Mean', 'Epoch Mean'};
+    'Channel Mean', 'Epoch Mean',...
+    'Band Power', 'EEG Bands'};
 
 switch operationName
     
-    case ALL_OPERATIONS{1} % Detrend
+    case OPERATIONS{1} % Detrend
         % args{1} should be 'linear' or 'constant'.
         options = {'constant', 'linear'};
         [s,~] = listdlg('PromptString','Select type:', 'SelectionMode','single',...
             'ListString', options, 'ListSize', [160 75]);
         returnArgs = options(s);
         
-    case ALL_OPERATIONS{2} % Normalize
+    case OPERATIONS{2} % Normalize
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{3} % Abs
+    case OPERATIONS{3} % Abs
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{4} % Remove Common Mode
+    case OPERATIONS{4} % Remove Common Mode
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{5} % Resample
+    case OPERATIONS{5} % Resample
         % args{1} should be p and args{2} should be q. p/q is
         % the sampling ratio.
         prompt = {'p:', 'q:'};
@@ -59,7 +60,7 @@ switch operationName
             end
         end
         
-    case ALL_OPERATIONS{6} % Filter
+    case OPERATIONS{6} % Filter
         % args{1} should be isBandStop and args{2} should be frequencyBand
         prompt = {'isBandStop [0/1]:', 'Frequency band [fHigh fLow]:'};
         dlg_title = 'Filter Options';
@@ -83,12 +84,12 @@ switch operationName
             end
         end
         
-    case ALL_OPERATIONS{7} % FFT
+    case OPERATIONS{7} % FFT
         % No argument required.
         returnArgs = {'N.R.'};
         
         
-    case ALL_OPERATIONS{8} % Spatial Filter
+    case OPERATIONS{8} % Spatial Filter
         % args{1} should be channel weights
         prompt = {'Channel weights (No. of weights should be equal to number of channels):'};
         dlg_title = 'Spatial filter';
@@ -109,7 +110,7 @@ switch operationName
             returnArgs = {cWeights};
         end
         
-    case ALL_OPERATIONS{9} % Select Channels
+    case OPERATIONS{9} % Select Channels
         % args{1} should be a vector with channel indices
         if(isempty(opData.channelNames))
             options = cellstr(num2str((1:opData.numChannels)'));
@@ -128,7 +129,7 @@ switch operationName
             returnArgs = {cellfun(@str2double, options(s))};
         end
         
-    case ALL_OPERATIONS{10} % Create Epochs
+    case OPERATIONS{10} % Create Epochs
         % args{1} should be [timeBefore timeAfter]
         if(opData.numEpochs > 1)
             returnArgs = {};
@@ -154,15 +155,41 @@ switch operationName
             end
         end
         
-    case ALL_OPERATIONS{11} % Exclude Epochs
+    case OPERATIONS{11} % Exclude Epochs
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{12} % Channel Mean
+    case OPERATIONS{12} % Channel Mean
         % No argument required.
         returnArgs = {'N.R.'};
         
-    case ALL_OPERATIONS{13} % Epoch Mean
+    case OPERATIONS{13} % Epoch Mean
+        % No argument required.
+        returnArgs = {'N.R.'};
+        
+    case OPERATIONS{14} % Band Power
+        % args{1} should be frequencyBand
+        prompt = {'Frequency band [fHigh fLow]:'};
+        dlg_title = 'Band Power';
+        num_lines = 1;
+        defaultans = {'[0.05 5]'};
+        answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+        if(isempty(answer))
+            returnArgs = {};
+            return;
+        end
+        frequencyBand = str2num(answer{1});
+        if(isempty(frequencyBand))
+            returnArgs = {};
+        else
+            if(isnan(frequencyBand(1)) || isnan(frequencyBand(2))...
+                    || frequencyBand(2) <= frequencyBand(1))
+                returnArgs = {};
+            else
+                returnArgs = {frequencyBand};
+            end
+        end
+    case OPERATIONS{15} % EEG Bands
         % No argument required.
         returnArgs = {'N.R.'};
         
