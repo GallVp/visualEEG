@@ -12,4 +12,7 @@ Currently visualEEG is being developed on macOS High Sierra, MATLAB 2017a. Howev
 ```
 $ git clone https://github.com/GallVp/visualEEG
 ```
-2. From MATLAB file explorer, add the visualEEG folder to path by right clicking on it and then selecting the **Add to Path** -> **Selected Folders** option. Type **visualEEG** in the MATLAB command window and hit enter to run.
+2. From MATLAB file explorer, enter the visualEEG folder by double clicking it. Type **visualEEG** in the MATLAB command window and hit enter to run.
+
+## Wiki
+A detailed documentation with tutorials is available [here](https://github.com/GallVp/visualEEG/wiki).

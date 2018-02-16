@@ -400,7 +400,7 @@ end
         hold on;
         plot(axH, opData.pnTime(:,:, opData.epochNum), opData.pnValue(:,:, opData.epochNum), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
         for jthChannel=1:opData.numChannels
-        text(axH, opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum), sprintf(' --> PN(%g, %g)',...
+        text(axH, opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum), sprintf(' --> MP(%g, %g)',...
             opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
         end
         
@@ -409,7 +409,7 @@ end
             plot(axH, opData.BP_IS_AT, opData.bpValue(:,:, opData.epochNum), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
         end
         for jthChannel=1:opData.numChannels
-        text(axH, opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum), sprintf(' --> BP(%g, %g)',...
+        text(axH, opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum), sprintf(' --> BP1(%g, %g)',...
             opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
         end
         

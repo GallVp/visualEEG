@@ -62,7 +62,7 @@ switch operationName
         
     case OPERATIONS{6} % Filter
         % args{1} should be isBandStop and args{2} should be frequencyBand
-        prompt = {'isBandStop [0/1]:', 'Frequency band [fHigh fLow]:'};
+        prompt = {'isBandStop [0/1]:', 'Frequency band [fLow fHigh]:'};
         dlg_title = 'Filter Options';
         num_lines = 1;
         defaultans = {'0', '[0.05 5]'};
