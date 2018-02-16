@@ -13,7 +13,7 @@ OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',..
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean',...
-    'Band Power', 'EEG Bands'};
+    'Band Power', 'EEG Bands', 'BP Feat.'};
 
 switch operationName
     
@@ -190,6 +190,10 @@ switch operationName
             end
         end
     case OPERATIONS{15} % EEG Bands
+        % No argument required.
+        returnArgs = {'N.R.'};
+        
+    case OPERATIONS{16} % BP Feat.
         % No argument required.
         returnArgs = {'N.R.'};
         
