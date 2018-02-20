@@ -15,3 +15,6 @@ data/*
 
 # R studio generated history
 .Rhistory
+
+# DS_Store banished
+.DS_Store
