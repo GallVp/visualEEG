@@ -261,12 +261,15 @@ updateView(handles);
 function opData = getOpData(ffData) % opData stands for operatable data
 opData.channelStream = ffData.fileData.(ffData.dataVariable);
 opData.fs = ffData.fs;
-opData.abscissa = 1:size(opData.channelStream, 1);
-opData.abscissa = opData.abscissa ./ opData.fs;
 
 if(ffData.channelsAcrossRows)
     opData.channelStream = permute(opData.channelStream, [2 1 3]);
 end
+
+% Compute abscissa
+opData.abscissa = 1:size(opData.channelStream, 1);
+opData.abscissa = opData.abscissa ./ opData.fs;
+
 opData.numChannels = size(opData.channelStream , 2);
 opData.numEpochs = size(opData.channelStream , 3);
 
@@ -341,6 +344,7 @@ if(~isempty(opData.updateView))
     axH = gca;
     opData.updateView(axH, opData);
 else
+    
     % Plot data
     dat = opData.channelStream;
     
