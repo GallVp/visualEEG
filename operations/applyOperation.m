@@ -2,14 +2,14 @@ function [opDataOut] = applyOperation(operationName, args,  opData)
 %applyOperation
 %
 % Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
+% Licensed under the MIT License. See License.txt in the project root for
 % license information.
 
 OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean',...
-    'Band Power', 'EEG Bands', 'BP Feat.'};
+    'Band Power', 'EEG Bands', 'BP Feat.', 'Exponentiation'};
 
 opDataOut = opData;
 
@@ -340,6 +340,14 @@ switch operationName
         % Add custom updateView function
         opDataOut.updateView = @(axH, opD)bp2UpdateView(axH, opD);
         
+    case OPERATIONS{17}% Exponentiation
+        % args{1} should be the exponent
+        exponent = args{1};
+        opDataOut.channelStream = opData.channelStream .^ exponent;
+        
+        % Remove custom updateView function
+        opDataOut.updateView = [];
+        
     otherwise
         disp('Operation not implemented');
 end
@@ -396,8 +404,8 @@ end
         hold on;
         plot(axH, opData.pnTime(:,:, opData.epochNum), opData.pnValue(:,:, opData.epochNum), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
         for jthChannel=1:opData.numChannels
-        text(axH, opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum), sprintf(' --> MP(%g, %g)',...
-            opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
+            text(axH, opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum), sprintf(' --> MP(%g, %g)',...
+                opData.pnTime(:, jthChannel, opData.epochNum), opData.pnValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
         end
         
         % Plot BP point
@@ -405,8 +413,8 @@ end
             plot(axH, opData.BP_IS_AT, opData.bpValue(:,:, opData.epochNum), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
         end
         for jthChannel=1:opData.numChannels
-        text(axH, opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum), sprintf(' --> BP1(%g, %g)',...
-            opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
+            text(axH, opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum), sprintf(' --> BP1(%g, %g)',...
+                opData.BP_IS_AT, opData.bpValue(:, jthChannel, opData.epochNum)), 'FontSize', 12);
         end
         
         % Plot BP2 point
@@ -414,8 +422,8 @@ end
             plot(axH, opData.BP2_IS_AT, opData.bp2Value(:,:, opData.epochNum), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
         end
         for jthChannel=1:opData.numChannels
-        text(axH, opData.BP2_IS_AT, opData.bp2Value(:, jthChannel, opData.epochNum), sprintf(' --> BP2(%g, %g)',...
-            opData.BP2_IS_AT, opData.bp2Value(:, jthChannel, opData.epochNum)), 'FontSize', 12);
+            text(axH, opData.BP2_IS_AT, opData.bp2Value(:, jthChannel, opData.epochNum), sprintf(' --> BP2(%g, %g)',...
+                opData.BP2_IS_AT, opData.bp2Value(:, jthChannel, opData.epochNum)), 'FontSize', 12);
         end
         hold off;
     end

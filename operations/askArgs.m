@@ -2,14 +2,14 @@ function [returnArgs] = askArgs(operationName, opData)
 %askArgs
 %
 % Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
+% Licensed under the MIT License. See License.txt in the project root for
 % license information.
 
 OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
     'Filter', 'FFT', 'Spatial Filter',...
     'Select Channels', 'Create Epochs', 'Exclude Epochs',...
     'Channel Mean', 'Epoch Mean',...
-    'Band Power', 'EEG Bands', 'BP Feat.'};
+    'Band Power', 'EEG Bands', 'BP Feat.', 'Exponentiation'};
 
 switch operationName
     
@@ -192,6 +192,28 @@ switch operationName
     case OPERATIONS{16} % BP Feat.
         % No argument required.
         returnArgs = {'N.R.'};
+        
+    case OPERATIONS{17} % Exponentiation
+        % args{1} should be the exponent
+        prompt = {'Exponent:'};
+        dlg_title = 'Exponentiation';
+        num_lines = 1;
+        defaultans = {'2'};
+        answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
+        if(isempty(answer))
+            returnArgs = {};
+            return;
+        end
+        y = str2double(answer{1});
+        if(isempty(y))
+            returnArgs = {};
+        else
+            if(y <= 0 || isnan(y))
+                returnArgs = {};
+            else
+                returnArgs = {y};
+            end
+        end
         
     otherwise
         returnArgs = {};
