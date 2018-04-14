@@ -209,7 +209,7 @@ function menuAbout_Callback(~, ~, ~)
 % hObject    handle to menuAbout (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-uiwait(msgbox(sprintf('visualEEG\n\nVersion 2.0\nLicense GPL v3\n\nUsman Rashid\nThomas Momme\nUsman Ayub\n\nhttps://github.com/GallVp/visualEEG'), 'About', 'help', 'modal'));
+uiwait(msgbox(sprintf('visualEEG\n\nCopyright (c) <2016> <Usman Rashid>\nLicensed under the MIT License. See License.txt in the project root for license information.'), 'About', 'help', 'modal'));
 
 % --------------------------------------------------------------------
 function menuImport_Callback(hObject, ~, handles)
