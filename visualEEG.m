@@ -25,7 +25,7 @@ function varargout = visualEEG(varargin)
 % Last Modified by GUIDE v2.5 30-Jan-2018 17:38:17
 %
 % Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
+% Licensed under the MIT License. See License.txt in the project root for
 % license information.
 
 % Begin initialization code - DO NOT EDIT
@@ -91,16 +91,11 @@ windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
 % Add folders to path
-addpath('helpers');
+addpath(genpath('libs'));
 addpath('operations');
 
-% Availabe operations
-handles.OPERATIONS = {'Detrend', 'Normalize', 'Abs', 'Remove Common Mode', 'Resample',...
-    'Filter', 'FFT', 'Spatial Filter',...
-    'Select Channels', 'Create Epochs', 'Exclude Epochs',...
-    'Channel Mean', 'Epoch Mean',...
-    'Band Power', 'EEG Bands', 'BP Feat.', 'Exponentiation'};
-
+% Load funcs from the operations folder
+handles.OPERATIONS = loadFuncs('operations');
 
 % Update handles structure
 guidata(hObject, handles);
@@ -463,8 +458,6 @@ guidata(hObject, handles);
 updateView(handles);
 
 
-
-
 % --- Executes on button press in pbAddOperation.
 function pbAddOperation_Callback(hObject, ~, handles)
 % hObject    handle to pbAddOperation (see GCBO)
@@ -483,7 +476,7 @@ function handlesOut = applyOp(handles, operationName)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 
 % If operation is create epochs, ask for events variable
-if(strcmp(operationName, 'Create Epochs') && isempty(handles.dSets(handles.datasetNum).ffData.eventVariable))
+if(strcmp(operationName, 'createEpochs') && isempty(handles.dSets(handles.datasetNum).ffData.eventVariable))
     [s,v] = listdlg('PromptString','Select events variable:',...
         'SelectionMode','single',...
         'ListString', handles.dSets(handles.datasetNum).ffData.variableNames);
@@ -497,28 +490,35 @@ if(strcmp(operationName, 'Create Epochs') && isempty(handles.dSets(handles.datas
     end
 end
 
-args = askArgs(operationName, opData);
+% Convert operation name to handle
+fHandle = str2func(operationName);
+[argFunc, opFunc] = fHandle();
+
+args = argFunc(opData);
 if(isempty(args))% Empty means valid arguments were not provided
     handlesOut = handles;
     return;
+else
+    [opDataOut] = opFunc(opData, args);
+    
+    opDataOut.operations{length(opDataOut.operations) + 1} = operationName;
+    
+    opDataOut.operationArgs{length(opDataOut.operations)} = args;
+    
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opDataOut;
+    handlesOut = handles;
 end
-
-[opDataOut] = applyOperation(operationName, args, opData);
-
-opDataOut.operations{length(opDataOut.operations) + 1} = operationName;
-
-opDataOut.operationArgs{length(opDataOut.operations)} = args;
-
-handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opDataOut;
-handlesOut = handles;
 
 function handlesOut = applyAllOps(handles)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 freshOpData = getOpData(handles.dSets(handles.datasetNum).ffData);
 
 for i=1:length(opData.operations)
-    freshOpData = applyOperation(opData.operations{i},...
-        opData.operationArgs{i}, freshOpData);
+    operationName = opData.operations{i};
+    % Convert operation name to handle;
+    fHandle = str2func(operationName);
+    [~, opFunc] = fHandle();
+    freshOpData = opFunc(freshOpData, opData.operationArgs{i});
     freshOpData.operations{i} = opData.operations{i};
     freshOpData.operationArgs{i} = opData.operationArgs{i};
 end
