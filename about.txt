@@ -1,0 +1,14 @@
+visualEEG
+
+Copyright (c) <2016> <Usman Rashid>
+Licensed under the MIT License. See License.txt in the project root for
+license information.
+
+Contributors:
+Usman Rashid
+Thomas Momme Christensen
+Usman Ayub
+
+Third party libraries:
+1. [barwitherr] Copyright (c) 2014, Martina Callaghan. License can be
+found in libs/barwitherr folder.

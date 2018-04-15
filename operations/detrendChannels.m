@@ -1,9 +1,9 @@
-function [argFunc, opFunc] = channelDetrend
-%channelDetrend Detrends each channel
+function [argFunc, opFunc] = detrendChannels
+%detrendChannels Detrends each channel.
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for
+%   license information.
 
 argFunc     = @askArgs;
 opFunc      = @applyOperation;

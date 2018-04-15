@@ -1,16 +1,16 @@
 function [filteredData] = filterStream(data, fs, order, fcLow, fcHigh, zeroPhase)
-% filterStream Apply low and high pass filter to a stream of data.
+%filterStream Apply low and high pass filter to a stream of data.
 %
 %
-% Default Parameters:
-% zeroPhase = 1; If true, filtfilt is used instead of filter.
-% fcHigh = 0.05
-% fcLow = 1
-% order = 2
+%   Default Parameters:
+%   zeroPhase = 1; If true, filtfilt is used instead of filter.
+%   fcHigh = 0.05
+%   fcLow = 1
+%   order = 2
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for 
+%   license information.
 
 if (nargin < 3)
     zeroPhase = 1;

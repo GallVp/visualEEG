@@ -1,9 +1,9 @@
-function [argFunc, opFunc] = channelFilter
-%channelFilter Apply filter to each channel with the specified options
+function [argFunc, opFunc] = filterChannels
+%filterChannels Apply filter to each channel with the specified options
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for
+%   license information.
 
 argFunc     = @askArgs;
 opFunc      = @applyOperation;

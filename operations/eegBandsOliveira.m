@@ -1,5 +1,8 @@
-function [argFunc, opFunc] = eegBands
-%eegBands Finds the power in the EEG bands
+function [argFunc, opFunc] = eegBandsOliveira
+%eegBands Finds the power in the EEG bands, then averages across
+%   epochs and channels. This analysis is based on "Proposing
+%   Metrics for Benchmarking Novel EEG Technologies Towards Real-World
+%   Measurements", Oliveira et. al. 2016.
 %
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for
@@ -40,10 +43,15 @@ opFunc      = @applyOperation;
             alphaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_ALPHA_RANGE));
             betaPower = 10 .* log10(bandpower(opData.channelStream, opData.fs, EEG_BETA_RANGE));
         end
-        opDataOut.deltaPower    = deltaPower;
-        opDataOut.thetaPower    = thetaPower;
-        opDataOut.alphaPower    = alphaPower;
-        opDataOut.betaPower     = betaPower;
+        opDataOut.deltaPowerMean    = mean(deltaPower(:));
+        opDataOut.thetaPowerMean    = mean(thetaPower(:));
+        opDataOut.alphaPowerMean    = mean(alphaPower(:));
+        opDataOut.betaPowerMean     = mean(betaPower(:));
+        
+        opDataOut.deltaPowerStd     = std(deltaPower(:));
+        opDataOut.thetaPowerStd     = std(thetaPower(:));
+        opDataOut.alphaPowerStd     = std(alphaPower(:));
+        opDataOut.betaPowerStd      = std(betaPower(:));
         
         opDataOut.deltaBand = EEG_DELTA_RANGE;
         opDataOut.thetaBand = EEG_THETA_RANGE;
@@ -54,12 +62,9 @@ opFunc      = @applyOperation;
     end
 %% Update the view
     function updateView(axH, opData)
-        plot(axH, 1, opData.deltaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
-        hold on;
-        plot(axH, 2, opData.thetaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
-        plot(axH, 3, opData.alphaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
-        plot(axH, 4, opData.betaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
-        hold off;
+        errs = [opData.deltaPowerStd opData.thetaPowerStd opData.alphaPowerStd opData.betaPowerStd];
+        data = [opData.deltaPowerMean opData.thetaPowerMean opData.alphaPowerMean opData.betaPowerMean];
+        barwitherr(errs, data);
         xlabel(axH, 'Frequency (Hz)');
         ylabel(axH, 'Power (dB)');
         xticks(axH, [1 2 3 4]);

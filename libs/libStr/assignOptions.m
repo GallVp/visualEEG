@@ -1,10 +1,10 @@
 function [ assignedOptions ] = assignOptions( inputOptions, defaultOptions )
 %ASSIGNOPTIONS Takes input options and assigns any missing options from
-% default options.
+%   default options.
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for 
+%   license information.
 
 assignedOptions = inputOptions;
 mustHaveFields = fieldnames(defaultOptions);

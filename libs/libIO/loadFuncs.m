@@ -1,10 +1,10 @@
 function [funcNames] = loadFuncs(folderName)
 %loadFuncs Creates a cell array of function names from *.m files in a
-%directory.
+%   directory.
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for
+%   license information.
 
 
 FUNC_EXT = '.m';

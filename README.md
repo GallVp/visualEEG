@@ -16,3 +16,7 @@ $ git clone https://github.com/GallVp/visualEEG
 
 ## Wiki
 A detailed documentation with tutorials is available [here](https://github.com/GallVp/visualEEG/wiki).
+
+## Third Party Libraries
+visualEEG uses following third party libraries. The licenses for these libraries can be found next to source files in the libs/thirdpartlib folder.
+1. `barwitherr` Copyright (c) 2014, Martina Callaghan. Source is available [here](https://au.mathworks.com/matlabcentral/fileexchange/30639-barwitherr-errors-varargin-?focused=3845794&tab=function).

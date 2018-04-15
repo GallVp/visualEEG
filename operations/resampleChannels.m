@@ -1,9 +1,9 @@
-function [argFunc, opFunc] = channelResample
-%channelResample Resample the channels using MATLAB resample function.
+function [argFunc, opFunc] = resampleChannels
+%resampleChannels Resample the channels using MATLAB resample function.
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for
+%   license information.
 
 argFunc     = @askArgs;
 opFunc      = @applyOperation;

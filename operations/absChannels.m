@@ -1,9 +1,9 @@
-function [argFunc, opFunc] = channelNormalize
-%channelNormalize Normalizes each channel
+function [argFunc, opFunc] = absChannels
+%absChannels Finds the absolute value of data for each channel
 %
-% Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for
-% license information.
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for
+%   license information.
 
 argFunc     = @askArgs;
 opFunc      = @applyOperation;
@@ -15,20 +15,21 @@ opFunc      = @applyOperation;
     end
 %% Apply the operation
     function opDataOut = applyOperation(opData, args)
-        opDataOut   = opData;
+        opDataOut = opData;
         % No argument required.
         if(opData.numEpochs > 1)
             processedData = zeros(size(opData.channelStream));
             for i=1:opData.numEpochs
-                processedData(:, :, i) = normalizeColumns(opData.channelStream(:, :, i) );
+                processedData(:, :, i) = abs(opData.channelStream(:, :, i));
             end
         else
-            processedData = normalizeColumns(opData.channelStream);
+            processedData = abs(opData.channelStream);
         end
         opDataOut.channelStream = processedData;
         
         % Remove custom updateView function
         opDataOut.updateView = [];
+        
     end
 %% Update the view
     function updateView(axH, opData)
