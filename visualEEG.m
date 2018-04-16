@@ -280,21 +280,22 @@ opData.numEpochs = size(opData.channelStream , 3);
 opData.channelNames = {};
 opData.events = [];
 
+%** Additional variables being added for better conformity
+% However, these variables sould be during data export.
 opData.fileVariableNames    = ffData.variableNames;
 opData.fileData             = ffData.fileData;
-
 opData.epochNum = 1;
+% Custom updateView function
+opData.updateView = [];
+% Legend info
+opData.legendInfo = {};
+%** End Additional
+
 opData.epochExcludeStatus = [];
 
 % Info on operations
 opData.operations = {};
 opData.operationArgs = {};
-
-% Custom updateView function
-opData.updateView = [];
-
-% Legend info
-opData.legendInfo = {};
 
 
 
@@ -309,6 +310,12 @@ function menuExport_Callback(hObject, eventdata, handles)
 if path ~= 0
     filePath = fullfile(path, file);
     opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+    % Remove attached additional variables
+    opData = rmfield(opData, 'fileData');
+    opData = rmfield(opData, 'fileVariableNames');
+    opData = rmfield(opData, 'epochNum');
+    opData = rmfield(opData, 'legendInfo');
+    opData = rmfield(opData, 'updateView');
     save(filePath, '-struct', 'opData');
 end
 
