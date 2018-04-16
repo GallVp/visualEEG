@@ -131,7 +131,8 @@ function pbNext_Callback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum + 1;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum =...
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum + 1;
 guidata(hObject, handles);
 updateView(handles);
 
@@ -146,16 +147,13 @@ function pumFile_Callback(hObject, ~, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumFile
 index = get(hObject,'Value');
 
-if(~isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
-    handles.fileNum = index;
-else
-    handles.fileNum = index;
-    handles.dSets(handles.datasetNum).ffData.fileNum = index;
-    handles.dSets(handles.datasetNum).ffData.fileData = load(fullfile(handles.dSets(handles.datasetNum).ffData.folderName,...
-        handles.dSets(handles.datasetNum).ffData.fileNames{index}));
-    handles.dSets(handles.datasetNum).ffData.fileName = handles.dSets(handles.datasetNum).ffData.fileNames{index};
-    handles.dSets(handles.datasetNum).ffData.fs = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.fsVariable);
-    
+handles.fileNum = index;
+handles.dSets(handles.datasetNum).ffData.fileNum = index;
+handles.dSets(handles.datasetNum).ffData.fileData = load(fullfile(handles.dSets(handles.datasetNum).ffData.folderName,...
+    handles.dSets(handles.datasetNum).ffData.fileNames{index}));
+handles.dSets(handles.datasetNum).ffData.fileName = handles.dSets(handles.datasetNum).ffData.fileNames{index};
+
+if(isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
     handles.dSets(handles.datasetNum).opDataCache{index} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
 
@@ -263,9 +261,10 @@ uicontrol(handles.pbNext);
 guidata(hObject, handles);
 updateView(handles);
 
-function opData = getOpData(ffData) % opData stands for operatable data
+function opData = getOpData(ffData) % opData stands for operatable data.
+% This is the structure which is passed around visualEEG functions.
 opData.channelStream = ffData.fileData.(ffData.dataVariable);
-opData.fs = ffData.fs;
+opData.fs = ffData.fileData.(ffData.fsVariable);
 
 if(ffData.channelsAcrossRows)
     opData.channelStream = permute(opData.channelStream, [2 1 3]);
@@ -278,17 +277,11 @@ opData.abscissa = opData.abscissa ./ opData.fs;
 opData.numChannels = size(opData.channelStream , 2);
 opData.numEpochs = size(opData.channelStream , 3);
 
-if(~isempty(ffData.channelNamesVariable))
-    opData.channelNames = ffData.fileData.(ffData.channelNamesVariable);
-else
-    opData.channelNames = {};
-end
+opData.channelNames = {};
+opData.events = [];
 
-if(~isempty(ffData.eventVariable))
-    opData.events = ffData.fileData.(ffData.eventVariable);
-else
-    opData.events = [];
-end
+opData.fileVariableNames    = ffData.variableNames;
+opData.fileData             = ffData.fileData;
 
 opData.epochNum = 1;
 opData.epochExcludeStatus = [];
@@ -299,6 +292,9 @@ opData.operationArgs = {};
 
 % Custom updateView function
 opData.updateView = [];
+
+% Legend info
+opData.legendInfo = {};
 
 
 
@@ -409,8 +405,8 @@ else
 end
 
 % Show legend
-if(handles.showLegend)
-    legend(opData.channelNames);
+if(handles.showLegend && ~isempty(opData.legendInfo))
+    legend(opData.legendInfo);
 end
 
 function dataSetNames = getDataSetNames(handles)
@@ -457,8 +453,6 @@ opData.operationArgs{index} = [];
 opData.operations = opData.operations(~cellfun('isempty',opData.operations));
 opData.operationArgs = opData.operationArgs(~cellfun('isempty',opData.operationArgs));
 
-handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-
 if(~isempty(opData.operations))
     handles = applyAllOps(opData.operations, opData.operationArgs, handles);
 else
@@ -484,21 +478,6 @@ updateView(handles);
 
 function handlesOut = applyOp(handles, operationName)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
-
-% If operation is create epochs, ask for events variable
-if(strcmp(operationName, 'createEpochs') && isempty(handles.dSets(handles.datasetNum).ffData.eventVariable))
-    [s,v] = listdlg('PromptString','Select events variable:',...
-        'SelectionMode','single',...
-        'ListString', handles.dSets(handles.datasetNum).ffData.variableNames);
-    if(v)
-        handles.dSets(handles.datasetNum).ffData.eventVariable = handles.dSets(handles.datasetNum).ffData.variableNames{s};
-        opData.events = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.eventVariable);
-        handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-    else
-        handlesOut = handles;
-        return;
-    end
-end
 
 % Convert operation name to handle
 fHandle = str2func(operationName);
@@ -549,17 +528,8 @@ function toolShowLegend_ClickedCallback(hObject, ~, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
-if(isempty(opData.channelNames))
-    [s,v] = listdlg('PromptString','Select channel names variable:',...
-        'SelectionMode','single',...
-        'ListString', handles.dSets(handles.datasetNum).ffData.variableNames);
-    if(v)
-        handles.dSets(handles.datasetNum).ffData.channelNamesVariable = handles.dSets(handles.datasetNum).ffData.variableNames{s};
-        opData.channelNames = handles.dSets(handles.datasetNum).ffData.fileData.(handles.dSets(handles.datasetNum).ffData.channelNamesVariable);
-        handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-    else
-        return;
-    end
+if(isempty(opData.legendInfo))
+    return;
 end
 
 handles.showLegend = ~handles.showLegend;

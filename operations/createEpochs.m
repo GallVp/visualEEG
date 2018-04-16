@@ -10,6 +10,15 @@ opFunc      = @applyOperation;
 
 %% Ask for arguments
     function returnArgs = askArgs(opData)
+        
+        if(isempty(opData.events))
+            h = errordlg(sprintf('Operation only applicable to\ndata with events.'),...
+                'createEpochs', 'modal');
+            uiwait(h);
+            returnArgs = {};
+            return;
+        end
+        
         % args{1} should be [timeBefore timeAfter]
         if(opData.numEpochs > 1)
             returnArgs = {};
