@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 %
 % Edit the above text to modify the response to help visualEEG
 %
-% Last Modified by GUIDE v2.5 30-Jan-2018 17:38:17
+% Last Modified by GUIDE v2.5 16-Apr-2018 14:58:27
 %
 % Copyright (c) <2016> <Usman Rashid>
 % Licensed under the MIT License. See License.txt in the project root for
@@ -64,6 +64,7 @@ set(handles.bgEpochs, 'Visible', 'Off');
 set(handles.upData, 'Visible', 'Off');
 set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menuExport, 'Enable', 'Off');
+set(handles.menuTools, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
 
@@ -252,6 +253,7 @@ set(handles.bgEpochs, 'Visible', 'On');
 set(handles.upData, 'Visible', 'On');
 set(handles.upOperations, 'Visible', 'On');
 set(handles.menuExport, 'Enable', 'On');
+set(handles.menuTools, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
 
@@ -458,7 +460,7 @@ opData.operationArgs = opData.operationArgs(~cellfun('isempty',opData.operationA
 handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
 
 if(~isempty(opData.operations))
-    handles = applyAllOps(handles);
+    handles = applyAllOps(opData.operations, opData.operationArgs, handles);
 else
     handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
@@ -517,18 +519,17 @@ else
     handlesOut = handles;
 end
 
-function handlesOut = applyAllOps(handles)
-opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+function handlesOut = applyAllOps(operations, operationArgs, handles)
 freshOpData = getOpData(handles.dSets(handles.datasetNum).ffData);
 
-for i=1:length(opData.operations)
-    operationName = opData.operations{i};
+for i=1:length(operations)
+    operationName = operations{i};
     % Convert operation name to handle;
     fHandle = str2func(operationName);
     [~, opFunc] = fHandle();
-    freshOpData = opFunc(freshOpData, opData.operationArgs{i});
-    freshOpData.operations{i} = opData.operations{i};
-    freshOpData.operationArgs{i} = opData.operationArgs{i};
+    freshOpData = opFunc(freshOpData, operationArgs{i});
+    freshOpData.operations{i} = operations{i};
+    freshOpData.operationArgs{i} = operationArgs{i};
 end
 
 handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = freshOpData;
@@ -591,4 +592,34 @@ function pumDataSet_CreateFcn(hObject, ~, ~)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+% --------------------------------------------------------------------
+function menuImportOps_Callback(hObject, eventdata, handles)
+% hObject    handle to menuImportOps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[file,path] = uigetfile('*.csv');
+if file ~=0
+    [operations, operationArgs] = importOpearions(fullfile(path, file));
+    handlesOut = applyAllOps(operations, operationArgs, handles);
+    guidata(hObject, handlesOut);
+    updateView(handlesOut);
+end
+
+
+% --------------------------------------------------------------------
+function menuExportOps_Callback(hObject, eventdata, handles)
+% hObject    handle to menuExportOps (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+if(isempty(opData.operations))
+    return;
+end
+filter = {'*.csv'};
+[file, path] = uiputfile(filter);
+if file ~=0
+    exportOpearions(opData.operations, opData.operationArgs, fullfile(path, file));
 end

@@ -1,0 +1,3 @@
+removeCommonMode, N.R.
+detrendChannels, linear
+filterChannels, 0, [0.05 40]
