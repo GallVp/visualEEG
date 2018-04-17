@@ -50,7 +50,7 @@ opFunc      = @applyOperation;
             processedData = opData.channelStream * M;
         end
         opDataOut.channelStream = processedData;
-        opDataOut.channelNames = {'SF Channel'};
+        opDataOut.legendInfo = {'SF Channel'};
         opDataOut.numChannels = size(opDataOut.channelStream, 2);
         
         % Remove custom updateView function

@@ -36,7 +36,7 @@ opFunc      = @applyOperation;
         opDataOut.channelStream = opData.channelStream(:, channelNums, :);
         opDataOut.numChannels = size(opDataOut.channelStream, 2);
         if(~isempty(opDataOut.channelNames))
-            opDataOut.channelNames = opData.channelNames(channelNums);
+            opDataOut.legendInfo = opData.channelNames(channelNums);
         end
         
         % Remove custom updateView function

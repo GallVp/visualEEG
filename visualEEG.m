@@ -122,7 +122,14 @@ function pbPrevious_Callback(hObject, ~, handles)
 % hObject    handle to pbPrevious (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum - 1;
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+opData.epochNum = opData.epochNum - 1;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+if(isfield(opData, 'onEpochSwitch'))
+    updateView(handles);
+    opData = opData.onEpochSwitch(opData);
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+end
 guidata(hObject, handles);
 updateView(handles);
 
@@ -132,9 +139,14 @@ function pbNext_Callback(hObject, ~, handles)
 % hObject    handle to pbNext (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum =...
-    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum + 1;
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+opData.epochNum = opData.epochNum + 1;
+handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+if(isfield(opData, 'onEpochSwitch'))
+    updateView(handles);
+    opData = opData.onEpochSwitch(opData);
+    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+end
 guidata(hObject, handles);
 updateView(handles);
 
@@ -340,6 +352,9 @@ if path ~= 0
     opData = rmfield(opData, 'epochNum');
     opData = rmfield(opData, 'legendInfo');
     opData = rmfield(opData, 'updateView');
+    if(isfield(opData, 'onEpochSwitch'))
+        opData = rmfield(opData, 'onEpochSwitch');
+    end
     save(filePath, '-struct', 'opData');
 end
 
@@ -672,6 +687,9 @@ opData = rmfield(opData, 'fileVariableNames');
 opData = rmfield(opData, 'epochNum');
 opData = rmfield(opData, 'legendInfo');
 opData = rmfield(opData, 'updateView');
+if(isfield(opData, 'onEpochSwitch'))
+    opData = rmfield(opData, 'onEpochSwitch');
+end
 save(filePath, '-struct', 'opData');
 
 

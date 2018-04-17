@@ -1,0 +1,5 @@
+loadEvents, emgOnsets
+removeCommonMode, N.R.
+spatialFilter, [1 1 1 1 -1 1 1 1 1]
+filterChannels, 0, [0.05 5]
+createEpochs, [3 3]
