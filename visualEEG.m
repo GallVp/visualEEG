@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 %
 % Edit the above text to modify the response to help visualEEG
 %
-% Last Modified by GUIDE v2.5 16-Apr-2018 14:58:27
+% Last Modified by GUIDE v2.5 17-Apr-2018 15:09:46
 %
 % Copyright (c) <2016> <Usman Rashid>
 % Licensed under the MIT License. See License.txt in the project root for
@@ -65,6 +65,8 @@ set(handles.upData, 'Visible', 'Off');
 set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menuExport, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
+set(handles.menuOptions, 'Enable', 'Off');
+set(handles.menuSaveToOutFold, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
 
@@ -147,6 +149,11 @@ function pumFile_Callback(hObject, ~, handles)
 %        contents{get(hObject,'Value')} returns selected item from pumFile
 index = get(hObject,'Value');
 
+if(index == handles.fileNum)
+    return;
+end
+% save old file num in case for operation overwrite
+oldFileNum = handles.fileNum;
 handles.fileNum = index;
 handles.dSets(handles.datasetNum).ffData.fileNum = index;
 handles.dSets(handles.datasetNum).ffData.fileData = load(fullfile(handles.dSets(handles.datasetNum).ffData.folderName,...
@@ -155,6 +162,14 @@ handles.dSets(handles.datasetNum).ffData.fileName = handles.dSets(handles.datase
 
 if(isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
     handles.dSets(handles.datasetNum).opDataCache{index} = getOpData(handles.dSets(handles.datasetNum).ffData);
+end
+
+% If apply all files is true, overwrite all operations in the new loaded
+% file.
+val = get(handles.menuOperateAllFiles, 'Check');
+if(strcmp(val, 'on'))
+    opDataOld = handles.dSets(handles.datasetNum).opDataCache{oldFileNum};
+    handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
 end
 
 guidata(hObject, handles);
@@ -191,10 +206,16 @@ end
 
 
 % --------------------------------------------------------------------
-function menuFile_Callback(~, ~, ~)
+function menuFile_Callback(hObject, ~, handles)
 % hObject    handle to menuFile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
+    set(handles.menuSaveToOutFold, 'Enable', 'On');
+else
+    set(handles.menuSaveToOutFold, 'Enable', 'Off');
+end
+guidata(hObject, handles);
 
 % --------------------------------------------------------------------
 function menuHelp_Callback(~, ~, ~)
@@ -252,6 +273,7 @@ set(handles.upData, 'Visible', 'On');
 set(handles.upOperations, 'Visible', 'On');
 set(handles.menuExport, 'Enable', 'On');
 set(handles.menuTools, 'Enable', 'On');
+set(handles.menuOptions, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
 
@@ -304,9 +326,11 @@ function menuExport_Callback(hObject, eventdata, handles)
 % hObject    handle to menuExport (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-[file, path] = uiputfile('*.mat','Save processed data as');
-
+if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
+    [file, path] = uiputfile('*.mat','Save processed data as', handles.dSets(handles.datasetNum).outputFolder);
+else
+    [file, path] = uiputfile('*.mat','Save processed data as');
+end
 if path ~= 0
     filePath = fullfile(path, file);
     opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
@@ -593,6 +617,8 @@ function menuExportOps_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 if(isempty(opData.operations))
+    h = errordlg('No operations to export', 'Export Operations', 'modal');
+    uiwait(h);
     return;
 end
 filter = {'*.csv'};
@@ -600,3 +626,64 @@ filter = {'*.csv'};
 if file ~=0
     exportOpearions(opData.operations, opData.operationArgs, fullfile(path, file));
 end
+
+
+% --------------------------------------------------------------------
+function menuOptions_Callback(hObject, eventdata, handles)
+% hObject    handle to menuOptions (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
+    set(handles.menuSetOutFold, 'Text', 'Change output folder');
+else
+    set(handles.menuSetOutFold, 'Text', 'Set output folder');
+end
+
+
+% --------------------------------------------------------------------
+function menuSetOutFold_Callback(hObject, eventdata, handles)
+% hObject    handle to menuSetOutFold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
+    selpath = uigetdir(handles.dSets(handles.datasetNum).outputFolder);
+else
+    selpath = uigetdir;
+end
+
+if selpath ~= 0
+    handles.dSets(handles.datasetNum).outputFolder = selpath;
+    guidata(hObject, handles);
+end
+
+
+% --------------------------------------------------------------------
+function menuSaveToOutFold_Callback(hObject, eventdata, handles)
+% hObject    handle to menuSaveToOutFold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+file = handles.dSets(handles.datasetNum).ffData.fileName;
+path = handles.dSets(handles.datasetNum).outputFolder;
+filePath = fullfile(path, file);
+opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
+% Remove attached additional variables
+opData = rmfield(opData, 'fileData');
+opData = rmfield(opData, 'fileVariableNames');
+opData = rmfield(opData, 'epochNum');
+opData = rmfield(opData, 'legendInfo');
+opData = rmfield(opData, 'updateView');
+save(filePath, '-struct', 'opData');
+
+
+% --------------------------------------------------------------------
+function menuOperateAllFiles_Callback(hObject, eventdata, handles)
+% hObject    handle to menuOperateAllFiles (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+val = get(handles.menuOperateAllFiles, 'Check');
+if(strcmp(val, 'on'))
+    val = 'off';
+else
+    val = 'on';
+end
+set(handles.menuOperateAllFiles, 'Check', val);
