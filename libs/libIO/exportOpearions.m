@@ -14,6 +14,9 @@ for i = 1:numOperations
         arg = operationArgs{i}{j};
         if(~ischar(arg))
             if(isvector(arg) && length(arg) > 1)
+                if(iscolumn(arg))
+                    arg = arg';
+                end
                 arg = sprintf('[%s]', regexprep(num2str(arg),' +',' '));
             else
                 arg = num2str(arg);
