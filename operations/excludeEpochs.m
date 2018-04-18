@@ -17,12 +17,13 @@ opFunc      = @applyOperation;
     function opDataOut = applyOperation(opData, args)
         opDataOut = opData;
         % No argument required.
-        opDataOut.channelStream = opData.channelStream(:,:, ~opData.epochExcludeStatus);
-        opDataOut.numEpochs = size(opDataOut.channelStream, 3);
-        opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
-        
+        opDataOut.channelStream         = opData.channelStream(:,:, ~opData.epochExcludeStatus);
+        opDataOut.numEpochs             = size(opDataOut.channelStream, 3);
+        opDataOut.epochsRetained        = find(~opData.epochExcludeStatus);
+        opDataOut.epochExcludeStatus    = zeros(opDataOut.numEpochs, 1);
+        opDataOut.epochNum              = 1;
         % Remove custom updateView function
-        opDataOut.updateView = [];
+        opDataOut.updateView            = [];
     end
 %% Update the view
     function updateView(axH, opData)
