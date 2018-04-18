@@ -39,7 +39,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         plot(axH, opData.fftFreq, opData.frequencyStream(:,:, opData.epochNum));
         xlabel(axH, 'Frequency (Hz)');
         ylabel(axH, 'Power (dB)');

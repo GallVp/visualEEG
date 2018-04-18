@@ -53,7 +53,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         plot(axH, 1, opData.deltaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
         hold on;
         plot(axH, 2, opData.thetaPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);

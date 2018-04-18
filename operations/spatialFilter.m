@@ -58,6 +58,7 @@ opFunc      = @applyOperation;
     end
 
 %% Create a update view function which takes axis handle and opData.
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
     end
 end

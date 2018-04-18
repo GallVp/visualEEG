@@ -52,7 +52,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         plot(axH, 1, opData.bandPower(:,:, opData.epochNum), 'x', 'LineWidth', 2, 'MarkerSize', 12);
         xlabel(axH, 'Frequency (Hz)');
         xticks(axH, 1);

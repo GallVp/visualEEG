@@ -78,7 +78,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         plot(axH, opData.raFreq, opData.diffInSpectra);
         hold on;
         plot(axH, [opData.raFreq(1) opData.raFreq(end)], [opData.diffInSpectraMean opData.diffInSpectraMean], '-k');

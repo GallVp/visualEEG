@@ -1,5 +1,6 @@
-function [argFunc, opFunc] = exponentChannels
-%exponentChannels Applies the exponent (x ^ y) operation to each channel.
+function [argFunc, opFunc] = setQuestionText
+%setQuestionText Adds text for a yes no question to be used by askQuestion
+%   function.
 %
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for
@@ -10,34 +11,29 @@ opFunc      = @applyOperation;
 
 %% Ask for arguments
     function returnArgs = askArgs(opData)
-        prompt = {'Exponent:'};
-        dlg_title = 'Exponentiation';
+        % args{1} should be questionText
+        prompt = {'Questio text:'};
+        dlg_title = 'Set Question Text';
         num_lines = 1;
-        defaultans = {'2'};
+        defaultans = {'?'};
         answer = inputdlg(prompt,dlg_title,num_lines,defaultans);
         if(isempty(answer))
             returnArgs = {};
             return;
         end
-        y = str2double(answer{1});
-        if(isempty(y))
+        questionText = answer{1};
+        if(isempty(questionText))
             returnArgs = {};
         else
-            if(y <= 0 || isnan(y))
-                returnArgs = {};
-            else
-                returnArgs = {y};
-            end
+            returnArgs = {questionText};
         end
     end
 %% Apply the operation
     function opDataOut = applyOperation(opData, args)
-        opDataOut   = opData;
-        exponent    = args{1};
-        opDataOut.channelStream = opData.channelStream .^ exponent;
-        
-        % Remove custom updateView function
-        opDataOut.updateView = [];
+        opDataOut = opData;
+        % args{1} should be questionText
+        questionText = args{1};
+        opDataOut.questionText = questionText;
     end
 %% Update the view
     function opDataOut = updateView(axH, opData)

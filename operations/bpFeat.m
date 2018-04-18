@@ -75,7 +75,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         % Plot data
         dat = opData.channelStream;
         

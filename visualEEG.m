@@ -125,13 +125,8 @@ function pbPrevious_Callback(hObject, ~, handles)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 opData.epochNum = opData.epochNum - 1;
 handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-if(isfield(opData, 'onEpochSwitch'))
-    updateView(handles);
-    opData = opData.onEpochSwitch(opData);
-    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-end
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 
 % --- Executes on button press in pbNext.
@@ -142,13 +137,8 @@ function pbNext_Callback(hObject, ~, handles)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 opData.epochNum = opData.epochNum + 1;
 handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-if(isfield(opData, 'onEpochSwitch'))
-    updateView(handles);
-    opData = opData.onEpochSwitch(opData);
-    handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
-end
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 
 % --- Executes on selection change in pumFile.
@@ -177,15 +167,23 @@ if(isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
 end
 
 % If apply all files is true, overwrite all operations in the new loaded
-% file.
+% file only if the newly loaded file does not have the same operations.
 val = get(handles.menuOperateAllFiles, 'Check');
 if(strcmp(val, 'on'))
     opDataOld = handles.dSets(handles.datasetNum).opDataCache{oldFileNum};
-    handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
+    opDataNew = handles.dSets(handles.datasetNum).opDataCache{index};
+    if(isempty(opDataNew.operations))
+        handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
+    else
+        opCompare = strcmp(opDataOld.operations, opDataNew.operations);
+        if(sum(opCompare) ~= length(opCompare))
+            handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
+        end
+    end
 end
 
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 % --- Executes during object creation, after setting all properties.
 function pumFile_CreateFcn(hObject, ~, ~)
@@ -212,8 +210,8 @@ function cbDiscard_Callback(hObject, ~, handles)
 val = get(hObject,'Value');
 if(~isempty(handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochExcludeStatus))
     handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochExcludeStatus(handles.dSets(handles.datasetNum).opDataCache{handles.fileNum}.epochNum) = val;
-    guidata(hObject, handles);
-    updateView(handles);
+    handlesOut = updateView(handles);
+    guidata(hObject, handlesOut);
 end
 
 
@@ -292,8 +290,8 @@ set(handles.toolShowLegend, 'Enable', 'On');
 % Set focus to next
 uicontrol(handles.pbNext);
 
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 function opData = getOpData(ffData) % opData stands for operatable data.
 % This is the structure which is passed around visualEEG functions.
@@ -352,9 +350,6 @@ if path ~= 0
     opData = rmfield(opData, 'epochNum');
     opData = rmfield(opData, 'legendInfo');
     opData = rmfield(opData, 'updateView');
-    if(isfield(opData, 'onEpochSwitch'))
-        opData = rmfield(opData, 'onEpochSwitch');
-    end
     save(filePath, '-struct', 'opData');
 end
 
@@ -382,30 +377,10 @@ set(gca,'OuterPosition',[0 0 1 1]);
 set(gca,'position',[0.1300 0.1100 0.7750 0.8150]);
 
 % ---Update View function
-function updateView(handles)
+function handlesOut = updateView(handles)
+handlesOut = handles;
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 ffData = handles.dSets(handles.datasetNum).ffData;
-
-% Call custom updateView if it exists
-if(~isempty(opData.updateView))
-    axH = gca;
-    opData.updateView(axH, opData);
-else
-    
-    % Plot data
-    dat = opData.channelStream;
-    
-    if(size(dat, 2) > 128)
-        disp('Warning: Only plotting first 128 channels');
-        dat = dat(:, 1:128);
-    end
-    absc = opData.abscissa;
-    
-    plot(absc, dat(:,:, opData.epochNum));
-    % Set axis labels
-    xlabel('Time (s)');
-    ylabel('Amplitude');
-end
 
 % Update epoch discard cb enable/disable
 if(~isempty(opData.epochExcludeStatus))
@@ -419,18 +394,6 @@ set(handles.pumDataSet, 'Value', handles.datasetNum);
 % Update file selection
 set(handles.pumFile, 'String', ffData.fileNames);
 set(handles.pumFile, 'Value', handles.fileNum);
-
-% Set Visibility of next, previous buttons
-if opData.epochNum == opData.numEpochs
-    set(handles.pbNext, 'Enable', 'Off');
-else
-    set(handles.pbNext, 'Enable', 'On');
-end
-if opData.epochNum == 1
-    set(handles.pbPrevious, 'Enable', 'Off');
-else
-    set(handles.pbPrevious, 'Enable', 'On');
-end
 
 % Update value of epoch info control
 set(handles.bgEpochs, 'Title', sprintf('Epoch:%d/%d', opData.epochNum, opData.numEpochs));
@@ -448,6 +411,40 @@ if(~isempty(opData.operations))
     set(handles.lbOperations, 'Value', length(opData.operations));
 else
     set(handles.lbOperations, 'String', '');
+end
+
+% Call custom updateView if it exists
+if(~isempty(opData.updateView))
+    axH = gca;
+    opData = opData.updateView(axH, opData);
+    handlesOut.dSets(handles.datasetNum).opDataCache{handles.fileNum} = opData;
+else
+    
+    % Plot data
+    dat = opData.channelStream;
+    
+    if(size(dat, 2) > 128)
+        disp('Warning: Only plotting first 128 channels');
+        dat = dat(:, 1:128);
+    end
+    absc = opData.abscissa;
+    
+    plot(absc, dat(:,:, opData.epochNum));
+    % Set axis labels
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+end
+
+% Set Visibility of next, previous buttons
+if opData.epochNum == opData.numEpochs
+    set(handles.pbNext, 'Enable', 'Off');
+else
+    set(handles.pbNext, 'Enable', 'On');
+end
+if opData.epochNum == 1
+    set(handles.pbPrevious, 'Enable', 'Off');
+else
+    set(handles.pbPrevious, 'Enable', 'On');
 end
 
 % Show legend
@@ -504,8 +501,8 @@ if(~isempty(opData.operations))
 else
     handles.dSets(handles.datasetNum).opDataCache{handles.fileNum} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 
 % --- Executes on button press in pbAddOperation.
@@ -519,8 +516,8 @@ function pbAddOperation_Callback(hObject, ~, handles)
 if(v)
     handles = applyOp(handles, handles.OPERATIONS{s});
 end
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 function handlesOut = applyOp(handles, operationName)
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
@@ -579,8 +576,8 @@ if(isempty(opData.legendInfo))
 end
 
 handles.showLegend = ~handles.showLegend;
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 
 % --- Executes on selection change in pumDataSet.
@@ -594,8 +591,8 @@ function pumDataSet_Callback(hObject, ~, handles)
 index = get(hObject,'Value');
 handles.datasetNum = index;
 handles.fileNum = handles.dSets(handles.datasetNum).ffData.fileNum;
-guidata(hObject, handles);
-updateView(handles);
+handlesOut = updateView(handles);
+guidata(hObject, handlesOut);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -620,8 +617,8 @@ function menuImportOps_Callback(hObject, eventdata, handles)
 if file ~=0
     [operations, operationArgs] = importOpearions(fullfile(path, file));
     handlesOut = applyAllOps(operations, operationArgs, handles);
+    handlesOut = updateView(handlesOut);
     guidata(hObject, handlesOut);
-    updateView(handlesOut);
 end
 
 
@@ -687,9 +684,6 @@ opData = rmfield(opData, 'fileVariableNames');
 opData = rmfield(opData, 'epochNum');
 opData = rmfield(opData, 'legendInfo');
 opData = rmfield(opData, 'updateView');
-if(isfield(opData, 'onEpochSwitch'))
-    opData = rmfield(opData, 'onEpochSwitch');
-end
 save(filePath, '-struct', 'opData');
 
 

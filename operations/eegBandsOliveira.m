@@ -61,7 +61,8 @@ opFunc      = @applyOperation;
         opDataOut.updateView = @updateView;
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
         errs = [opData.deltaPowerStd opData.thetaPowerStd opData.alphaPowerStd opData.betaPowerStd];
         data = [opData.deltaPowerMean opData.thetaPowerMean opData.alphaPowerMean opData.betaPowerMean];
         barwitherr(errs, data);

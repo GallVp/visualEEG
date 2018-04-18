@@ -43,6 +43,7 @@ opFunc      = @applyOperation;
         opDataOut.updateView = [];
     end
 %% Update the view
-    function updateView(axH, opData)
+    function opDataOut = updateView(axH, opData)
+        opDataOut = opData;
     end
 end
