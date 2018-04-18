@@ -8,9 +8,7 @@ function [argFunc, opFunc] = spatialFilter
 argFunc     = @askArgs;
 opFunc      = @applyOperation;
 
-%% Create a function which takes opData and returns a cell array of args
-%% required by this operation
-% args{1} should be the exponent
+%% Ask for arguments
     function returnArgs = askArgs(opData)
         % args{1} should be channel weights
         prompt = {'Channel weights (No. of weights should be equal to number of channels):'};
@@ -32,9 +30,7 @@ opFunc      = @applyOperation;
             returnArgs = {cWeights};
         end
     end
-%% Create a function which takes opData, args and returns processedData
-%% and a view update function.
-% args{1} should be the exponent
+%% Apply the operation
     function opDataOut = applyOperation(opData, args)
         opDataOut = opData;
         % args{1} should be channel weights
@@ -56,8 +52,7 @@ opFunc      = @applyOperation;
         % Remove custom updateView function
         opDataOut.updateView = [];
     end
-
-%% Create a update view function which takes axis handle and opData.
+%% Update the view
     function opDataOut = updateView(axH, opData)
         opDataOut = opData;
     end
