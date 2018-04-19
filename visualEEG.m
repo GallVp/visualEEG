@@ -93,12 +93,18 @@ set(hObject,'units','characters');
 windowPosition = [x y width height];
 set(hObject, 'pos', windowPosition);
 
-% Add folders to path
-addpath(genpath('libs'));
-addpath('operations');
-
-% Load funcs from the operations folder
-handles.OPERATIONS = loadFuncs('operations');
+if(isdeployed)
+    rootDir = ctfroot;
+    % Load funcs from the operations folder
+    handles.OPERATIONS = loadFuncs(fullfile(rootDir, 'operations'));
+else
+    % Add folders to path
+    addpath(genpath('libs'));
+    addpath('operations');
+    
+    % Load funcs from the operations folder
+    handles.OPERATIONS = loadFuncs('operations');
+end
 
 % Update handles structure
 guidata(hObject, handles);
@@ -172,7 +178,7 @@ val = get(handles.menuOperateAllFiles, 'Check');
 if(strcmp(val, 'on'))
     opDataOld = handles.dSets(handles.datasetNum).opDataCache{oldFileNum};
     opDataNew = handles.dSets(handles.datasetNum).opDataCache{index};
-    if(isempty(opDataNew.operations))
+    if(isempty(opDataNew.operations) || length(opDataOld.operations) ~= length(opDataNew.operations))
         handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
     else
         opCompare = strcmp(opDataOld.operations, opDataNew.operations);
