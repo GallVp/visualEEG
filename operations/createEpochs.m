@@ -55,7 +55,7 @@ opFunc      = @applyOperation;
         opDataOut.abscissa = opDataOut.abscissa ./ opDataOut.fs;
         opDataOut.abscissa = opDataOut.abscissa - wn(1) ./ opData.fs;
         opDataOut.epochExcludeStatus = zeros(opDataOut.numEpochs, 1);
-        
+        opDataOut.epochWindow = [wn(1), wn(2)];
         % Remove custom updateView function
         opDataOut.updateView = [];
     end
