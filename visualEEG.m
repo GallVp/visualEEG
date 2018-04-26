@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 %
 % Edit the above text to modify the response to help visualEEG
 %
-% Last Modified by GUIDE v2.5 17-Apr-2018 15:09:46
+% Last Modified by GUIDE v2.5 27-Apr-2018 10:36:34
 %
 % Copyright (c) <2016> <Usman Rashid>
 % Licensed under the MIT License. See License.txt in the project root for
@@ -67,8 +67,10 @@ set(handles.menuExport, 'Enable', 'Off');
 set(handles.menuTools, 'Enable', 'Off');
 set(handles.menuOptions, 'Enable', 'Off');
 set(handles.menuSaveToOutFold, 'Enable', 'Off');
+set(handles.menuOperations, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
+set(handles.toolSaveToOutFold, 'Enable', 'Off');
 
 % Plot instructions
 text(0.37,0.5, 'Go to File->Import dataset');
@@ -226,11 +228,6 @@ function menuFile_Callback(hObject, ~, handles)
 % hObject    handle to menuFile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
-    set(handles.menuSaveToOutFold, 'Enable', 'On');
-else
-    set(handles.menuSaveToOutFold, 'Enable', 'Off');
-end
 guidata(hObject, handles);
 
 % --------------------------------------------------------------------
@@ -291,6 +288,7 @@ set(handles.menuExport, 'Enable', 'On');
 set(handles.menuTools, 'Enable', 'On');
 set(handles.menuOptions, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
+set(handles.menuOperations, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
 
 % Set focus to next
@@ -302,7 +300,11 @@ guidata(hObject, handlesOut);
 function opData = getOpData(ffData) % opData stands for operatable data.
 % This is the structure which is passed around visualEEG functions.
 opData.channelStream = ffData.fileData.(ffData.dataVariable);
-opData.fs = ffData.fileData.(ffData.fsVariable);
+if(isempty(ffData.fsVariable))
+    opData.fs = ffData.fs;
+else
+    opData.fs = ffData.fileData.(ffData.fsVariable);
+end
 
 if(ffData.channelsAcrossRows)
     opData.channelStream = permute(opData.channelStream, [2 1 3]);
@@ -329,7 +331,7 @@ opData.updateView = [];
 opData.legendInfo = {};
 %** End Additional
 
-opData.epochExcludeStatus = [];
+opData.epochExcludeStatus = zeros(size(opData.channelStream, 3), 1);
 
 % Info on operations
 opData.operations = {};
@@ -456,6 +458,11 @@ end
 % Show legend
 if(handles.showLegend && ~isempty(opData.legendInfo))
     legend(opData.legendInfo);
+end
+
+% Set toolSaveToOutFold enable status
+if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
+    set(handles.toolSaveToOutFold, 'Enable', 'On');
 end
 
 function dataSetNames = getDataSetNames(handles)
@@ -595,10 +602,12 @@ function pumDataSet_Callback(hObject, ~, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns pumDataSet contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from pumDataSet
 index = get(hObject,'Value');
-handles.datasetNum = index;
-handles.fileNum = handles.dSets(handles.datasetNum).ffData.fileNum;
-handlesOut = updateView(handles);
-guidata(hObject, handlesOut);
+if(handles.datasetNum ~= index)
+    handles.datasetNum = index;
+    handles.fileNum = handles.dSets(handles.datasetNum).ffData.fileNum;
+    handlesOut = updateView(handles);
+    guidata(hObject, handlesOut);
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -670,6 +679,8 @@ else
 end
 
 if selpath ~= 0
+    set(handles.menuSaveToOutFold, 'Enable', 'On');
+    set(handles.toolSaveToOutFold, 'Enable', 'On');
     handles.dSets(handles.datasetNum).outputFolder = selpath;
     guidata(hObject, handles);
 end
@@ -691,6 +702,8 @@ opData = rmfield(opData, 'epochNum');
 opData = rmfield(opData, 'legendInfo');
 opData = rmfield(opData, 'updateView');
 save(filePath, '-struct', 'opData');
+set(handles.toolSaveToOutFold, 'Enable', 'Off');
+guidata(hObject, handles);
 
 
 % --------------------------------------------------------------------
@@ -705,3 +718,25 @@ else
     val = 'on';
 end
 set(handles.menuOperateAllFiles, 'Check', val);
+
+
+% --------------------------------------------------------------------
+function menuAutoReapply_Callback(hObject, eventdata, handles)
+% hObject    handle to menuAutoReapply (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menuOperations_Callback(hObject, eventdata, handles)
+% hObject    handle to menuOperations (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function toolSaveToOutFold_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to toolSaveToOutFold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+menuSaveToOutFold_Callback(hObject, eventdata, handles)
