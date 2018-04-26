@@ -50,9 +50,12 @@ opFunc      = @applyOperation;
             processedData   = resample(opData.channelStream, p, q);
         end
         opDataOut.channelStream = processedData;
+        if(~isempty(opData.events))
+            opDataOut.events    = round(opData.events .* p / q);
+        end
         opDataOut.fs            = opData.fs * p / q;
-        opDataOut.abscissa = 1:size(opDataOut.channelStream, 1);
-        opDataOut.abscissa = opDataOut.abscissa ./ opDataOut.fs;
+        opDataOut.abscissa      = 1:size(opDataOut.channelStream, 1);
+        opDataOut.abscissa      = opDataOut.abscissa ./ opDataOut.fs;
         
         % Remove custom updateView function
         opDataOut.updateView = [];
