@@ -22,7 +22,7 @@ function varargout = visualEEG(varargin)
 %
 % Edit the above text to modify the response to help visualEEG
 %
-% Last Modified by GUIDE v2.5 27-Apr-2018 10:36:34
+% Last Modified by GUIDE v2.5 27-Apr-2018 10:57:59
 %
 % Copyright (c) <2016> <Usman Rashid>
 % Licensed under the MIT License. See License.txt in the project root for
@@ -71,6 +71,8 @@ set(handles.menuOperations, 'Enable', 'Off');
 set(handles.upOperations, 'Visible', 'Off');
 set(handles.toolShowLegend, 'Enable', 'Off');
 set(handles.toolSaveToOutFold, 'Enable', 'Off');
+set(handles.exportFig, 'Enable', 'Off');
+
 
 % Plot instructions
 text(0.37,0.5, 'Go to File->Import dataset');
@@ -250,7 +252,10 @@ while ischar(ln)
     ln = fgets(fileID);
 end
 fclose(fileID);
-uiwait(msgbox(sprintf('%s', abt), 'About', 'help', 'modal'));
+[iconImage, iconMap, iconAlpha] = imread('icon.png');
+mH  = msgbox(sprintf('%s', abt), 'About', 'custom', iconImage, iconMap, 'modal');
+set(mH.Children(2).Children, 'AlphaData', iconAlpha);
+uiwait(mH);
 
 % --------------------------------------------------------------------
 function menuImport_Callback(hObject, ~, handles)
@@ -290,6 +295,8 @@ set(handles.menuOptions, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
 set(handles.menuOperations, 'Enable', 'On');
 set(handles.toolShowLegend, 'Enable', 'On');
+set(handles.exportFig, 'Enable', 'On');
+
 
 % Set focus to next
 uicontrol(handles.pbNext);
@@ -740,3 +747,28 @@ function toolSaveToOutFold_ClickedCallback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 menuSaveToOutFold_Callback(hObject, eventdata, handles)
+
+
+% --------------------------------------------------------------------
+function exportFig_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to exportFig (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+filter = {'*.pdf';'*.png';'*.eps';'*.tiff';'*.jpg';'*.bmp'};
+[file, path] = uiputfile(filter);
+if file == 0
+    return;
+end
+set(0, 'showhiddenhandles','on'); % Make the GUI figure handle visible
+h = findobj(gcf,'type','axes'); % Find the axes object in the GUI
+f1 = figure('Visible', 'off'); % Open a new figure with handle f1
+s = copyobj(h,f1); % Copy axes object h into figure f1
+set(gca, 'ActivePositionProperty','outerposition');
+set(gca, 'Units','normalized');
+set(gca, 'OuterPosition',[0 0 1 1]);
+set(gca, 'position',[0.1300 0.1100 0.7750 0.8150]);
+set(gca, 'LineWidth', 2);
+set(gca, 'FontSize', 14);
+set(gca, 'Box', 'Off');
+export_fig(fullfile(path, file), '-transparent', f1);
+delete(f1);
