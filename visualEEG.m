@@ -384,12 +384,18 @@ function saveFigure_ClickedCallback(~, ~, handles)
 
 set(0,'showhiddenhandles','on'); % Make the GUI figure handle visible
 h = findobj(gcf,'type','axes'); % Find the axes object in the GUI
+l = findobj(gcf,'type','legend'); % Find the legend object in the GUI
 f1 = figure; % Open a new figure with handle f1
-s = copyobj(h,f1); % Copy axes object h into figure f1
-set(gca,'ActivePositionProperty','outerposition');
-set(gca,'Units','normalized');
-set(gca,'OuterPosition',[0 0 1 1]);
-set(gca,'position',[0.1300 0.1100 0.7750 0.8150]);
+copyobj([h l],f1); % Copy axes object h into figure f1
+axisOfH = gca;
+set(axisOfH, 'ActivePositionProperty','outerposition');
+set(axisOfH, 'Units','normalized');
+set(axisOfH, 'OuterPosition',[0 0 1 1]);
+set(axisOfH, 'position',[0.1300 0.1100 0.7750 0.8150]);
+set(axisOfH, 'LineWidth', 2);
+set(axisOfH, 'FontSize', 14);
+set(axisOfH, 'Box', 'Off');
+set(axisOfH.Children, 'LineWidth', 2);
 
 % ---Update View function
 function handlesOut = updateView(handles)
@@ -761,14 +767,33 @@ if file == 0
 end
 set(0, 'showhiddenhandles','on'); % Make the GUI figure handle visible
 h = findobj(gcf,'type','axes'); % Find the axes object in the GUI
+l = findobj(gcf,'type','legend'); % Find the legend object in the GUI
 f1 = figure('Visible', 'off'); % Open a new figure with handle f1
-s = copyobj(h,f1); % Copy axes object h into figure f1
-set(gca, 'ActivePositionProperty','outerposition');
-set(gca, 'Units','normalized');
-set(gca, 'OuterPosition',[0 0 1 1]);
-set(gca, 'position',[0.1300 0.1100 0.7750 0.8150]);
-set(gca, 'LineWidth', 2);
-set(gca, 'FontSize', 14);
-set(gca, 'Box', 'Off');
-export_fig(fullfile(path, file), '-transparent', f1);
+copyobj([h l],f1); % Copy axes object h into figure f1
+axisOfH = gca;
+set(axisOfH, 'ActivePositionProperty','outerposition');
+set(axisOfH, 'Units','normalized');
+set(axisOfH, 'OuterPosition',[0 0 1 1]);
+set(axisOfH, 'position',[0.1300 0.1100 0.7750 0.8150]);
+set(axisOfH, 'LineWidth', 2);
+set(axisOfH, 'FontSize', 14);
+set(axisOfH, 'Box', 'Off');
+set(axisOfH.Children, 'LineWidth', 2);
+
+% For pdf and eps try export_fig. For rest use, MATLAB print. 
+printFilter = {'*.png';'*.tiff';'*.jpg';'*.bmp'};
+[~, ~, ext] = fileparts(fullfile(path, file));
+filterSpec = sprintf('*%s', ext);
+if(sum(strcmp(filterSpec, printFilter)))
+    formatSpec = sprintf('-d%s', ext(2:end));
+    print(fullfile(path, file), formatSpec, f1, '-r600');
+else
+    try
+        export_fig(fullfile(path, file), '-transparent', f1);
+    catch ME
+        uiwait(errordlg(sprintf('Failed to export using "export_fig". Now using MATLAB "print" function.\nMATLAB "print" produces poor quality graphics.\n\nFor optimal quality, please make sure you have following softwares installed:\n1. gs: http://www.ghostscript.com\n2. pdftops: http://www.xpdfreader.com'),'Figure export', 'modal'));
+        formatSpec = sprintf('-d%s', ext(2:end));
+        print(fullfile(path, file), formatSpec, f1, '-r600');
+    end
+end
 delete(f1);
