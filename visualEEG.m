@@ -674,9 +674,9 @@ function menuOptions_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 if(isfield(handles.dSets(handles.datasetNum), 'outputFolder'))
-    set(handles.menuSetOutFold, 'Text', 'Change output folder');
+    set(handles.menuSetOutFold, 'Label', 'Change output folder');
 else
-    set(handles.menuSetOutFold, 'Text', 'Set output folder');
+    set(handles.menuSetOutFold, 'Label', 'Set output folder');
 end
 
 
