@@ -1,0 +1,124 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration build-checksum="3445136859" file="H:\MATLAB\visualEEG\visualEEG_win.prj" location="H:\MATLAB\visualEEG" name="visualEEG_win" preferred-package-location="H:\MATLAB\visualEEG Package" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="Application Compiler">
+    <param.appname>visualEEG</param.appname>
+    <param.icon>${PROJECT_ROOT}\visualEEG_win_resources\icon.ico</param.icon>
+    <param.icons>
+      <file>${PROJECT_ROOT}\visualEEG_win_resources\icon_48.png</file>
+      <file>${PROJECT_ROOT}\visualEEG_win_resources\icon_32.png</file>
+      <file>${PROJECT_ROOT}\visualEEG_win_resources\icon_24.png</file>
+      <file>${PROJECT_ROOT}\visualEEG_win_resources\icon_16.png</file>
+    </param.icons>
+    <param.version>2.1</param.version>
+    <param.authnamewatermark>Usman Rashid</param.authnamewatermark>
+    <param.email>urashid@aut.ac.nz</param.email>
+    <param.company>Auckland University of Technology (AUT)</param.company>
+    <param.summary>visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analysis of EEG/EMG data.</param.summary>
+    <param.description />
+    <param.screenshot>${PROJECT_ROOT}\icon.png</param.screenshot>
+    <param.guid />
+    <param.installpath.string>\Auckland University of Technology (AUT)\visualEEG\</param.installpath.string>
+    <param.installpath.combo>option.installpath.programfiles</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.target.install.notes />
+    <param.intermediate>H:\MATLAB\visualEEG Package</param.intermediate>
+    <param.files.only>H:\MATLAB\visualEEG Package</param.files.only>
+    <param.output>H:\MATLAB\visualEEG Package</param.output>
+    <param.logdir>H:\MATLAB</param.logdir>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options />
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.web.mcr>false</param.web.mcr>
+    <param.package.mcr>true</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>visualEEG_win_installer</param.web.mcr.name>
+    <param.package.mcr.name>visualEEG_win_installer</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>true</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <unset>
+      <param.description />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.target.install.notes />
+      <param.enable.clean.build />
+      <param.user.defined.mcr.options />
+      <param.target.type />
+      <param.support.packages />
+      <param.no.mcr />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}\visualEEG.m</file>
+    </fileset.main>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}\libs</file>
+      <file>${PROJECT_ROOT}\operations</file>
+    </fileset.resources>
+    <fileset.package>
+      <file>${PROJECT_ROOT}\LEGAL.txt</file>
+      <file>${PROJECT_ROOT}\libs</file>
+      <file>${PROJECT_ROOT}\LICENSE</file>
+      <file>${PROJECT_ROOT}\operations</file>
+      <file>${PROJECT_ROOT}\README.md</file>
+      <file>${PROJECT_ROOT}\Sample Data</file>
+      <file>${PROJECT_ROOT}\Sample Pipelines</file>
+    </fileset.package>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}\about.txt</file>
+      <file>${PROJECT_ROOT}\icon.png</file>
+      <file>${PROJECT_ROOT}\importOptionsDlg.m</file>
+    </fileset.depfun>
+    <build-deliverables>
+      <file location="H:\MATLAB\visualEEG Package" name="splash.png" optional="false">H:\MATLAB\visualEEG Package\splash.png</file>
+      <file location="H:\MATLAB\visualEEG Package" name="visualEEG.exe" optional="false">H:\MATLAB\visualEEG Package\visualEEG.exe</file>
+      <file location="H:\MATLAB\visualEEG Package" name="readme.txt" optional="true">H:\MATLAB\visualEEG Package\readme.txt</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>C:\Program Files\MATLAB\R2017a</root>
+      <toolboxes>
+        <toolbox name="fixedpoint" />
+        <toolbox name="matlabcoder" />
+        <toolbox name="embeddedcoder" />
+      </toolboxes>
+      <toolbox>
+        <fixedpoint>
+          <enabled>true</enabled>
+        </fixedpoint>
+      </toolbox>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+      <toolbox>
+        <embeddedcoder>
+          <enabled>true</enabled>
+        </embeddedcoder>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>false</unix>
+      <mac>false</mac>
+      <windows>true</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>6.2</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>win64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
