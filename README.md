@@ -17,7 +17,7 @@ $ git clone https://github.com/GallVp/visualEEG
 2. From MATLAB file explorer, enter the visualEEG folder by double clicking it. Type **visualEEG** in the MATLAB command window and hit enter to run.
 
 ### Binary Versions (Matlab Not Required)
-#### Version 2.1: [Windows installer](https://github.com/GallVp/visualEEG/releases/download/v2.1/visualEEG_win_installer.exe).
+#### Version 2.1: [Windows installer](https://github.com/GallVp/visualEEG/releases/download/v2.1/visualEEG_win_installer.exe), [Mac installer](https://github.com/GallVp/visualEEG/releases/download/v2.1/visualEEG_mac_installer.app.zip)
 
 ## Wiki
 A detailed documentation with tutorials is available [here](https://github.com/GallVp/visualEEG/wiki).
