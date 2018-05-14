@@ -643,7 +643,7 @@ function menuImportOps_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 [file,path] = uigetfile('*.csv');
 if file ~=0
-    [operations, operationArgs] = importOpearions(fullfile(path, file));
+    [operations, operationArgs] = importOperations(fullfile(path, file));
     handlesOut = applyAllOps(operations, operationArgs, handles);
     handlesOut = updateView(handlesOut);
     guidata(hObject, handlesOut);
@@ -664,7 +664,7 @@ end
 filter = {'*.csv'};
 [file, path] = uiputfile(filter);
 if file ~=0
-    exportOpearions(opData.operations, opData.operationArgs, fullfile(path, file));
+    exportOperations(opData.operations, opData.operationArgs, fullfile(path, file));
 end
 
 

@@ -5,7 +5,6 @@ function [ assignedOptions ] = assignOptions( inputOptions, defaultOptions )
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for 
 %   license information.
-
 assignedOptions = inputOptions;
 mustHaveFields = fieldnames(defaultOptions);
 for i = 1:length(mustHaveFields)

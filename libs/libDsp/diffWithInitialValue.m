@@ -3,9 +3,8 @@ function [ diffOfData ] = diffWithInitialValue( data, initValues )
 %   wise differential of a matrix with initial values appended at the
 %   beginning.
 %
-%
 %   Copyright (c) <2016> <Usman Rashid>
-%   Licensed under the MIT License. See LICENSE in the project root for
+%   Licensed under the MIT License. See License.txt in the project root for 
 %   license information.
 
 if (size(data, 1) == 1)
