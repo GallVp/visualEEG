@@ -8,6 +8,9 @@ function processFolder(inputFolder, outputFolder, processPipe, viewPipe)
 %   Licensed under the MIT License. See License.txt in the project root for 
 %   license information.
 
+% EXCLUDED FILES
+EXCLUDED_FILES = {'.DS_Store'};
+
 D = dialog(...
     'Units',            'pixels',...
     'Name',             func2str(processPipe),...
@@ -103,6 +106,21 @@ updateLists;
 
     function updateLists
         ouputFolderFiles = processDataFolder(vars.outputFolder);
+        inputFolderFiles = processDataFolder(vars.inputFolder);
+        if(isempty(ouputFolderFiles))
+            set(vars.pbDelete, 'Enable', 'Off');
+            set(vars.pbViewPipe, 'Enable', 'Off');
+        else
+            set(vars.pbDelete, 'Enable', 'On');
+            if(isempty(vars.viewPipe))
+                set(vars.pbViewPipe, 'Enable', 'Off');
+            else
+                set(vars.pbViewPipe, 'Enable', 'On');
+            end
+        end
+        if(isempty(inputFolderFiles))
+            return;
+        end
         
         function fNameWithoutExt = cellFilePart(fName)
             [~, fNameWithoutExt, ~] = fileparts(fName);
@@ -114,7 +132,6 @@ updateLists;
         
         ouputFolderFilesNoExt = cellfun(@cellFilePart, ouputFolderFiles, 'UniformOutput', 0);
         
-        inputFolderFiles = processDataFolder(vars.inputFolder);
         [~, ~ , inputFileExt] = fileparts(inputFolderFiles{1});
         
         inputFolderFilesNoExt = cellfun(@cellFilePart, inputFolderFiles, 'UniformOutput', 0);
@@ -127,22 +144,13 @@ updateLists;
             set(vars.lstInputList, 'Value', vars.selectedFileNum);
         end
         set(vars.lstOutputList, 'String', ouputFolderFiles);
-        if(isempty(ouputFolderFiles))
-            set(vars.pbDelete, 'Enable', 'Off');
-            set(vars.pbViewPipe, 'Enable', 'Off');
-        else
-            set(vars.pbDelete, 'Enable', 'On');
-            if(isempty(vars.viewPipe))
-                set(vars.pbViewPipe, 'Enable', 'Off');
-            else
-                set(vars.pbViewPipe, 'Enable', 'On');
-            end
-        end
     end
     function [fileNames] = processDataFolder(folderPath)
         fileNames = dir(folderPath);
         fileNames = fileNames(~[fileNames(:).isdir]);
         fileNames = {fileNames.name};
+        excludedFiles = strcmpMSC(fileNames, EXCLUDED_FILES);
+        fileNames = fileNames(~excludedFiles);
     end
 
     function procFunc(~, ~)

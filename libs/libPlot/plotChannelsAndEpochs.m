@@ -150,7 +150,7 @@ set(H, 'Visible','on');
             dat = persistant.epochs(:, persistant.channelNum,persistant.epochNum);
             absc = persistant.abscissa;
         else
-            [dat, absc] = plotFFT(persistant.epochs(:, persistant.channelNum, persistant.epochNum), persistant.fs, 1);
+            [dat, absc] = computePSD(persistant.epochs(:, persistant.channelNum, persistant.epochNum), persistant.fs, 1);
         end
         if(strcmp(persistant.options.plotType, persistant.PLOT_TYPE_PLOT))
             plot(absc, dat)
