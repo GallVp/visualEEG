@@ -1,4 +1,4 @@
-function exportOpearions(operations, operationArgs, fileName)
+function exportOperations(operations, operationArgs, fileName)
 %saveOpearions Saves the operations and the arguments as a comma separated
 %   file. Vectors are saved as [a b c].
 %

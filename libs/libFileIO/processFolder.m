@@ -5,7 +5,7 @@ function processFolder(inputFolder, outputFolder, processPipe, viewPipe)
 %   using viewPipe.
 %
 %   Copyright (c) <2016> <Usman Rashid>
-%   Licensed under the MIT License. See License.txt in the project root for 
+%   Licensed under the MIT License. See License.txt in the project root for
 %   license information.
 
 % EXCLUDED FILES
@@ -106,7 +106,7 @@ updateLists;
 
     function updateLists
         ouputFolderFiles = processDataFolder(vars.outputFolder);
-        inputFolderFiles = processDataFolder(vars.inputFolder);
+        [inputFolderFiles, ~, inputFolderFilesWithExt] = processDataFolder(vars.inputFolder);
         if(isempty(ouputFolderFiles))
             set(vars.pbDelete, 'Enable', 'Off');
             set(vars.pbViewPipe, 'Enable', 'Off');
@@ -122,35 +122,27 @@ updateLists;
             return;
         end
         
-        function fNameWithoutExt = cellFilePart(fName)
-            [~, fNameWithoutExt, ~] = fileparts(fName);
-        end
-        
-        function nameWithExt = appendExt(extName, fName)
-            nameWithExt = strcat(fName, extName);
-        end
-        
-        ouputFolderFilesNoExt = cellfun(@cellFilePart, ouputFolderFiles, 'UniformOutput', 0);
-        
-        [~, ~ , inputFileExt] = fileparts(inputFolderFiles{1});
-        
-        inputFolderFilesNoExt = cellfun(@cellFilePart, inputFolderFiles, 'UniformOutput', 0);
-        
-        remainingFiles = setdiff(inputFolderFilesNoExt, ouputFolderFilesNoExt);
-        remainingFilesWithExt = cellfun(@(x) appendExt(inputFileExt, x), remainingFiles, 'UniformOutput', 0);
-        
-        set(vars.lstInputList, 'String', remainingFilesWithExt);
+        [~, rI] = setdiff(inputFolderFiles, ouputFolderFiles);
+        inputFolderFilesWithExt = inputFolderFilesWithExt(rI);
+        set(vars.lstInputList, 'String', inputFolderFilesWithExt);
         if(vars.selectedFileNum ~= 0)
             set(vars.lstInputList, 'Value', vars.selectedFileNum);
         end
         set(vars.lstOutputList, 'String', ouputFolderFiles);
     end
-    function [fileNames] = processDataFolder(folderPath)
+    function [fileNames, fileExts, fileNamesWithExt] = processDataFolder(folderPath)
         fileNames = dir(folderPath);
         fileNames = fileNames(~[fileNames(:).isdir]);
         fileNames = {fileNames.name};
         excludedFiles = strcmpMSC(fileNames, EXCLUDED_FILES);
         fileNames = fileNames(~excludedFiles);
+        fileNamesWithExt = fileNames;
+        
+        [fileNames, fileExts] = cellfun(@cellFilePart, fileNames, 'UniformOutput', 0);
+        
+        function [fNameWithoutExt, fileExts] = cellFilePart(fName)
+            [~, fNameWithoutExt, fileExts] = fileparts(fName);
+        end
     end
 
     function procFunc(~, ~)
@@ -160,7 +152,7 @@ updateLists;
             return;
         end
         try
-        processedFileData = vars.processPipe(fullfile(vars.inputFolder, filesList{selectedFileNum}));
+            processedFileData = vars.processPipe(fullfile(vars.inputFolder, filesList{selectedFileNum}));
         catch me
             errordlg(me.message, 'Error in processing pipeline', 'modal');
             processedFileData = [];

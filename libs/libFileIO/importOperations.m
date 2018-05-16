@@ -1,4 +1,4 @@
-function [operations, operationArgs] = importOpearions(fileName)
+function [operations, operationArgs] = importOperations(fileName)
 %saveOpearions Loads the operations and the arguments from a comma
 %   separated file. Vectors are treated as [a b c].
 %
