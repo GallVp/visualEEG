@@ -18,11 +18,9 @@ ouputFolderFiles = processDataFolder(andSaveInFolder);
 [remainingFiles, rI] = setdiff(inputFolderFiles, ouputFolderFiles);
 inputFolderFilesWithExt = inputFolderFilesWithExt(rI);
 
-processedData = cellfun(@(x) thisFunction(fullfile(inFolder, x)), inputFolderFilesWithExt, 'UniformOutput', 0);
-
-for i = 1:length(processedData)
-    svData = processedData{i};
-    save(fullfile(andSaveInFolder, remainingFiles{i}), '-struct', 'svData');
+for i = 1:length(inputFolderFilesWithExt)
+    processedData = thisFunction(fullfile(inFolder, inputFolderFilesWithExt{i}));
+    save(fullfile(andSaveInFolder, remainingFiles{i}), '-struct', 'processedData');
     fprintf('Saved file %s\n', remainingFiles{i});
 end
 
