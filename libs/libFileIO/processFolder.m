@@ -105,7 +105,7 @@ updateLists;
 
 
     function updateLists
-        ouputFolderFiles = processDataFolder(vars.outputFolder);
+        [ouputFolderFiles, ~, outputFolderFilesWithExt] = processDataFolder(vars.outputFolder);
         [inputFolderFiles, ~, inputFolderFilesWithExt] = processDataFolder(vars.inputFolder);
         if(isempty(ouputFolderFiles))
             set(vars.pbDelete, 'Enable', 'Off');
@@ -128,7 +128,7 @@ updateLists;
         if(vars.selectedFileNum ~= 0)
             set(vars.lstInputList, 'Value', vars.selectedFileNum);
         end
-        set(vars.lstOutputList, 'String', ouputFolderFiles);
+        set(vars.lstOutputList, 'String', outputFolderFilesWithExt);
     end
     function [fileNames, fileExts, fileNamesWithExt] = processDataFolder(folderPath)
         fileNames = dir(folderPath);
