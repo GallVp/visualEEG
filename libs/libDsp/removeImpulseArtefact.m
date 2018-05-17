@@ -4,17 +4,17 @@ function [ cleanedData, artefactPoints ] = removeImpulseArtefact( inputData, dia
 %   spikes above 'cuttOff' ~ 1500.
 %
 %   Copyright (c) <2016> <Usman Rashid>
-%   Licensed under the MIT License. See License.txt in the project root for 
+%   Licensed under the MIT License. See License.txt in the project root for
 %   license information.
 
-if(nargin < 4)
+if(nargin < 2)
+    diagonisticPlot = 1;
+    dpTitle = 'Diagnostic plot';
     cuttOff = 1500;
 elseif(nargin < 3)
     dpTitle = 'Diagnostic plot';
     cuttOff = 1500;
-elseif(nargin < 2)
-    diagonisticPlot = 1;
-    dpTitle = 'Diagnostic plot';
+elseif(nargin < 4)
     cuttOff = 1500;
 end
 NUM_CONSEC_EVENTS = 2;
