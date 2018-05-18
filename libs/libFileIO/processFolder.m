@@ -1,4 +1,4 @@
-function processFolder(inputFolder, outputFolder, processPipe, viewPipe)
+function processFolder(inputFolder, outputFolder, processPipe, viewPipe, editPipe)
 %processFolder Opens inputFolder and dsiplays a list of files in that
 %   folder that can be processed with attached processPipe. Also shows a
 %   list of processed files from the outputFolder that can be viewed
@@ -7,6 +7,14 @@ function processFolder(inputFolder, outputFolder, processPipe, viewPipe)
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for
 %   license information.
+
+% Input constants
+if nargin < 4
+    viewPipe    = [];
+    editPipe    = [];
+elseif nargin < 5
+    editPipe    = [];
+end
 
 % EXCLUDED FILES
 EXCLUDED_FILES = {'.DS_Store'};
@@ -56,6 +64,7 @@ vars.inputFolder        = inputFolder;
 vars.outputFolder       = outputFolder;
 vars.processPipe        = processPipe;
 vars.viewPipe           = viewPipe;
+vars.editPipe           = editPipe;
 vars.selectedFileNum    = 1;
 
 
@@ -91,15 +100,21 @@ vars.pbProcessPipe = uicontrol('Parent',D,...
 
 vars.pbViewPipe = uicontrol('Parent',D,...
     'Style','pushbutton',...
-    'Position', [winWidth - horizontalSpacing - lstWidth + pbX - horizontalSpacing verticleSpacing txtWidth/2 txtHeight],...
+    'Position', [winWidth - lstWidth - horizontalSpacing verticleSpacing txtWidth/2 txtHeight],...
     'String', 'View',...
     'Callback', @viewFunc);
 
 vars.pbDelete = uicontrol('Parent',D,...
     'Style','pushbutton',...
-    'Position', [winWidth - horizontalSpacing - lstWidth + pbX verticleSpacing txtWidth/2 txtHeight],...
+    'Position', [winWidth - lstWidth + horizontalSpacing/4 verticleSpacing txtWidth/2 txtHeight],...
     'String', 'Delete',...
     'Callback', @delFunc);
+
+vars.pbEditPipe = uicontrol('Parent',D,...
+    'Style','pushbutton',...
+    'Position', [winWidth - lstWidth + 1.5*horizontalSpacing verticleSpacing txtWidth/2 txtHeight],...
+    'String', 'Edit',...
+    'Callback', @editFunc);
 
 updateLists;
 
@@ -116,6 +131,11 @@ updateLists;
                 set(vars.pbViewPipe, 'Enable', 'Off');
             else
                 set(vars.pbViewPipe, 'Enable', 'On');
+            end
+            if(isempty(vars.editPipe))
+                set(vars.pbEditPipe, 'Enable', 'Off');
+            else
+                set(vars.pbEditPipe, 'Enable', 'On');
             end
         end
         if(isempty(inputFolderFiles))
@@ -175,6 +195,38 @@ updateLists;
                 if(vars.selectedFileNum >= length(filesList) - 1)
                     vars.selectedFileNum = selectedFileNum - 1;
                 end
+                updateLists;
+            case 'No'
+                return;
+        end
+    end
+    function editFunc(~, ~)
+        filesList = get(vars.lstOutputList, 'String');
+        selectedFileNum = get(vars.lstOutputList, 'Value');
+        if(isempty(filesList))
+            return;
+        end
+        try
+            processedFileData = vars.editPipe(fullfile(vars.outputFolder, filesList{selectedFileNum}));
+        catch me
+            errordlg(me.message, 'Error in edit pipeline', 'modal');
+            processedFileData = [];
+        end
+        if(isempty(processedFileData))
+            return;
+        end
+        % Construct a questdlg with two options
+        choice = questdlg('Would you like to save the results?', ...
+            'Save Result', ...
+            'Yes', 'No', 'Yes');
+        % Handle response
+        switch choice
+            case 'Yes'
+                if ~exist(vars.outputFolder, 'dir')
+                    mkdir(vars.outputFolder);
+                end
+                [~, saveFileName, ~] = fileparts(filesList{selectedFileNum});
+                save(fullfile(vars.outputFolder, saveFileName), '-struct', 'processedFileData');
                 updateLists;
             case 'No'
                 return;
