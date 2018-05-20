@@ -18,17 +18,18 @@ elseif(nargin < 4)
     cuttOff = 1500;
 end
 NUM_CONSEC_EVENTS = 2;
-eventsAreAt = inputData > cuttOff | inputData < -cuttOff;
+AVERAGE_VALUE_SHIFT = 5;
+eventsAreAt = inputData > cuttOff | inputData < - cuttOff;
 
 % Ignore all those events which are not isolated single events
 [moreThanOneConscEventsAt, ~] = consecEvents(eventsAreAt, NUM_CONSEC_EVENTS);
 artefactPoints = eventsAreAt;
 artefactPoints(moreThanOneConscEventsAt) = false;
 
-artefactPointsL = circshift(artefactPoints, -1);
+artefactPointsL = circshift(artefactPoints, -AVERAGE_VALUE_SHIFT);
 artefactPointsL(end) = false;
 
-artefactPointsR = circshift(artefactPoints, 1);
+artefactPointsR = circshift(artefactPoints, AVERAGE_VALUE_SHIFT);
 artefactPointsR(1) = false;
 
 cleanedData = inputData;
