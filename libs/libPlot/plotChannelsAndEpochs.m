@@ -98,7 +98,7 @@ end
 
 % Add a text uicontrol.
 vars.txtEpochInfo = uicontrol('Style','text',...
-    'Position',[10 20 120 25]);
+    'Position',[10 25 120 25]);
 
 % First view update
 updateView
