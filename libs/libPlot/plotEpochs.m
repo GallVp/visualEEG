@@ -75,26 +75,26 @@ set(H, 'Position', hPos);
 
 % Create push buttons
 vars.btnNext = uicontrol('Style', 'pushbutton', 'String', 'Next',...
-    'Position', [300 20 75 20],...
+    'Position', [350 20 75 20],...
     'Callback', @next);
 
 vars.btnPrevious = uicontrol('Style', 'pushbutton', 'String', 'Previous',...
-    'Position', [200 20 75 20],...
+    'Position', [250 20 75 20],...
     'Callback', @previous);
 
 if(~isempty(vars.fs))
     vars.btnSpectrum = uicontrol('Style', 'pushbutton', 'String', 'Spectrum',...
-        'Position', [400 20 75 20],...
+        'Position', [450 20 75 20],...
         'Callback', @spectrum);
 end
 % Add a check uicontrol.
 vars.ckbEpochExclude = uicontrol('Style','checkbox',...
-    'Position',[225 20 75 20], 'String', {'Exclude'}, 'Callback', @exclude);
+    'Position',[150 20 75 20], 'String', {'Exclude'}, 'Callback', @exclude);
 
 
 % Add a text uicontrol.
 vars.txtEpochInfo = uicontrol('Style','text',...
-    'Position',[75 17 120 20]);
+    'Position',[25 20 120 20]);
 
 % First view update
 updateView
@@ -131,7 +131,7 @@ uiwait(H);
 
     function exclude(~,~)
         val = get(vars.ckbEpochExclude, 'Value');
-        vars.options.excludedEpochs(1, vars.epochNum) = val;
+        vars.options.excludedEpochs(vars.epochNum) = val;
     end
 
 % Update view function
@@ -142,7 +142,7 @@ uiwait(H);
             dat = vars.epochs(:,:,vars.epochNum);
             absc = vars.abscissa;
         else
-            [dat, absc] = plotFFT(vars.epochs(:,:, vars.epochNum), vars.fs, 1);
+            [dat, absc] = computePSD(vars.epochs(:,:, vars.epochNum), vars.fs);
         end
         if(strcmp(vars.options.plotType, vars.PLOT_TYPE_PLOT))
             plot(absc, dat)
@@ -197,6 +197,7 @@ uiwait(H);
         else
             xlabel(vars.options.xLabel);
         end
+        set(vars.ckbEpochExclude, 'Value', vars.options.excludedEpochs(vars.epochNum));
     end
     function closeFigure(~,~)
         excludedEpochs = vars.options.excludedEpochs;

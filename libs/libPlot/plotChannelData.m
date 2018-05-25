@@ -84,7 +84,7 @@ end
 
 % Add a text uicontrol.
 vars.txtChannelInfo = uicontrol('Style','text',...
-    'Position',[75 17 120 20]);
+    'Position',[75 20 120 20]);
 
 updateView
 
