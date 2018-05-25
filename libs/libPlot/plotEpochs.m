@@ -1,8 +1,8 @@
-function H = plotChannelsAndEpochs(epochs, fs, options)
-%plotChannelsAndEpochs Create a figure and axes showing epoch data.
-%   epochs is a matrix in which 1st dimension is the time, 2nd dimension
-%   is channels and the 3rd dimension is epochs. This function plots
-%   epochs separately for each channel.
+function [H, excludedEpochs] = plotEpochs(epochs, fs, options)
+%plotEpochs Create a figure and axes showing epoch data. epochs is a matrix
+%   in which 1st dimension is the time, 2nd dimension is channels and the
+%   3rd dimension is epochs. This function plots epochs from all the
+%   channels in one axes. Also, allows excluding epochs.
 %
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for 
@@ -25,6 +25,9 @@ vars.options.lineWidth        = 1;
 vars.options.xShift           = 0;
 vars.options.cueEpochs        = [];
 vars.options.markerLineWidth  = 2;
+vars.options.excludedEpochs   = zeros(size(epochs, 3), 1);
+
+excludedEpochs = vars.options.excludedEpochs;
 
 switch(nargin)
     case 1
@@ -44,10 +47,9 @@ end
 
 % Startup data selection
 vars.totalEpochs = size(vars.epochs, 3);
-vars.totalChannels = size(vars.epochs, 2);
 vars.epochNum = 1;
-vars.channelNum = 1;
 vars.domain = vars.DOMAIN_TIME;
+vars.excludedEpochs = vars.options.excludedEpochs;
 
 % Calculate abscissa from fs
 if(isempty(vars.fs))
@@ -61,7 +63,8 @@ end
 H = figure('Visible','off',...
     'Units', 'pixels',...
     'ResizeFcn',@handleResize,...
-    'Name', 'Plot Channel Epochs Tool',...
+    'CloseRequestFcn',@closeFigure,...
+    'Name', 'Plot Epochs Tool',...
     'numbertitle','off');
 
 % Startup size
@@ -79,32 +82,26 @@ vars.btnPrevious = uicontrol('Style', 'pushbutton', 'String', 'Previous',...
     'Position', [200 20 75 20],...
     'Callback', @previous);
 
-% Create channel push buttons
-vars.btnNextChannel = uicontrol('Style', 'pushbutton', 'String', '>>',...
-    'Position', [400 20 25 20],...
-    'Callback', @nextChannel);
-
-vars.btnPreviousChannel = uicontrol('Style', 'pushbutton', 'String', '<<',...
-    'Position', [150 20 25 20],...
-    'Callback', @previousChannel);
-
-% Spectrum button
 if(~isempty(vars.fs))
     vars.btnSpectrum = uicontrol('Style', 'pushbutton', 'String', 'Spectrum',...
-        'Position', [450 20 75 20],...
+        'Position', [400 20 75 20],...
         'Callback', @spectrum);
 end
+% Add a check uicontrol.
+vars.ckbEpochExclude = uicontrol('Style','checkbox',...
+    'Position',[225 20 75 20], 'String', {'Exclude'}, 'Callback', @exclude);
 
 
 % Add a text uicontrol.
 vars.txtEpochInfo = uicontrol('Style','text',...
-    'Position',[10 20 120 25]);
+    'Position',[75 17 120 20]);
 
 % First view update
 updateView
 
 % Make figure visble after adding all components
 set(H, 'Visible','on');
+uiwait(H);
 
 % Event Handlers
     function next(~,~)
@@ -114,16 +111,6 @@ set(H, 'Visible','on');
 
     function previous(~,~)
         vars.epochNum = vars.epochNum - 1;
-        updateView
-    end
-
-    function nextChannel(~,~)
-        vars.channelNum = vars.channelNum + 1;
-        updateView
-    end
-
-    function previousChannel(~,~)
-        vars.channelNum = vars.channelNum - 1;
         updateView
     end
 
@@ -142,15 +129,20 @@ set(H, 'Visible','on');
         updateView
     end
 
+    function exclude(~,~)
+        val = get(vars.ckbEpochExclude, 'Value');
+        vars.options.excludedEpochs(1, vars.epochNum) = val;
+    end
+
 % Update view function
     function updateView
         ax = subplot(1, 1, 1, 'Units', 'pixels');
         domainIsTime = strcmp(vars.domain, vars.DOMAIN_TIME);
         if(domainIsTime)
-            dat = vars.epochs(:, vars.channelNum,vars.epochNum);
+            dat = vars.epochs(:,:,vars.epochNum);
             absc = vars.abscissa;
         else
-            [dat, absc] = computePSD(vars.epochs(:, vars.channelNum, vars.epochNum), vars.fs, 1);
+            [dat, absc] = plotFFT(vars.epochs(:,:, vars.epochNum), vars.fs, 1);
         end
         if(strcmp(vars.options.plotType, vars.PLOT_TYPE_PLOT))
             plot(absc, dat)
@@ -166,14 +158,14 @@ set(H, 'Visible','on');
         
         % Create a legend entry
         if(~isempty(vars.options.legendInfo))
-            legendCell = vars.options.legendInfo{vars.channelNum};
+            legendCell = vars.options.legendInfo;
         else
             legendCell = [];
         end
         
         % Plot cue if present
         if(~isempty(vars.options.cueEpochs) && domainIsTime)
-            plot(find(vars.options.cueEpochs(:, vars.channelNum, vars.epochNum)) / vars.fs - vars.options.xShift,...
+            plot(find(vars.options.cueEpochs(:,:, vars.epochNum)) / vars.fs - vars.options.xShift,...
                 mean(mean(dat, 2)), 'k+', 'lineWidth', vars.options.markerLineWidth);
             legendCell{end+1} = 'Cue';
         end
@@ -190,21 +182,7 @@ set(H, 'Visible','on');
             set(vars.btnPrevious, 'Enable', 'On');
         end
         
-        % Enable disable channel buttons
-        if vars.channelNum == vars.totalChannels
-            set(vars.btnNextChannel, 'Enable', 'Off');
-        else
-            set(vars.btnNextChannel, 'Enable', 'On');
-        end
-        
-        if vars.channelNum == 1
-            set(vars.btnPreviousChannel, 'Enable', 'Off');
-        else
-            set(vars.btnPreviousChannel, 'Enable', 'On');
-        end
-        
-        set(vars.txtEpochInfo, 'String', sprintf('Epoch: %d/%d\nChannel: %d/%d',...
-            vars.epochNum, vars.totalEpochs, vars.channelNum, vars.totalChannels));
+        set(vars.txtEpochInfo, 'String', sprintf('Epoch : %d/%d', vars.epochNum, vars.totalEpochs));
         
         if(~isempty(legendCell))
             legend(legendCell);
@@ -219,5 +197,9 @@ set(H, 'Visible','on');
         else
             xlabel(vars.options.xLabel);
         end
+    end
+    function closeFigure(~,~)
+        excludedEpochs = vars.options.excludedEpochs;
+        delete(gcf);
     end
 end
