@@ -34,7 +34,11 @@ artefactPointsR(1) = false;
 
 cleanedData = inputData;
 
-cleanedData(artefactPoints) = (cleanedData(artefactPointsL) + cleanedData(artefactPointsR)) / 2;
+if(sum(artefactPointsL) == sum(artefactPointsR))
+    cleanedData(artefactPoints) = (cleanedData(artefactPointsL) + cleanedData(artefactPointsR)) / 2;
+else
+    cleanedData(artefactPoints) = cleanedData(artefactPointsR);
+end
 
 
 %% Do diagnostic plotting
