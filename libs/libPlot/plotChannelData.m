@@ -12,6 +12,8 @@ vars.PLOT_TYPE_PLOT   = 'PLOT';
 vars.PLOT_TYPE_STEM   = 'STEM';
 vars.DOMAIN_TIME      = 'TIME';
 vars.DOMAIN_FREQUENCY = 'FREQUENCY';
+vars.DOMAIN_STAT      = 'STAT';
+vars.NUM_HIST_BINS    = 100;
 vars.eventNames = {'Cue', 'Detected onsets', 'Selected onsets'};
 
 % Assign default options
@@ -69,22 +71,26 @@ set(H, 'Position', hPos);
 
 % Create push buttons
 vars.btnNext = uicontrol('Style', 'pushbutton', 'String', 'Next',...
-    'Position', [300 20 75 20],...
+    'Position', [250 20 75 20],...
     'Callback', @next);
 
 vars.btnPrevious = uicontrol('Style', 'pushbutton', 'String', 'Previous',...
-    'Position', [200 20 75 20],...
+    'Position', [150 20 75 20],...
     'Callback', @previous);
 if(~isempty(vars.fs))
     vars.btnSpectrum = uicontrol('Style', 'pushbutton', 'String', 'Spectrum',...
-        'Position', [400 20 75 20],...
+        'Position', [350 20 75 20],...
         'Callback', @spectrum);
 end
+
+vars.btnHist = uicontrol('Style', 'pushbutton', 'String', 'Histogram',...
+    'Position', [450 20 75 20],...
+    'Callback', @histogram);
 
 
 % Add a text uicontrol.
 vars.txtChannelInfo = uicontrol('Style','text',...
-    'Position',[75 20 120 20]);
+    'Position',[25 20 120 20]);
 
 updateView
 
@@ -103,12 +109,25 @@ set(H, 'Visible','on');
     end
 
     function spectrum(~,~)
-        if(strcmp(vars.options.domain, vars.DOMAIN_TIME))
+        if(strcmp(vars.options.domain, vars.DOMAIN_TIME) || strcmp(vars.options.domain, vars.DOMAIN_STAT))
             vars.options.domain = vars.DOMAIN_FREQUENCY;
             set(vars.btnSpectrum, 'String', 'Signal');
+            set(vars.btnHist, 'String', 'Histogram');
         else
             vars.options.domain = vars.DOMAIN_TIME;
             set(vars.btnSpectrum, 'String', 'Spectrum');
+        end
+        updateView
+    end
+
+    function histogram(~,~)
+        if(strcmp(vars.options.domain, vars.DOMAIN_TIME) || strcmp(vars.options.domain, vars.DOMAIN_FREQUENCY))
+            vars.options.domain = vars.DOMAIN_STAT;
+            set(vars.btnSpectrum, 'String', 'Spectrum');
+            set(vars.btnHist, 'String', 'Signal');
+        else
+            vars.options.domain = vars.DOMAIN_TIME;
+            set(vars.btnHist, 'String', 'Histogram');
         end
         updateView
     end
@@ -126,11 +145,17 @@ set(H, 'Visible','on');
                 dat = vars.channelStream(:, vars.channelNum);
             end
             absc = vars.abscissa;
-        else
+        elseif(strcmp(vars.options.domain, vars.DOMAIN_FREQUENCY))
             if(vars.options.applyDetrend)
                 [dat, absc] = computePSD(detrend(vars.channelStream(:, vars.channelNum)), vars.fs);
             else
                 [dat, absc] = computePSD(vars.channelStream(:, vars.channelNum), vars.fs);
+            end
+        else
+            if(vars.options.applyDetrend)
+                [dat, absc] = hist(detrend(vars.channelStream(:, vars.channelNum)), vars.NUM_HIST_BINS);
+            else
+                [dat, absc] = hist(vars.channelStream(:, vars.channelNum), vars.NUM_HIST_BINS);
             end
         end
         if(strcmp(vars.options.plotType, vars.PLOT_TYPE_PLOT))
