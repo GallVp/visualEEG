@@ -64,7 +64,6 @@ set(handles.bgEpochs, 'Visible', 'Off');
 set(handles.upData, 'Visible', 'Off');
 set(handles.saveFigure, 'Enable', 'Off');
 set(handles.menuExport, 'Enable', 'Off');
-set(handles.menuTools, 'Enable', 'Off');
 set(handles.menuOptions, 'Enable', 'Off');
 set(handles.menuSaveToOutFold, 'Enable', 'Off');
 set(handles.menuOperations, 'Enable', 'Off');
@@ -290,7 +289,6 @@ set(handles.bgEpochs, 'Visible', 'On');
 set(handles.upData, 'Visible', 'On');
 set(handles.upOperations, 'Visible', 'On');
 set(handles.menuExport, 'Enable', 'On');
-set(handles.menuTools, 'Enable', 'On');
 set(handles.menuOptions, 'Enable', 'On');
 set(handles.saveFigure, 'Enable', 'On');
 set(handles.menuOperations, 'Enable', 'On');
@@ -306,11 +304,11 @@ guidata(hObject, handlesOut);
 
 function opData = getOpData(ffData) % opData stands for operatable data.
 % This is the structure which is passed around visualEEG functions.
-opData.channelStream = ffData.fileData.(ffData.dataVariable);
+opData.channelStream = eval(strcat('ffData.fileData.', ffData.dataVariable));
 if(isempty(ffData.fsVariable))
     opData.fs = ffData.fs;
 else
-    opData.fs = ffData.fileData.(ffData.fsVariable);
+    opData.fs = eval(strcat('ffData.fileData.', ffData.fsVariable));
 end
 
 if(ffData.channelsAcrossRows)

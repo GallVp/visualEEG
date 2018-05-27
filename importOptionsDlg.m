@@ -26,7 +26,7 @@ function varargout = importOptionsDlg(varargin)
 %
 %
 % Copyright (c) <2016> <Usman Rashid>
-% Licensed under the MIT License. See License.txt in the project root for 
+% Licensed under the MIT License. See License.txt in the project root for
 % license information.
 
 % Begin initialization code - DO NOT EDIT
@@ -145,7 +145,7 @@ handles.dataStructureDefault.folderName         = [];
 handles.dataStructureDefault.fsVariable         = [];
 handles.dataStructureDefault.fileNum            = 1;
 handles.dataStructureDefault.channelNamesVariable = [];
-    
+
 
 handles.dataOut.ffData = assignOptions(handles.ffData, handles.dataStructureDefault);
 
@@ -309,12 +309,31 @@ end
     'SelectionMode','single',...
     'ListString', handles.ffData.variableNames);
 if(v)
-    handles.ffData.dataVariable = handles.ffData.variableNames{s};
-    set(handles.editDataVariable, 'String', handles.ffData.dataVariable);
-    if(size(handles.ffData.fileData.(handles.ffData.dataVariable), 2) > handles.MAX_CHANNELS)
-        set(handles.cbChannAcrossRow, 'Value', 1);
+    % Code to support structures
+    dataVar = handles.ffData.variableNames{s};
+    if(~isstruct(handles.ffData.fileData.(dataVar)))
+        handles.ffData.dataVariable = dataVar;
+        set(handles.editDataVariable, 'String', handles.ffData.dataVariable);
+        if(size(handles.ffData.fileData.(handles.ffData.dataVariable), 2) > handles.MAX_CHANNELS)
+            set(handles.cbChannAcrossRow, 'Value', 1);
+        else
+            set(handles.cbChannAcrossRow, 'Value', 0);
+        end
     else
-        set(handles.cbChannAcrossRow, 'Value', 0);
+        dataVarFields = fieldnames(handles.ffData.fileData.(dataVar));
+        [s, v] = listdlg('PromptString','Select a sub variable:',...
+            'SelectionMode','single',...
+            'ListString', dataVarFields);
+        if(v)
+            subVar = dataVarFields{s};
+            handles.ffData.dataVariable = strcat(dataVar, '.', subVar);
+            set(handles.editDataVariable, 'String', handles.ffData.dataVariable);
+            if(size(eval(strcat('handles.ffData.fileData.', handles.ffData.dataVariable)), 2) > handles.MAX_CHANNELS)
+                set(handles.cbChannAcrossRow, 'Value', 1);
+            else
+                set(handles.cbChannAcrossRow, 'Value', 0);
+            end
+        end
     end
 end
 guidata(hObject, handles);
@@ -332,15 +351,35 @@ end
     'ListString', handles.ffData.variableNames);
 if(v)
     try
-        handles.ffData.fsVariable        = handles.ffData.variableNames{s};
-        handles.ffData.fs                = handles.ffData.fileData.(handles.ffData.fsVariable);
-        if(~isscalar(handles.ffData.fs))
-            handles.ffData.fsVariable    = [];
-            handles.ffData.fs            = [];
-            errordlg('Inappropriate variable for sample rate.', 'Sample Rate', 'modal');
-            return;
+        fsVar                            = handles.ffData.variableNames{s};
+        if(~isstruct(handles.ffData.fileData.(fsVar)))
+            handles.ffData.fsVariable        = fsVar;
+            handles.ffData.fs                = handles.ffData.fileData.(handles.ffData.fsVariable);
+            if(~isscalar(handles.ffData.fs))
+                handles.ffData.fsVariable    = [];
+                handles.ffData.fs            = [];
+                errordlg('Inappropriate variable for sample rate.', 'Sample Rate', 'modal');
+                return;
+            end
+            set(handles.editSampleRate, 'String', num2str(handles.ffData.fs));
+        else
+            fsVarFields = fieldnames(handles.ffData.fileData.(fsVar));
+            [s, v] = listdlg('PromptString','Select a sub variable:',...
+                'SelectionMode','single',...
+                'ListString', fsVarFields);
+            if(v)
+                subVar = fsVarFields{s};
+                handles.ffData.fsVariable = strcat(fsVar, '.', subVar);
+                handles.ffData.fs         = eval(strcat('handles.ffData.fileData.', handles.ffData.fsVariable));
+                if(~isscalar(handles.ffData.fs))
+                    handles.ffData.fsVariable    = [];
+                    handles.ffData.fs            = [];
+                    errordlg('Inappropriate variable for sample rate.', 'Sample Rate', 'modal');
+                    return;
+                end
+                set(handles.editSampleRate, 'String', num2str(handles.ffData.fs));
+            end
         end
-        set(handles.editSampleRate, 'String', num2str(handles.ffData.fs));
     catch me
         errordlg(me.message, 'Sample Rate', 'modal');
     end

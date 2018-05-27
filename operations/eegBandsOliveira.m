@@ -57,6 +57,10 @@ opFunc      = @applyOperation;
         opDataOut.thetaBand = EEG_THETA_RANGE;
         opDataOut.alphaBand = EEG_ALPHA_RANGE;
         opDataOut.betaBand = EEG_BETA_RANGE;
+        
+        opDataOut.numEpochs = size(opDataOut.channelStream, 3);
+        opDataOut.epochNum = 1;
+        opDataOut.epochExcludeStatus = [];
         % Add custom updateView function
         opDataOut.updateView = @updateView;
     end
