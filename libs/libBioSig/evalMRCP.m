@@ -41,7 +41,7 @@ SNR = 10 .* log10(abs(PN) ./ PMN);
 CV = zeros(size(signalSegmentEpochs, 3), 1);
 for i=1:size(signalSegmentEpochs, 3)
     filteredEpoch = lowPassStream(signalSegmentEpochs(:,:, i), fs, MRCP_FREQ_CUTOFF);
-    CV(i) = abs(std(filteredEpoch) / mean(filteredEpoch)) * 100;
+    CV(i) = abs(std(filteredEpoch) / mean(filteredEpoch));;
 end
 
 CVerp = mean(CV, 'omitnan');
@@ -49,5 +49,5 @@ CVerp = mean(CV, 'omitnan');
 %% Assign results
 measureValues = [PN; PNT; PMN; CVerp; SNR];
 measureNames = {'PN'; 'PNT'; 'PMN'   ; 'CV'; 'SNR'};
-measureUnits = {'uV'; 'ms' ; 'uVrms' ; '%' ; 'dB' };
+measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'Var' ; 'dB' };
 end
