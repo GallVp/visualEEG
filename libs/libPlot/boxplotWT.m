@@ -1,4 +1,4 @@
-function boxplotWT(boxData, groupVector, LTitles, XTitles)
+function boxplotWT(boxData, groupVector, LTitles, XTitles, placeXTitlesAt)
 %boxplotWT Box plot with titles and colors for different groups.
 %   boxData is a matrix with rows corresponding to values and columns
 %   corresponding to groups. groupVector contains group number against each
@@ -34,7 +34,7 @@ for j = 1:length(h)
 end
 legend(h, LTitles, 'Location', 'NorthWest', 'EdgeColor', [1 1 1])
 set(gca,'TickLength',[0 0])
-set(gca, 'XTick', (1:length(XTitles):numColumns) + numGroups/2 - 0.5);
+set(gca, 'XTick', placeXTitlesAt);
 xticklabels(gca, XTitles);
 set(gca, 'FontSize', 12);
 set(gcf, 'Color', [1 1 1]);
