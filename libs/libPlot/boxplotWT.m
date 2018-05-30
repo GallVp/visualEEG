@@ -4,6 +4,10 @@ function boxplotWT(boxData, groupVector, LTitles, XTitles)
 %   corresponding to groups. groupVector contains group number against each
 %   column. length(Ltitles) assumed to be equal to number of groups.
 %   length(XTitles) is assumed t be equal to numColumns / numGroups.
+%
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for 
+%   license information.
 
 [~, numColumns] = size(boxData);
 numGroups = length(unique(groupVector));
