@@ -49,6 +49,6 @@ CVerp = mean(CV, 'omitnan');
 
 %% Assign results
 measureValues = [PN; PNT; PMN; PMNpp; CVerp; SNR];
-measureNames = {'PN'; 'PNT'; 'PMN'   ; 'PMN' ; 'CV'  ; 'SNR'};
+measureNames = {'PN'; 'PNT'; 'PMN'   ; 'PMNpp' ; 'CV'  ; 'SNR'};
 measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'uVpp'; 'Var' ; 'dB' };
 end
