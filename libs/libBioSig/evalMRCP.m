@@ -32,7 +32,8 @@ signalSegmentEpochs = usingEpochs(signalSegmentIndices(1)+1:signalSegmentIndices
 noiseSegment = grandMRCPfiltered(noiseSegmentIndices(1)+1:noiseSegmentIndices(2));
 
 %% Premovement noise
-PMN = rms(noiseSegment);
+PMN     = rms(noiseSegment);
+PMNpp   = max(noiseSegment) - min(noiseSegment);
 
 %% SNR
 SNR = 10 .* log10(abs(PN) ./ PMN);
@@ -41,13 +42,13 @@ SNR = 10 .* log10(abs(PN) ./ PMN);
 CV = zeros(size(signalSegmentEpochs, 3), 1);
 for i=1:size(signalSegmentEpochs, 3)
     filteredEpoch = lowPassStream(signalSegmentEpochs(:,:, i), fs, MRCP_FREQ_CUTOFF);
-    CV(i) = abs(std(filteredEpoch) / mean(filteredEpoch));;
+    CV(i) = abs(std(filteredEpoch) / mean(filteredEpoch));
 end
 
 CVerp = mean(CV, 'omitnan');
 
 %% Assign results
-measureValues = [PN; PNT; PMN; CVerp; SNR];
-measureNames = {'PN'; 'PNT'; 'PMN'   ; 'CV'; 'SNR'};
-measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'Var' ; 'dB' };
+measureValues = [PN; PNT; PMN; PMNpp; CVerp; SNR];
+measureNames = {'PN'; 'PNT'; 'PMN'   ; 'PMN' ; 'CV'  ; 'SNR'};
+measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'uVpp'; 'Var' ; 'dB' };
 end
