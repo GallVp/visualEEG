@@ -46,7 +46,7 @@ end
 PMN = mean(PMN, 'omitnan');
 
 %% Assign results
-measureValues = [PN; PNT; BLA; PMNpp; PMN; SNR];
+measureValues = [PN ; PNT  ; BLA     ; PMN    ; SNR];
 measureNames = {'PN'; 'PNT'; 'BLA'   ; 'PMN'  ; 'SNR'};
 measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'uVrms'; 'dB' };
 end
