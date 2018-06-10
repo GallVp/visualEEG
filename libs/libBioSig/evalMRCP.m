@@ -30,7 +30,7 @@ BLA                 = rms(baselineSegment);
 %% SNR
 SNR                 = 10 .* log10(abs(PN) ./ BLA);
 %% Assign results
-measureValues       = [PN ; PNT  ; BLA     ; SNR];
+measureValues       = [PN  ; PNT  ; BLA     ; SNR];
 measureNames        = {'PN'; 'PNT'; 'BLA'   ; 'SNR'};
 measureUnits        = {'uV'; 'ms' ; 'uVrms' ; 'dB' };
 end
