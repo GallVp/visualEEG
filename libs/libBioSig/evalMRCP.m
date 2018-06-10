@@ -29,26 +29,24 @@ EEG_SIGNAL_WINDOW(2) = EEG_SIGNAL_WINDOW(2) + PNT / 1000;
 signalSegmentIndices = round((EEG_SIGNAL_WINDOW + timeBeforeEvent) * fs);
 noiseSegmentIndices = round((EEG_NOISE_WINDOW + timeBeforeEvent) * fs);
 signalSegmentEpochs = usingEpochs(signalSegmentIndices(1)+1:signalSegmentIndices(2), :, :);
-noiseSegment = grandMRCPfiltered(noiseSegmentIndices(1)+1:noiseSegmentIndices(2));
+baselineSegment = grandMRCPfiltered(noiseSegmentIndices(1)+1:noiseSegmentIndices(2));
 
 %% Premovement noise
-PMN     = rms(noiseSegment);
-PMNpp   = max(noiseSegment) - min(noiseSegment);
+BLA     = rms(baselineSegment);
 
 %% SNR
-SNR = 10 .* log10(abs(PN) ./ PMN);
+SNR = 10 .* log10(abs(PN) ./ BLA);
 
-%% CVerp
-CV = zeros(size(signalSegmentEpochs, 3), 1);
+%% Per epoch measures: Premovement noise
+PMN = zeros(size(signalSegmentEpochs, 3), 1);
 for i=1:size(signalSegmentEpochs, 3)
-    filteredEpoch = lowPassStream(signalSegmentEpochs(:,:, i), fs, MRCP_FREQ_CUTOFF);
-    CV(i) = abs(std(filteredEpoch) / mean(filteredEpoch));
+    PMN(i) = rms(signalSegmentEpochs(:,:, i));
 end
 
-CVerp = mean(CV, 'omitnan');
+PMN = mean(PMN, 'omitnan');
 
 %% Assign results
-measureValues = [PN; PNT; PMN; PMNpp; CVerp; SNR];
-measureNames = {'PN'; 'PNT'; 'PMN'   ; 'PMNpp' ; 'CV'  ; 'SNR'};
-measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'uVpp'; 'Var' ; 'dB' };
+measureValues = [PN; PNT; BLA; PMNpp; PMN; SNR];
+measureNames = {'PN'; 'PNT'; 'BLA'   ; 'PMN' ; 'SNR'};
+measureUnits = {'uV'; 'ms' ; 'uVrms' ; 'uVpp'; 'dB' };
 end
