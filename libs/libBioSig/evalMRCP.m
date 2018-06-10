@@ -22,8 +22,15 @@ grandMRCPfiltered   = lowPassStream(mean(usingEpochs, 3), fs, MRCP_FREQ_CUTOFF);
 PN                  = -PN;
 PNT                 = (PNT + pnWindow(1)) ./fs - timeBeforeEvent;
 PNT                 = PNT .* 1000;  % convert to ms.
+%% Find signal and noise segments
+noiseSegmentIndices = round((EEG_NOISE_WINDOW + timeBeforeEvent) * fs);
+baselineSegment     = grandMRCPfiltered(noiseSegmentIndices(1)+1:noiseSegmentIndices(2));
+%% Premovement noise
+BLA                 = rms(baselineSegment);
+%% SNR
+SNR                 = 10 .* log10(abs(PN) ./ BLA);
 %% Assign results
-measureValues       = [PN  ; PNT];
-measureNames        = {'PN'; 'PNT'};
-measureUnits        = {'uV'; 'ms'};
+measureValues       = [PN ; PNT  ; BLA     ; SNR];
+measureNames        = {'PN'; 'PNT'; 'BLA'   ; 'SNR'};
+measureUnits        = {'uV'; 'ms' ; 'uVrms' ; 'dB' };
 end
