@@ -25,4 +25,5 @@ A detailed documentation with tutorials is available [here](https://github.com/G
 ## Third Party Libraries
 visualEEG uses following third party libraries. The licenses for these libraries can be found next to source files in their respective libs/thirdpartlib folders.
 1. `barwitherr` Copyright (c) 2014, Martina Callaghan. Source is available [here](https://au.mathworks.com/matlabcentral/fileexchange/30639-barwitherr-errors-varargin-?focused=3845794&tab=function).
-1. `export_fig` Copyright (c) 2014, Oliver J. Woodford, Yair M. Altman. Source is available [here](https://github.com/altmany/export_fig).
+2. `export_fig` Copyright (c) 2014, Oliver J. Woodford, Yair M. Altman. Source is available [here](https://github.com/altmany/export_fig).
+3. `pooledmeanstd` Copyright (c) 2012, R P. Source is available [here](https://au.mathworks.com/matlabcentral/fileexchange/37233-pooled-mean-and-standard-deviation).
