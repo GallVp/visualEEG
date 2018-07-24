@@ -3,6 +3,21 @@ function H = plotChannelData(channelStream, fs, options)
 %   channelStream is a matrix in which 1st dimension is the time and
 %   second dimension is the channels.
 %
+%   Available options:
+%   options.plotType         = vars.PLOT_TYPE_PLOT;
+%   options.legendInfo       = [];
+%   options.title            = 'Channel Data';
+%   options.xLabel           = {'Sample Number'};
+%   options.yLabel           = 'Amplitude';
+%   options.lineWidth        = 1;
+%   options.markerLineWidth  = 1;
+%   options.domain           = vars.DOMAIN_TIME;
+%   options.eventVector      = [];
+%   options.onsetsVector     = [];
+%   options.onsetsVector2    = [];
+%   options.applyDetrend     = 1;
+%   options.xShift           = 0;
+%
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for 
 %   license information.
