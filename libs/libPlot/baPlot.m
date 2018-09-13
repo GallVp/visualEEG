@@ -1,5 +1,9 @@
 function [bias, LOA, CR] = baPlot(dataVectA, dataVectB, labels, units)
-%baPlot
+%baPlot Bland-Altman plotting with bias, CR, LOAs.
+%
+%   Copyright (c) <2016> <Usman Rashid>
+%   Licensed under the MIT License. See License.txt in the project root for 
+%   license information.
 
 if nargin < 3
     labels = {inputname(1), inputname(2)};

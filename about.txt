@@ -12,5 +12,6 @@ Usman Ayub
 Third party libraries:
 visualEEG uses following open source libraries. Please see LEGAL.txt
 in the root folder for further details.
-1. [barwitherr] Copyright (c) 2014, Martina Callaghan.
-2. [export_fig] Copyright (c) 2014, Oliver J. Woodford, Yair M. Altman.
+1. [barwitherr] Copyright (c) 2014, Martina Callaghan
+2. [export_fig] Copyright (c) 2014, Oliver J. Woodford, Yair M. Altman
+3. [pooledmeanstd] Copyright (c) 2012, R. P.
