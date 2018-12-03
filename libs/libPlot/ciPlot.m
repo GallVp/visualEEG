@@ -16,11 +16,11 @@ elseif nargin < 3
     isMatched = 1;
 end
 
-meanA = mean(matA, 2);
-meanB = mean(matB, 2);
+meanA = mean(matA, 2, 'omitnan');
+meanB = mean(matB, 2, 'omitnan');
 
-stdA = std(matA, 0, 2);
-stdB = std(matB, 0, 2);
+stdA = std(matA, 0, 2, 'omitnan');
+stdB = std(matB, 0, 2, 'omitnan');
 
 nA = size(matA, 2);
 nB = size(matB, 2);
@@ -65,8 +65,8 @@ if ~isempty(matB)
     
     if isMatched
         abDiff      = matA - matB;
-        meanDiff = mean(abDiff, 2);
-        stdDiff = std(abDiff, 0, 2);
+        meanDiff = mean(abDiff, 2, 'omitnan');
+        stdDiff = std(abDiff, 0, 2, 'omitnan');
         nDiff = size(abDiff, 2);
         ciDiff = ciLevel .* stdDiff ./ sqrt(nDiff);
         
