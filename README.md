@@ -4,6 +4,10 @@
 
 visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analysis of EEG/EMG data. The goal of this project is to develop a single window interactive tool for beginners. For serious research, we recommend EEGLAB https://bitbucket.org/sccn_eeglab/eeglab.git.
 
+|![alt text](figs/visualEEG_main.png)|
+|:--:|
+|**Fig. 1.** *The main GUI window of visualEEG which allows an interactive processing of data.*|
+
 ## Compatibility
 Currently visualEEG is being developed on macOS High Sierra, MATLAB 2017a. However, in the past, it has been tested to work on OSX El Capitan MATLAB R2015b; Windows 7, MATLAB 2014a; and Linux (Ubuntu LTS 14.04), MATLAB 2012b.
 

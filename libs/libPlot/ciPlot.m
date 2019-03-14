@@ -1,4 +1,4 @@
-function ciPlot(matA, matB, isMatched)
+function ciPlot(matA, matB, inputOptions)
 %ciPlot Plots mean and confidence intervals for rows across columns of matA
 %   and matB along with the difference wave.
 %
@@ -9,12 +9,20 @@ function ciPlot(matA, matB, isMatched)
 
 ciLevelSample = 1.96;
 
+defaultOptions.isMatched    = 1;
+defaultOptions.plotDiff     = 1;
+defaultOptions.legend       = [];
+
 if nargin < 2
     matB = [];
-    isMatched = 1;
+    options = defaultOptions;
 elseif nargin < 3
-    isMatched = 1;
+    options = defaultOptions;
+else
+    options = assignOptions(inputOptions, defaultOptions);
 end
+
+
 
 meanA = mean(matA, 2, 'omitnan');
 meanB = mean(matB, 2, 'omitnan');
@@ -28,7 +36,7 @@ nB = size(matB, 2);
 if isempty(matB)
     ciLevel = 1.96;
 else
-    if isMatched
+    if options.isMatched
         ciLevel = tinv(0.975, nA - 1);
     else
         ciLevel = tinv(0.975, nA + nB - 2);
@@ -50,20 +58,28 @@ ciB = ciB';
 
 
 if ~isempty(matB)
-    ax(1) = subplot(2, 1, 1);
-    plot(x, meanA, 'b-', 'LineWidth', 1.5);
+    if options.plotDiff
+        ax(1) = subplot(2, 1, 1);
+    end
+    p1 = plot(x, meanA, 'b-', 'LineWidth', 1.5);
     hold on;
     plot([x(1) x(end)], [0 0], 'k--', 'LineWidth', 1);
     fill([x fliplr(x)],[meanA-ciA fliplr(meanA+ciA)], 'b', 'EdgeColor', [1 1 1], 'FaceAlpha', 0.2, 'EdgeAlpha', 0);
     
-    plot(x, meanB, 'r-', 'LineWidth', 1.5);
+    p2 = plot(x, meanB, 'r-', 'LineWidth', 1.5);
     fill([x fliplr(x)],[meanB-ciB fliplr(meanB+ciB)], 'r', 'EdgeColor', [1 1 1], 'FaceAlpha', 0.2, 'EdgeAlpha', 0);
     hold off;
     box off;
+    if(~isempty(options.legend))
+        legend([p1 p2], options.legend, 'Box', 'off');
+    end
+    if ~options.plotDiff
+        return;
+    end
     
     ax(2) = subplot(2, 1, 2);
     
-    if isMatched
+    if options.isMatched
         abDiff      = matA - matB;
         meanDiff = mean(abDiff, 2, 'omitnan');
         stdDiff = std(abDiff, 0, 2, 'omitnan');
