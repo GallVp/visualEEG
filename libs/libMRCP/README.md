@@ -16,6 +16,6 @@ movementOnsetAt:    Time of the movement onset in seconds.
 Running the `findMRCPFeat(averagedMRCP, fs, movementOnsetAt)` gives following output.
 
 <p align="center">
-<img alt="Automated labelling example" src="../../figs/findMRCPFeat_example" height="auto" width="50%"/><hr>
+<img alt="Automated labelling example" src="../../figs/findMRCPFeat_example.png" height="auto" width="50%"/><hr>
 <em>Fig 1. Automated labelling of an example MRCP.</em>
 </p>
