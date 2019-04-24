@@ -2,12 +2,15 @@
 
 [![Gitter](https://badges.gitter.im/GallVp/visualEEG.svg)](https://gitter.im/GallVp/visualEEG?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analysis of EEG/EMG data. The goal of this project is to develop a single window interactive tool for beginners. For serious research, we recommend EEGLAB https://bitbucket.org/sccn_eeglab/eeglab.git.
+visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analysis of EEG/EMG data. The goal of this project is to develop a single window interactive tool.
 
 <p align="center">
 <img alt="visualEEG main window" src="./figs/visualEEG_main.png" height="auto" width="50%"/><hr>
 <em>Fig 1. The main GUI window of visualEEG which allows an interactive processing of data.</em>
 </p>
+
+## Source Code and Tutorials related to Publications
+1. [README](https://github.com/GallVp/visualEEG/tree/master/libs/libMRCP) for "Automated labelling of Movement-Related Cortical Potentials using Segmented Regression".
 
 ## Compatibility
 Currently visualEEG is being developed on macOS Mojave, MATLAB 2017b. However, in the past, it has been tested to work on OSX El Capitan MATLAB R2015b; Windows 7, MATLAB 2014a; and Linux (Ubuntu LTS 14.04), MATLAB 2012b.
