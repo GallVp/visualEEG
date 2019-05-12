@@ -1,7 +1,7 @@
 # libMRCP
 A small library of functions to process movement-related cortical potentials.
 
-# Topics
+## Topics
 ### 1. Automated Labeling of Movement-Related Cortical Potentials using Segmented Regression
 #### DOI: [10.1109/TNSRE.2019.2913880](http://dx.doi.org/10.1109/TNSRE.2019.2913880)
 #### Summary
