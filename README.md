@@ -10,7 +10,7 @@ visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analy
 </p>
 
 ## Source Code and Tutorials related to Publications
-1. [README](https://github.com/GallVp/visualEEG/tree/master/libs/libMRCP) for "Automated labelling of Movement-Related Cortical Potentials using Segmented Regression".
+1. [README](https://github.com/GallVp/visualEEG/tree/master/libs/libMRCP) for "Automated Labeling of Movement-Related Cortical Potentials using Segmented Regression", *IEEE Transactions on Neural Systems and Rehabilitation Engineering*, doi: [10.1109/TNSRE.2019.2913880](http://dx.doi.org/10.1109/TNSRE.2019.2913880)
 
 ## Compatibility
 Currently visualEEG is being developed on macOS Mojave, MATLAB 2017b. However, in the past, it has been tested to work on OSX El Capitan MATLAB R2015b; Windows 7, MATLAB 2014a; and Linux (Ubuntu LTS 14.04), MATLAB 2012b.
