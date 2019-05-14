@@ -16,7 +16,7 @@
 
 ## Sample Data
 
-A sample dataset is included with visualEEG source code. It is a single **MAT** file named *dorsiflexions.mat*. This file contains EEG and EMG data recorded continuously from a healthy participant doing right foot ballistic dorsiflexions at their own pace. The sample rate for both EEG and EMG data is 250 samples/sec.
+A sample dataset is included with visualEEG source code. It is a single *MAT* file named *dorsiflexions.mat*. This file contains EEG and EMG data recorded continuously from a healthy participant doing right foot ballistic dorsiflexions at their own pace. The sample rate for both EEG and EMG data is 250 samples/sec.
 
 ### EEG Data
 
