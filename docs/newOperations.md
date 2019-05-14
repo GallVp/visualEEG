@@ -7,7 +7,7 @@
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/README.md">Overview of visualEEG</a>
     </li>
     <li>
-        <a href="https://github.com/GallVp/visualEEG/tree/master/docs/importTutorial.md">How to Import Data in visualEEG?</a>
+        <a href="https://github.com/GallVp/visualEEG/tree/master/docs/importData.md">How to Import Data in visualEEG?</a>
     </li>
     <li>
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/sampleData.md">Sample Data Explained</a>
