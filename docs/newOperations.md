@@ -14,7 +14,7 @@
     </li>
 </ul>
 
-# Adding New Operations
+## Adding New Operations
 
 New operations/functions can be added to visualEEG by simply placing the function file in the **operations** folder. However, this function should conform to the following template. This template is implementing the `newFunction`.
 

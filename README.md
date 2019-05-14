@@ -17,7 +17,7 @@ visualEEG is a MATLAB/GUIDE based toolbox which can be used for very basic analy
 
 Following tutorials are available.
 
-<ul>
+<ol>
     <li>
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/README.md">Overview of visualEEG</a>
     </li>
@@ -30,7 +30,7 @@ Following tutorials are available.
     <li>
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/newOperations.md">How to Add New Operations?</a>
     </li>
-</ul>
+</ol>
 
 ## Compatibility
 

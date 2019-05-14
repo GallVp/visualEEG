@@ -15,6 +15,7 @@
 </ul>
 
 ## Steps to import data
+
 1. Open visualEEG by typing visualEEG in MATLAB command window and hit enter. For now, visualEEG only supports importing MATLAB's *MAT* files.
 
 <p align="center">

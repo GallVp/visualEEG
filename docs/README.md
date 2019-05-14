@@ -2,7 +2,7 @@
 
 ## Contents:
 
-<ul>
+<ol>
     <li>
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/importData.md">How to Import Data in visualEEG?</a>
     </li>
@@ -12,7 +12,7 @@
     <li>
         <a href="https://github.com/GallVp/visualEEG/tree/master/docs/newOperations.md">How to Add New Operations?</a>
     </li>
-</ul>
+</ol>
 
 ## Summary
 
