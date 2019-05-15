@@ -60,20 +60,21 @@ opFunc      = @applyOperation;
             activitySpectra(1:length(f), :, i) = x(f<=FREQ_LIMIT);
         end
         % Take mean across epochs
-        opDataOut.referenceSpectra      = mean(referenceSpectra(1:length(f), :, :), 3);
-        opDataOut.activitySpectra       = mean(activitySpectra(1:length(f), :, :), 3);
-        opDataOut.diffInSpectra         = opDataOut.activitySpectra - opDataOut.referenceSpectra;
-        opDataOut.diffInSpectraMean     = mean(opDataOut.diffInSpectra);
-        opDataOut.diffInSpectraCI       = CI_AT * std(opDataOut.diffInSpectra)...
-            / sqrt(length(opDataOut.diffInSpectra));
-        opDataOut.diffInSpectraCrosses  = opDataOut.diffInSpectra >= (opDataOut.diffInSpectraMean + opDataOut.diffInSpectraCI) |...
-            opDataOut.diffInSpectra <= (opDataOut.diffInSpectraMean - opDataOut.diffInSpectraCI);
-        opDataOut.diffInSpectraCrosses  = retainFirstAndLastOne(opDataOut.diffInSpectraCrosses);
-        opDataOut.diffInSpectraCrosses(1) = 0;
+        opDataOut.referenceSpectra          = mean(referenceSpectra(1:length(f), :, :), 3);
+        opDataOut.activitySpectra           = mean(activitySpectra(1:length(f), :, :), 3);
+        opDataOut.diffInSpectra             = opDataOut.activitySpectra - opDataOut.referenceSpectra;
+        opDataOut.diffInSpectraMean         = mean(opDataOut.diffInSpectra);
+        opDataOut.diffInSpectraCI           = CI_AT .* std(opDataOut.diffInSpectra)...
+                                                / sqrt(length(opDataOut.diffInSpectra));
+        opDataOut.diffInSpectraCrosses      = opDataOut.diffInSpectra >= (opDataOut.diffInSpectraMean + opDataOut.diffInSpectraCI) |...
+                                                opDataOut.diffInSpectra <= (opDataOut.diffInSpectraMean - opDataOut.diffInSpectraCI);
+        opDataOut.diffInSpectraCrosses      = retainFirstAndLastOne(opDataOut.diffInSpectraCrosses);
+        opDataOut.diffInSpectraCrosses(1)   = 0;
         opDataOut.diffInSpectraCrosses(end) = 0;
-        opDataOut.diffInSpectraCrosses  = find(opDataOut.diffInSpectraCrosses);
-        opDataOut.numEpochs             = 1;
-        opDataOut.raFreq                = f;
+        opDataOut.diffInSpectraCrosses      = find(opDataOut.diffInSpectraCrosses);
+        opDataOut.numEpochs                 = 1;
+        opDataOut.epochNum                  = 1;
+        opDataOut.raFreq                    = f;
         % Add custom updateView function
         opDataOut.updateView = @updateView;
     end
@@ -85,6 +86,7 @@ opFunc      = @applyOperation;
         plot(axH, [opData.raFreq(1) opData.raFreq(end)], [opData.diffInSpectraMean opData.diffInSpectraMean], '-k');
         plot(axH, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean + [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
         plot(axH, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean - [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
+        
         for i=1:length(opData.diffInSpectraCrosses)
             diffIndex = opData.diffInSpectraCrosses(i);
             plot(axH, opData.raFreq(diffIndex), opData.diffInSpectra(diffIndex), 'r.', 'LineWidth', 2, 'MarkerSize', 15);

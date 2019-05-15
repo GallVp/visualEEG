@@ -1,7 +1,7 @@
 function [ X, f ] = computePSD( x, fs, na )
 %computePSD Estimates power spectral density pwelch. This code is written
 %   in accordance with the recommendations of Hanspeter Schmid, "How to use
-%   the FFT and Matlab?s pwelch function for signal and
+%   the FFT and Matlab's pwelch function for signal and
 %   noise simulations and measurements", 2011.
 %
 %   Copyright (c) <2016> <Usman Rashid>

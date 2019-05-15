@@ -21,19 +21,21 @@ opFunc      = @applyOperation;
         % No argument required.
         FREQ_LIMIT = 38;
         if(opData.numEpochs > 1)
-            processedData = zeros(size(opData.channelStream));
+            processedData           = zeros(size(opData.channelStream));
             for i=1:opData.numEpochs
-                [x, f] = computePSD(opData.channelStream(:, :, i), opData.fs);
-                processedData(1:length(f), :, i) = x;
+                [x, f]              = computePSD(opData.channelStream(:, :, i), opData.fs);
+                                        processedData(1:length(f),...
+                    :, i)           = x;
             end
-            processedData = processedData(1:length(f), :, :);
+            processedData           = processedData(1:length(f), :, :);
         else
-            [processedData, f] = computePSD(opData.channelStream, opData.fs);
+            [processedData, f]      = computePSD(opData.channelStream, opData.fs);
         end
-        f = f(f <= FREQ_LIMIT);
-        opDataOut.frequencyStream = mean(processedData(f <= FREQ_LIMIT, :, :), 3);
-        opDataOut.numEpochs = 1;
-        opDataOut.fftFreq = f;
+        f                           = f(f <= FREQ_LIMIT);
+        opDataOut.frequencyStream   = mean(processedData(f <= FREQ_LIMIT, :, :), 3);
+        opDataOut.numEpochs         = 1;
+        opDataOut.epochNum          = 1;
+        opDataOut.fftFreq           = f;
         
         % Add custom updateView function
         opDataOut.updateView = @updateView;
