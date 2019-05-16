@@ -175,8 +175,9 @@ if(isempty(handles.dSets(handles.datasetNum).opDataCache{index}))
     handles.dSets(handles.datasetNum).opDataCache{index} = getOpData(handles.dSets(handles.datasetNum).ffData);
 end
 
-% If apply all files is true, overwrite all operations in the new loaded
-% file only if the newly loaded file does not have the same operations.
+% If apply to all files is true, overwrite all operations in the new loaded
+% file only if the newly loaded file does not have the same operations and
+% the same arguments for these operations.
 val = get(handles.menuOperateAllFiles, 'Check');
 if(strcmp(val, 'on'))
     opDataOld = handles.dSets(handles.datasetNum).opDataCache{oldFileNum};
@@ -184,8 +185,9 @@ if(strcmp(val, 'on'))
     if(isempty(opDataNew.operations) || length(opDataOld.operations) ~= length(opDataNew.operations))
         handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
     else
-        opCompare = strcmp(opDataOld.operations, opDataNew.operations);
-        if(sum(opCompare) ~= length(opCompare))
+        areTheySame = opCompare(opDataOld.operations, opDataOld.operationArgs,...
+            opDataNew.operations, opDataNew.operationArgs);
+        if ~areTheySame
             handles = applyAllOps(opDataOld.operations, opDataOld.operationArgs, handles);
         end
     end
@@ -326,7 +328,7 @@ opData.channelNames = {};
 opData.events = [];
 
 %** Additional variables being added for better conformity
-% However, these variables sould be during data export.
+% However, these variables sould be removed during data export.
 opData.fileVariableNames    = ffData.variableNames;
 opData.fileData             = ffData.fileData;
 opData.epochNum = 1;
