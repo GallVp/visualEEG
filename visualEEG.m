@@ -397,6 +397,11 @@ set(axisOfH.Children, 'LineWidth', 2);
 
 % ---Update View function
 function handlesOut = updateView(handles)
+allAxes = findobj(gcf,'type','axes');
+if length(allAxes) > 1
+    allAxes(end).Visible = 'on';
+    delete(allAxes(1:end-1));
+end
 handlesOut = handles;
 opData = handles.dSets(handles.datasetNum).opDataCache{handles.fileNum};
 ffData = handles.dSets(handles.datasetNum).ffData;

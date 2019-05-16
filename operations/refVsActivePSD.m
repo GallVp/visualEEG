@@ -1,5 +1,5 @@
-function [argFunc, opFunc] = raPSD
-%raPSD Plots psd of reference segment vs the activity segment.
+function [argFunc, opFunc] = refVsActivePSD
+%refVsActivePSD Plots psd of reference segment vs the activity segment.
 %
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for
@@ -65,9 +65,9 @@ opFunc      = @applyOperation;
         opDataOut.diffInSpectra             = opDataOut.activitySpectra - opDataOut.referenceSpectra;
         opDataOut.diffInSpectraMean         = mean(opDataOut.diffInSpectra);
         opDataOut.diffInSpectraCI           = CI_AT .* std(opDataOut.diffInSpectra)...
-                                                / sqrt(length(opDataOut.diffInSpectra));
+            / sqrt(length(opDataOut.diffInSpectra));
         opDataOut.diffInSpectraCrosses      = opDataOut.diffInSpectra >= (opDataOut.diffInSpectraMean + opDataOut.diffInSpectraCI) |...
-                                                opDataOut.diffInSpectra <= (opDataOut.diffInSpectraMean - opDataOut.diffInSpectraCI);
+            opDataOut.diffInSpectra <= (opDataOut.diffInSpectraMean - opDataOut.diffInSpectraCI);
         opDataOut.diffInSpectraCrosses      = retainFirstAndLastOne(opDataOut.diffInSpectraCrosses);
         opDataOut.diffInSpectraCrosses(1)   = 0;
         opDataOut.diffInSpectraCrosses(end) = 0;
@@ -80,21 +80,36 @@ opFunc      = @applyOperation;
     end
 %% Update the view
     function opDataOut = updateView(axH, opData)
-        opDataOut = opData;
-        plot(axH, opData.raFreq, opData.diffInSpectra);
+        opDataOut           = opData;
+        axHPosition         = axH.Position;
+        cla(axH);
+        axH.Visible         = 'off';
+        
+        ax1 = axes('Position',[axHPosition(1) axHPosition(2) axHPosition(3) axHPosition(4)/2.5]);
+        
+        plot(ax1, opData.raFreq, opData.referenceSpectra);
         hold on;
-        plot(axH, [opData.raFreq(1) opData.raFreq(end)], [opData.diffInSpectraMean opData.diffInSpectraMean], '-k');
-        plot(axH, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean + [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
-        plot(axH, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean - [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
+        plot(ax1, opData.raFreq, opData.activitySpectra);
+        hold off;
+        
+        ax2 = axes('Position',[axHPosition(1)...
+            axHPosition(2) + axHPosition(4)/2.5 + (axHPosition(4)/2.5)/4 ...
+            axHPosition(3) axHPosition(4)/2.5]);
+        plot(ax2, opData.raFreq, opData.diffInSpectra);
+        hold on;
+        plot(ax2, [opData.raFreq(1) opData.raFreq(end)], [opData.diffInSpectraMean opData.diffInSpectraMean], '-k');
+        plot(ax2, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean + [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
+        plot(ax2, [opData.raFreq(1) opData.raFreq(end)], opData.diffInSpectraMean - [opData.diffInSpectraCI opData.diffInSpectraCI], '--r');
         
         for i=1:length(opData.diffInSpectraCrosses)
             diffIndex = opData.diffInSpectraCrosses(i);
-            plot(axH, opData.raFreq(diffIndex), opData.diffInSpectra(diffIndex), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
-            text(axH, opData.raFreq(diffIndex), opData.diffInSpectra(diffIndex),...
-                    sprintf(' --> %.2f Hz', opData.raFreq(diffIndex)), 'FontSize', 12);
+            plot(ax2, opData.raFreq(diffIndex), opData.diffInSpectra(diffIndex), 'r.', 'LineWidth', 2, 'MarkerSize', 15);
+            text(ax2, opData.raFreq(diffIndex), opData.diffInSpectra(diffIndex),...
+                sprintf(' --> %.2f Hz', opData.raFreq(diffIndex)), 'FontSize', 12);
         end
         hold off;
-        xlabel(axH, 'Frequency (Hz)');
-        ylabel(axH, 'Power (dB)');
+        xlabel(ax1, 'Frequency (Hz)');
+        ylabel(ax1, 'Power (dB)');
+        ylabel(ax2, 'Power (dB)');
     end
 end
