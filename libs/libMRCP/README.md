@@ -34,3 +34,30 @@ Running the `findMRCPFeat(averagedMRCP, fs, movementOnsetAt)` gives following ou
 <img alt="Automated labelling example" src="../../docs/figs/findMRCPFeat_example.png" height="auto" width="50%"/><hr>
 <em>Fig 1. Automated labeling of an example MRCP.</em>
 </p>
+
+If `findMRCPFeat` is ran with output arguments, it also returns the onsets BP1, BP2, time of PN, amplitudes at these time points and slopes of BP1 and BP2. For example:
+
+```MATLAB
+[timeVect, ampVect, slpVect, intVect, mdlResid] = findMRCPFeat(averagedMRCP, fs, movementOnsetAt);
+```
+
+Returns:
+
+```MATLAB
+timeVect =
+   -2.2040      % Onset of BP1 (s)
+   -0.5800      % Onset of BP2 (s)
+    0.0920      % Time of PN (s)
+
+ampVect =
+    3.0343      % Amplitude at onset of BP1 (uV)
+   -1.4920      % Amplitude at onset of BP2 (uV)
+  -10.4032      % Amplitude at time of PN (uV)
+
+slpVect =
+       NaN
+   -2.6502      % BP1 Slope (uV/s)
+  -13.8593      % BP2 Slope (uV/s)
+```
+
+Note that the onset times are computed with respect to the movement onset.
