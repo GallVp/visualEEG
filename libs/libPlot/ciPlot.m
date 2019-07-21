@@ -12,6 +12,7 @@ ciLevelSample = 1.96;
 defaultOptions.isMatched    = 1;
 defaultOptions.plotDiff     = 1;
 defaultOptions.legend       = [];
+defaultOptions.colorCode    = 'r';
 
 if nargin < 2
     matB = [];
@@ -107,11 +108,13 @@ if ~isempty(matB)
     linkaxes(ax, 'xy');
     box off;
 else
-    plot(x, meanA, 'r-', 'LineWidth', 1.5);
+    plot(x, meanA, strcat(options.colorCode,'-'), 'LineWidth', 1.5);
     hold on;
-    fill([x fliplr(x)],[meanA-ciA fliplr(meanA+ciA)], 'r', 'EdgeColor', [1 1 1], 'FaceAlpha', 0.2, 'EdgeAlpha', 0);
+    fill([x fliplr(x)],[meanA-ciA fliplr(meanA+ciA)], options.colorCode, 'EdgeColor', [1 1 1], 'FaceAlpha', 0.2, 'EdgeAlpha', 0);
     hold off;
     box off;
+    ax = axis;
+    axis([0 x(end) ax(3) ax(4)])
 end
 end
 

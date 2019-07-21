@@ -1,5 +1,10 @@
 function applyToAllFiles(thisFunction, inFolder, andSaveInFolder)
 %applyToAllFiles Applies the function to all files.
+%   Inputs:
+%   1. thisFunction: A handle for a function which takes full file path as
+%   input and returns a structure as output.
+%   2. inFolder: Path to folder for input files.
+%   3. andSaveInFolder: Path to folder for output files.
 %
 %   Copyright (c) <2016> <Usman Rashid>
 %   Licensed under the MIT License. See License.txt in the project root for
