@@ -19,7 +19,7 @@ function H = plotChannelData(channelStream, fs, options)
 %   options.xShift           = 0;
 %
 %   Copyright (c) <2016> <Usman Rashid>
-%   Licensed under the MIT License. See License.txt in the project root for 
+%   Licensed under the MIT License. See License.txt in the project root for
 %   license information.
 
 % Available option constants
@@ -138,7 +138,9 @@ set(H, 'Visible','on');
     function histogram(~,~)
         if(strcmp(vars.options.domain, vars.DOMAIN_TIME) || strcmp(vars.options.domain, vars.DOMAIN_FREQUENCY))
             vars.options.domain = vars.DOMAIN_STAT;
-            set(vars.btnSpectrum, 'String', 'Spectrum');
+            if(~isempty(vars.fs))
+                set(vars.btnSpectrum, 'String', 'Spectrum');
+            end
             set(vars.btnHist, 'String', 'Signal');
         else
             vars.options.domain = vars.DOMAIN_TIME;
